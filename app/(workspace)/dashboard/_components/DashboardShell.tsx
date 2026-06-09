@@ -779,7 +779,16 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
   // Server-side scoping in fetchDashboardData already narrows non-admin
   // tasks to "tasks in projects where I have ≥1 assignment". The 'mine'
   // view further narrows to just my-assignee tasks below.
-  const visibleTasks = tasks
+  // Tasks come unfiltered by URL project (the palette needs to search
+  // across everything); narrow to the active project here for the views
+  // that render board/list/sprint UI.
+  const visibleTasks = useMemo(
+    () =>
+      initial.currentProjectId
+        ? tasks.filter((t) => t.projectId === initial.currentProjectId)
+        : tasks,
+    [tasks, initial.currentProjectId]
+  )
 
   // Task IDs where the current user is @mentioned AND hasn't replied yet.
   // The rule: a task stays in the Mentions feed until the user posts a

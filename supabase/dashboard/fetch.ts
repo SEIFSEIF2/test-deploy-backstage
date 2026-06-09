@@ -280,8 +280,10 @@ export async function fetchDashboardData(
     }
   }
 
-  // Effective project filter for the tasks query: URL projectId narrows
-  // further within the scope; for non-admins, scope is myProjectIds.
+  // Tasks query: scope by role (members get only projects they're in)
+  // but NOT by the URL ?project= filter. The dashboard filters down to
+  // the active project client-side via visibleTasks, while command-palette
+  // search and cross-project relations need the full role-scoped list.
   let taskQuery = supabase
     .from('tasks')
     .select('*')
@@ -289,9 +291,7 @@ export async function fetchDashboardData(
     .order('sort_order', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false })
 
-  if (projectId) {
-    taskQuery = taskQuery.eq('project_id', projectId)
-  } else if (myProjectIds !== null) {
+  if (myProjectIds !== null) {
     if (myProjectIds.length === 0) {
       taskQuery = taskQuery.in('project_id', ['00000000-0000-0000-0000-000000000000'])
     } else {
