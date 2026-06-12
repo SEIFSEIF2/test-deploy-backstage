@@ -20,7 +20,8 @@ import {
   Shapes,
   Compass,
   UserCog,
-  Archive as ArchiveIcon
+  Archive as ArchiveIcon,
+  Palette
 } from 'lucide-react'
 import { STATUSES, TaskStatus } from './status'
 import StatusIcon from './StatusIcon'
@@ -68,7 +69,9 @@ const HINTS = {
   updates:
     'Recent activity on your projects. Status changes, comments, mentions.',
   symbols: 'Reference for the status and priority icons used on cards.',
-  settings: 'Card density, WIP limits, notifications, and help hints.'
+  settings: 'Card density, WIP limits, notifications, and help hints.',
+  brand:
+    'Explore sub-brand directions and export the SVG logo pack for every tool.'
 } as const
 
 type View =
@@ -83,6 +86,7 @@ type View =
   | 'team'
   | 'meetings'
   | 'archive'
+  | 'brand'
 
 interface SidebarProps {
   activeView: 'all' | 'mine' | 'inbox' | 'mentions'
@@ -561,6 +565,13 @@ export default function Sidebar({
             active={secondary === 'settings'}
             onClick={() => onSecondary('settings')}
             hint={showHints ? HINTS.settings : undefined}
+          />
+          <SidebarItem
+            icon={<Palette className="size-3.5" />}
+            label="Brand"
+            active={secondary === 'brand'}
+            onClick={() => onSecondary('brand')}
+            hint={showHints ? HINTS.brand : undefined}
           />
         </div>
 

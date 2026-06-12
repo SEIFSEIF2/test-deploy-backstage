@@ -98,6 +98,7 @@ import NewTaskModal from './NewTaskModal'
 import Timeline from './Timeline'
 import FilterPanel from './FilterPanel'
 import { ProjectsPanel, SettingsPanel, UpdatesPanel } from './Panels'
+import BrandPanel from './BrandPanel'
 import { MeetingsPanel } from './MeetingsPanel'
 import { TeamPanel } from './TeamPanel'
 import SprintsPanel from './SprintsPanel'
@@ -142,6 +143,7 @@ export type View =
   | 'team'
   | 'meetings'
   | 'archive'
+  | 'brand'
 
 export interface DashboardInitial {
   tasks: BoardTask[]
@@ -256,9 +258,19 @@ const PANEL_VIEWS = [
   'symbols',
   'team',
   'meetings',
-  'archive'
+  'archive',
+  'brand'
 ] as const
 type PanelView = (typeof PANEL_VIEWS)[number]
+
+// Panels with non-flat URLs. The default mapping is /dashboard/<view>;
+// entries here override that for the special-cased segment.
+const PANEL_ROUTE: Partial<Record<PanelView, string>> = {
+  brand: 'settings/brand'
+}
+const ROUTE_TO_PANEL: Record<string, PanelView> = Object.fromEntries(
+  Object.entries(PANEL_ROUTE).map(([view, seg]) => [seg, view as PanelView])
+)
 
 function pathTabFor(pathname: string | null): ActiveTab {
   if (pathname === '/dashboard/list') return 'list'
@@ -271,6 +283,7 @@ function pathTabFor(pathname: string | null): ActiveTab {
 function pathPanelFor(pathname: string | null): PanelView | null {
   if (!pathname) return null
   const seg = pathname.replace(/^\/dashboard\//, '')
+  if (ROUTE_TO_PANEL[seg]) return ROUTE_TO_PANEL[seg]
   return (PANEL_VIEWS as readonly string[]).includes(seg)
     ? (seg as PanelView)
     : null
@@ -301,6 +314,7 @@ function viewTitle(
     if (view === 'settings') return 'Workspace settings'
     if (view === 'team') return 'Team'
     if (view === 'archive') return 'Archive'
+    if (view === 'brand') return 'Brand exploration'
     return 'All tasks'
   })()
   return project ? `${project.name} — ${base}` : base
@@ -658,7 +672,8 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
       const params = new URLSearchParams(currentSearchParams.toString())
       params.delete('feed')
       const qs = params.toString()
-      router.push(qs ? `/dashboard/${next}?${qs}` : `/dashboard/${next}`)
+      const seg = PANEL_ROUTE[next as PanelView] ?? next
+      router.push(qs ? `/dashboard/${seg}?${qs}` : `/dashboard/${seg}`)
       return
     }
     // Feed change. If we're on a panel route, jump back to the Board with
@@ -2650,6 +2665,8 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
         return 'Team'
       case 'archive':
         return 'Archive'
+      case 'brand':
+        return 'Brand'
       case 'all':
       default:
         return 'All tasks'
@@ -2790,7 +2807,8 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                 view === 'symbols' ||
                 view === 'team' ||
                 view === 'meetings' ||
-                view === 'archive'
+                view === 'archive' ||
+                view === 'brand'
                   ? 'all'
                   : view
               }
@@ -2832,7 +2850,8 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                   view === 'symbols' ||
                   view === 'team' ||
                   view === 'meetings' ||
-                  view === 'archive'
+                  view === 'archive' ||
+                  view === 'brand'
                     ? 'all'
                     : view
                 }
@@ -3545,6 +3564,7 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                   initialQuickMeetUrl={initial.currentMember.quickMeetUrl}
                 />
               )}
+              {view === 'brand' && <BrandPanel />}
             </main>
 
             <Sheet
