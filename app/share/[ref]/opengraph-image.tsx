@@ -12,9 +12,9 @@ const TEXT_PRIMARY = '#0E1414'
 const TEXT_MUTED = '#566868'
 const TEXT_SUBTLE = '#7A8B8B'
 const BORDER_SOFT = 'rgba(15, 20, 20, 0.08)'
-const ACCENT_TEAL = '#00A89E'
-const ACCENT_TEAL_TEXT = '#018A82'
-const ACCENT_TEAL_TINT = 'rgba(0, 168, 158, 0.12)'
+const ACCENT_TEAL = '#948CC0'
+const ACCENT_TEAL_TEXT = '#6E62B0'
+const ACCENT_TEAL_TINT = 'rgba(148, 140, 192, 0.14)'
 const ACCENT_AMBER_TINT = 'rgba(239, 159, 39, 0.16)'
 
 const STATUS_LABEL: Record<string, string> = {
@@ -116,7 +116,7 @@ export default async function OG({
           position: 'relative'
         }}
       >
-        {/* Teal accent corner */}
+        {/* Violet accent corner */}
         <div
           style={{
             display: 'flex',
@@ -265,7 +265,7 @@ export default async function OG({
                   height: 60,
                   borderRadius: 9999,
                   background:
-                    'linear-gradient(135deg, #00A89E 0%, #018A82 100%)',
+                    'linear-gradient(135deg, #948CC0 0%, #6E62B0 100%)',
                   color: BG_CARD,
                   fontSize: 22,
                   fontWeight: 700,

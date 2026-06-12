@@ -267,7 +267,7 @@ export default function Sidebar({
           title="Back to all Tasks"
         >
           <Image
-            src="/logos/logo-icon.png"
+            src="/logos/verbivore-icon.svg"
             alt="Verbivore"
             width={24}
             height={24}

@@ -113,7 +113,7 @@ async function SharedTaskContent({ params }: { params: Params }) {
           <Link
             href={`/dashboard/board?project=${task.project.id}&task=${task.ref}`}
             prefetch={false}
-            className="group inline-flex h-9 items-center gap-1.5 rounded-full bg-[#00A89E] px-4 text-xs font-medium text-white shadow-sm transition hover:bg-[#018A82]"
+            className="group inline-flex h-9 items-center gap-1.5 rounded-full bg-[#948CC0] px-4 text-xs font-medium text-white shadow-sm transition hover:bg-[#6E62B0]"
           >
             Open in Backstage
             <ArrowUpRight className="size-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
@@ -122,7 +122,7 @@ async function SharedTaskContent({ params }: { params: Params }) {
 
         <article className="flex flex-col gap-6 rounded-3xl border border-zinc-200/70 bg-white p-7 shadow-[0_1px_0_rgba(15,18,23,0.04),0_18px_50px_-24px_rgba(15,18,23,0.18)] sm:p-9 dark:border-white/10 dark:bg-[#161F1F] dark:shadow-[0_18px_50px_-24px_rgba(0,0,0,0.6)]">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] tracking-[0.18em] uppercase">
-            <span className="rounded-md bg-[#00A89E]/10 px-2 py-0.5 font-medium tabular-nums text-[#018A82] dark:bg-[#00A89E]/15 dark:text-[#5DE1D6]">
+            <span className="rounded-md bg-[#948CC0]/10 px-2 py-0.5 font-medium tabular-nums text-[#6E62B0] dark:bg-[#948CC0]/15 dark:text-[#BCB3DD]">
               {task.ref}
             </span>
             <span className="inline-flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400">
@@ -159,7 +159,7 @@ async function SharedTaskContent({ params }: { params: Params }) {
         </article>
 
         <footer className="flex items-center justify-center gap-1.5 text-[11px] tracking-[0.18em] uppercase text-zinc-400 dark:text-zinc-600">
-          <span className="size-1 rounded-full bg-[#00A89E]" />
+          <span className="size-1 rounded-full bg-[#948CC0]" />
           Shared from Verbivore Backstage
         </footer>
       </div>
@@ -172,7 +172,7 @@ function BackgroundDecor() {
     <>
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-32 -right-24 h-80 w-80 rounded-full bg-[#00A89E]/12 blur-3xl dark:bg-[#00A89E]/15"
+        className="pointer-events-none absolute -top-32 -right-24 h-80 w-80 rounded-full bg-[#948CC0]/12 blur-3xl dark:bg-[#948CC0]/15"
       />
       <div
         aria-hidden

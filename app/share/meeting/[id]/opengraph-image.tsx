@@ -10,9 +10,9 @@ const BG_CARD = '#FFFFFF'
 const TEXT_PRIMARY = '#0E1414'
 const TEXT_MUTED = '#566868'
 const BORDER_SOFT = 'rgba(15, 20, 20, 0.08)'
-const ACCENT_TEAL = '#00A89E'
-const ACCENT_TEAL_TEXT = '#018A82'
-const ACCENT_TEAL_TINT = 'rgba(0, 168, 158, 0.12)'
+const ACCENT_TEAL = '#948CC0'
+const ACCENT_TEAL_TEXT = '#6E62B0'
+const ACCENT_TEAL_TINT = 'rgba(148, 140, 192, 0.14)'
 
 const STATUS_LABEL: Record<SharedMeeting['status'], string> = {
   pending: 'Pending approval',

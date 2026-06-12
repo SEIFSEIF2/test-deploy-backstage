@@ -18,7 +18,7 @@ export default function PortfolioComingSoonPage() {
     <main className="relative min-h-screen overflow-hidden bg-[#FAFAF7] px-4 py-12 dark:bg-[#0E1414]">
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-32 -right-24 h-80 w-80 rounded-full bg-[#00A89E]/12 blur-3xl dark:bg-[#00A89E]/15"
+        className="pointer-events-none absolute -top-32 -right-24 h-80 w-80 rounded-full bg-[#948CC0]/12 blur-3xl dark:bg-[#948CC0]/15"
       />
       <div
         aria-hidden
@@ -50,7 +50,7 @@ export default function PortfolioComingSoonPage() {
         </Link>
 
         <article className="flex w-full flex-col items-center gap-5 rounded-3xl border border-zinc-200/70 bg-white p-9 text-center shadow-[0_1px_0_rgba(15,18,23,0.04),0_18px_50px_-24px_rgba(15,18,23,0.18)] sm:p-12 dark:border-white/10 dark:bg-[#161F1F] dark:shadow-[0_18px_50px_-24px_rgba(0,0,0,0.6)]">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#00A89E]/12 px-3 py-1 text-[11px] font-medium tracking-[0.18em] uppercase text-[#018A82] dark:bg-[#00A89E]/15 dark:text-[#5DE1D6]">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#948CC0]/12 px-3 py-1 text-[11px] font-medium tracking-[0.18em] uppercase text-[#6E62B0] dark:bg-[#948CC0]/15 dark:text-[#BCB3DD]">
             <Sparkles className="size-3" />
             Coming soon
           </span>

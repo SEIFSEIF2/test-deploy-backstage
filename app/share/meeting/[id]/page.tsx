@@ -113,7 +113,7 @@ async function SharedMeetingContent({ params }: { params: Params }) {
           <Link
             href={`/dashboard?meetings=${meeting.id}`}
             prefetch={false}
-            className="group inline-flex h-9 items-center gap-1.5 rounded-full bg-[#00A89E] px-4 text-xs font-medium text-white shadow-sm transition hover:bg-[#018A82]"
+            className="group inline-flex h-9 items-center gap-1.5 rounded-full bg-[#948CC0] px-4 text-xs font-medium text-white shadow-sm transition hover:bg-[#6E62B0]"
           >
             Open in Backstage
             <ArrowUpRight className="size-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
@@ -144,7 +144,7 @@ async function SharedMeetingContent({ params }: { params: Params }) {
               href={meeting.meetLink}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex w-fit items-center gap-2 rounded-full bg-[#00A89E] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[#018A82]"
+              className="inline-flex w-fit items-center gap-2 rounded-full bg-[#948CC0] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[#6E62B0]"
             >
               <Video className="size-4" />
               Join Google Meet
@@ -231,7 +231,7 @@ async function SharedMeetingContent({ params }: { params: Params }) {
                       href={url}
                       target="_blank"
                       rel="noreferrer noopener"
-                      className="truncate text-sm text-[#018A82] hover:underline dark:text-[#3EE0D5]"
+                      className="truncate text-sm text-[#6E62B0] hover:underline dark:text-[#BCB3DD]"
                     >
                       {url}
                     </a>
@@ -243,7 +243,7 @@ async function SharedMeetingContent({ params }: { params: Params }) {
         </article>
 
         <footer className="flex items-center justify-center gap-1.5 text-[11px] tracking-[0.18em] uppercase text-zinc-400 dark:text-zinc-600">
-          <span className="size-1 rounded-full bg-[#00A89E]" />
+          <span className="size-1 rounded-full bg-[#948CC0]" />
           Shared from Verbivore Backstage
         </footer>
       </div>
@@ -256,7 +256,7 @@ function BackgroundDecor() {
     <>
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-32 -right-24 h-80 w-80 rounded-full bg-[#00A89E]/12 blur-3xl dark:bg-[#00A89E]/15"
+        className="pointer-events-none absolute -top-32 -right-24 h-80 w-80 rounded-full bg-[#948CC0]/12 blur-3xl dark:bg-[#948CC0]/15"
       />
       <div
         aria-hidden
@@ -313,7 +313,7 @@ function RecapBlock({
     }
   })()
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-[#00A89E]/30 bg-[#00A89E]/5 p-4 dark:border-[#00A89E]/30 dark:bg-[#00A89E]/10">
+    <div className="flex flex-col gap-3 rounded-2xl border border-[#948CC0]/30 bg-[#948CC0]/5 p-4 dark:border-[#948CC0]/30 dark:bg-[#948CC0]/10">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-[10px] tracking-[0.22em] uppercase text-zinc-500 dark:text-zinc-400">
           Recap

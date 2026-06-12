@@ -8,7 +8,7 @@ const meta = {
   component: Button,
   tags: ['ai-generated'],
   parameters: {
-    // --primary (#00a89e) + --primary-foreground (#ede8dc) fail WCAG AA at the
+    // --primary (#948cc0) + --primary-foreground (#ede8dc) fail WCAG AA at the
     // current button text size. Brand decision per docs/decisions/0026-verbivore-rebrand.md.
     a11y: { config: { rules: [{ id: 'color-contrast', enabled: false }] } }
   },
@@ -95,14 +95,14 @@ export const WithIcon: Story = {
   }
 }
 
-// Tailwind `bg-primary` resolves to var(--primary) = #00a89e = rgb(0, 168, 158).
+// Tailwind `bg-primary` resolves to var(--primary) = #948cc0 = rgb(148, 140, 192).
 // Fails if the shared preview did not load styles/globals.css.
 export const CssCheck: Story = {
   args: { children: 'Submit' },
   play: async ({ canvas }) => {
     const button = canvas.getByRole('button', { name: /submit/i })
     await expect(getComputedStyle(button).backgroundColor).toBe(
-      'rgb(0, 168, 158)'
+      'rgb(148, 140, 192)'
     )
   }
 }
