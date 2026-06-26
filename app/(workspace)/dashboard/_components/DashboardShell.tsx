@@ -100,6 +100,7 @@ import FilterPanel from './FilterPanel'
 import { ProjectsPanel, SettingsPanel, UpdatesPanel } from './Panels'
 import BrandPanel from './BrandPanel'
 import TrashPanel from './TrashPanel'
+import { type TaskAttachmentView } from './TaskImageDropZone'
 import { MeetingsPanel } from './MeetingsPanel'
 import { TeamPanel } from './TeamPanel'
 import SprintsPanel from './SprintsPanel'
@@ -192,6 +193,9 @@ export interface DashboardInitial {
     meetingId: string | null
     meetingAction: string | null
   }[]
+  // Image attachments per task. Signed URLs are valid for ~1h and get
+  // re-issued on every fetchInitial round (React Query refetchInterval).
+  attachmentsByTask: Record<string, TaskAttachmentView[]>
   // Task soft-delete + restore events. Surfaced on the Updates panel even
   // though the underlying task row no longer matches any visible-task scope.
   taskDeletionUpdates: {
@@ -605,6 +609,9 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
   const [projectExternalRefs, setProjectExternalRefs] = useState<
     Record<string, ProjectExternalRef[]>
   >(initial.externalRefsByProject)
+  const [attachments, setAttachments] = useState<
+    Record<string, TaskAttachmentView[]>
+  >(initial.attachmentsByTask)
 
   // Resync local state when the server hands us fresh data via router.refresh
   // (bulk create, "reset board", project switch). Per-mutation flows update
@@ -620,7 +627,27 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
     setSprints(initial.sprints)
     setExternalRefs(initial.externalRefsByTask)
     setProjectExternalRefs(initial.externalRefsByProject)
+    setAttachments(initial.attachmentsByTask)
   }
+
+  const handleAttachmentAdded = useCallback((a: TaskAttachmentView) => {
+    setAttachments((prev) => {
+      const list = prev[a.taskId] ?? []
+      return { ...prev, [a.taskId]: [...list, a] }
+    })
+  }, [])
+  const handleAttachmentRemoved = useCallback(
+    (attachmentId: string) => {
+      setAttachments((prev) => {
+        const next: Record<string, TaskAttachmentView[]> = {}
+        for (const [taskId, list] of Object.entries(prev)) {
+          next[taskId] = list.filter((a) => a.id !== attachmentId)
+        }
+        return next
+      })
+    },
+    []
+  )
 
   // The active tab + view + feed are all derived from the URL (pathname for
   // the route, search params for feed) so that browser back/forward, refresh,
@@ -3680,6 +3707,9 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                         title: task.title
                       })
                     }
+                    attachments={attachments[selected.id] ?? []}
+                    onAttachmentAdded={handleAttachmentAdded}
+                    onAttachmentRemoved={handleAttachmentRemoved}
                     copySlot={
                       <CopyButton
                         primaryLabel="Copy"

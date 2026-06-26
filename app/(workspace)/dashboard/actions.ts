@@ -109,6 +109,11 @@ import {
   updateSprint as updateSprintImpl,
   updateTaskExternalRefLabel as updateTaskExternalRefLabelImpl,
 } from '@/supabase/dashboard/mutations'
+import {
+  uploadTaskImage as uploadTaskImageImpl,
+  deleteTaskAttachment as deleteTaskAttachmentImpl,
+  listTaskAttachmentsForTasks as listTaskAttachmentsForTasksImpl,
+} from '@/supabase/dashboard/taskAttachments'
 
 export async function fetchDashboardData(
   ...args: Parameters<typeof fetchDashboardDataImpl>
@@ -645,4 +650,22 @@ export async function leaveQuickRoom(
   ...args: Parameters<typeof leaveQuickRoomImpl>
 ) {
   return leaveQuickRoomImpl(...args)
+}
+
+export async function uploadTaskImage(
+  ...args: Parameters<typeof uploadTaskImageImpl>
+) {
+  return uploadTaskImageImpl(...args)
+}
+
+export async function deleteTaskAttachment(
+  ...args: Parameters<typeof deleteTaskAttachmentImpl>
+) {
+  return deleteTaskAttachmentImpl(...args)
+}
+
+export async function listTaskAttachmentsForTasks(
+  ...args: Parameters<typeof listTaskAttachmentsForTasksImpl>
+) {
+  return listTaskAttachmentsForTasksImpl(...args)
 }

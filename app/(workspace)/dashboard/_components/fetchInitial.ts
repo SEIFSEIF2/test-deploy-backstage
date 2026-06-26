@@ -2,6 +2,7 @@ import 'server-only'
 import { createAdminClient } from '@/supabase/admin'
 import { getCurrentTeamMember } from '@/lib/dal'
 import { fetchDashboardData } from '../actions'
+import { listTaskAttachmentsForTasks } from '@/supabase/dashboard/taskAttachments'
 import {
   groupActivityByTask,
   groupCommentsByTask,
@@ -48,6 +49,15 @@ export async function fetchInitial(
     data.taskDeletionActivity
   )
 
+  const taskIds = tasks.map((t) => t.id)
+  const attachmentRows = await listTaskAttachmentsForTasks(taskIds)
+  const attachmentsByTask: Record<string, typeof attachmentRows> = {}
+  for (const row of attachmentRows) {
+    const list = attachmentsByTask[row.taskId] ?? []
+    list.push(row)
+    attachmentsByTask[row.taskId] = list
+  }
+
   const projectExists = projectParam
     ? data.projects.some((p) => p.id === projectParam)
     : false
@@ -84,6 +94,7 @@ export async function fetchInitial(
     teamUpdates,
     meetingUpdates,
     taskDeletionUpdates,
+    attachmentsByTask,
     externalRefsByTask,
     externalRefsByProject,
     projectAssigneeIds: data.projectAssigneeIds,

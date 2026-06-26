@@ -829,6 +829,70 @@ export type Database = {
           },
         ]
       }
+      task_attachments: {
+        Row: {
+          company_id: string
+          created_at: string
+          file_name: string
+          height: number | null
+          id: string
+          mime_type: string
+          size_bytes: number
+          storage_path: string
+          task_id: string
+          uploaded_by: string | null
+          width: number | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          file_name: string
+          height?: number | null
+          id?: string
+          mime_type: string
+          size_bytes: number
+          storage_path: string
+          task_id: string
+          uploaded_by?: string | null
+          width?: number | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          file_name?: string
+          height?: number | null
+          id?: string
+          mime_type?: string
+          size_bytes?: number
+          storage_path?: string
+          task_id?: string
+          uploaded_by?: string | null
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_attachments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_attachments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_attachments_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_comments: {
         Row: {
           author_id: string | null
