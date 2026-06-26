@@ -188,6 +188,10 @@ export interface DashboardData {
   teamActivity: DashboardActivityRow[]
   // Meeting lifecycle events. Same companywide scope as teamActivity.
   meetingActivity: DashboardActivityRow[]
+  // Task deletions (and restores). Pulled separately from `activity`
+  // because by definition the row's entity_id no longer matches any
+  // visible task. The title/ref/status snapshot lives in metadata.
+  taskDeletionActivity: DashboardActivityRow[]
   externalRefs: DashboardTaskExternalRefRow[]
   projectExternalRefs: DashboardProjectExternalRefRow[]
   // Distinct assignee ids per project, computed across all tasks (not
@@ -271,6 +275,7 @@ export async function fetchDashboardData(
       .select('project_id')
       .eq('company_id', member.companyId)
       .eq('assignee_id', member.id)
+      .is('deleted_at', null)
     if (assignedRes.error) throw assignedRes.error
     const ids = new Set<string>(watcherProjectIds)
     for (const r of assignedRes.data ?? []) ids.add(r.project_id)
@@ -288,6 +293,7 @@ export async function fetchDashboardData(
     .from('tasks')
     .select('*')
     .eq('company_id', member.companyId)
+    .is('deleted_at', null)
     .order('sort_order', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false })
 
@@ -337,12 +343,14 @@ export async function fetchDashboardData(
     sprintTasksRes,
     taskLabelsRes,
     checklistRes,
-    depsRes,
+    depsOutRes,
+    depsInRes,
     sprintTaskJoinForTasksRes,
     commentsRes,
     activityRes,
     teamActivityRes,
     meetingActivityRes,
+    taskDeletionActivityRes,
     externalRefsRes,
     projectExternalRefsRes,
     refTasksRes,
@@ -420,16 +428,21 @@ export async function fetchDashboardData(
       .select('*')
       .in('task_id', safeTaskIds)
       .order('sort_order', { ascending: true }),
-    // task_dependencies in both directions - one fetch, classify later
+    // task_dependencies in both directions. The two halves used to live in a
+    // single `.or(task_id.in.(...),depends_on_task_id.in.(...))` but that
+    // emits the full id list twice in the URL, blowing past the 16KB header
+    // limit once the company has ~200 visible tasks. Two separate queries
+    // ship the id list once each; we de-dupe the union in JS below.
     supabase
       .from('task_dependencies')
       .select('*')
       .eq('company_id', member.companyId)
-      .or(
-        taskIds.length === 0
-          ? 'task_id.eq.00000000-0000-0000-0000-000000000000'
-          : `task_id.in.(${taskIds.join(',')}),depends_on_task_id.in.(${taskIds.join(',')})`
-      ),
+      .in('task_id', safeTaskIds),
+    supabase
+      .from('task_dependencies')
+      .select('*')
+      .eq('company_id', member.companyId)
+      .in('depends_on_task_id', safeTaskIds),
     // sprint_tasks again, this time scoped to give each task its sprint
     // links (used by mapTask for the sprint chip). Same data as
     // sprintTasksRes but with the sprint name fetched inline.
@@ -471,6 +484,22 @@ export async function fetchDashboardData(
       .eq('company_id', member.companyId)
       .eq('entity_type', 'meeting')
       .order('created_at', { ascending: true }),
+    // Task deletions. Read separately from the visible-task activity query
+    // because by definition the deleted task is NOT in safeTaskIds and would
+    // never match the `entity_id IN (visibleTaskIds)` filter. Title/ref/etc
+    // come from the metadata snapshot taken at delete time. We deliberately
+    // only fetch `task.deleted` here, not `task.restored` - a restored task
+    // is back in safeTaskIds, so its `task.restored` row arrives via the
+    // regular `activityRes` query above. Fetching restores here too would
+    // duplicate the row (same id in two branches -> React duplicate key).
+    supabase
+      .from('activity_logs')
+      .select('*, actor:team_members!activity_log_actor_id_fkey(id, full_name)')
+      .eq('company_id', member.companyId)
+      .eq('entity_type', 'task')
+      .eq('action', 'task.deleted')
+      .order('created_at', { ascending: false })
+      .limit(100),
     // task external refs scoped to visible tasks
     supabase
       .from('task_external_refs')
@@ -495,7 +524,8 @@ export async function fetchDashboardData(
     supabase
       .from('tasks')
       .select('id, ref, title')
-      .eq('company_id', member.companyId),
+      .eq('company_id', member.companyId)
+      .is('deleted_at', null),
     // Per-project assignee roster. Covers every assignee on every
     // project in scope, ignoring the viewer's task-level filter, so the
     // Projects panel can render the real team on each card.
@@ -504,6 +534,7 @@ export async function fetchDashboardData(
         .from('tasks')
         .select('project_id, assignee_id')
         .eq('company_id', member.companyId)
+        .is('deleted_at', null)
         .not('assignee_id', 'is', null)
       if (myProjectIds !== null) {
         q = q.in('project_id', safeProjectIds(myProjectIds))
@@ -522,12 +553,14 @@ export async function fetchDashboardData(
     sprintTasksRes.error,
     taskLabelsRes.error,
     checklistRes.error,
-    depsRes.error,
+    depsOutRes.error,
+    depsInRes.error,
     sprintTaskJoinForTasksRes.error,
     commentsRes.error,
     activityRes.error,
     teamActivityRes.error,
     meetingActivityRes.error,
+    taskDeletionActivityRes.error,
     externalRefsRes.error,
     projectExternalRefsRes.error,
     refTasksRes.error,
@@ -592,11 +625,15 @@ export async function fetchDashboardData(
     checklistByTask.set(row.task_id, list)
   }
 
-  // dependencies: classify into out (task_id matches) and in (depends_on_task_id matches)
+  // dependencies: classify into out (task_id matches) and in (depends_on_task_id matches).
+  // We fired two separate queries (depsOutRes scoped by task_id, depsInRes scoped by
+  // depends_on_task_id) to keep each URL under the 16KB header cap; merge + dedupe by id.
   const depsOutByTask = new Map<string, DepsOutRow[]>()
   const depsInByTask = new Map<string, DepsInRow[]>()
-  for (const dep of depsRes.data ?? []) {
-    // outbound: this task depends on something
+  const depsSeen = new Set<string>()
+  for (const dep of [...(depsOutRes.data ?? []), ...(depsInRes.data ?? [])]) {
+    if (depsSeen.has(dep.id)) continue
+    depsSeen.add(dep.id)
     if (taskIds.includes(dep.task_id)) {
       const list = depsOutByTask.get(dep.task_id) ?? []
       list.push({
@@ -606,7 +643,6 @@ export async function fetchDashboardData(
       })
       depsOutByTask.set(dep.task_id, list)
     }
-    // inbound: something depends on this task
     if (taskIds.includes(dep.depends_on_task_id)) {
       const list = depsInByTask.get(dep.depends_on_task_id) ?? []
       list.push({
@@ -764,6 +800,20 @@ export async function fetchDashboardData(
     }
   })
 
+  const taskDeletionActivity: DashboardActivityRow[] = (
+    taskDeletionActivityRes.data ?? []
+  ).map((a) => {
+    const actor = a.actor as { id: string; full_name: string } | null
+    return {
+      id: a.id,
+      entityId: a.entity_id,
+      action: a.action,
+      createdAt: a.created_at,
+      metadata: a.metadata,
+      actor: actor ? { id: actor.id, fullName: actor.full_name } : null
+    }
+  })
+
   const externalRefs: DashboardTaskExternalRefRow[] = (
     externalRefsRes.data ?? []
   ).map((r) => ({
@@ -797,6 +847,7 @@ export async function fetchDashboardData(
     activity,
     teamActivity,
     meetingActivity,
+    taskDeletionActivity,
     externalRefs,
     projectExternalRefs,
     projectAssigneeIds,

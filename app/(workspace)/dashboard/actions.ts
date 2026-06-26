@@ -73,6 +73,8 @@ import {
   deleteDashboardTask as deleteDashboardTaskImpl,
   deleteSprint as deleteSprintImpl,
   duplicateDashboardTask as duplicateDashboardTaskImpl,
+  listTrashedTasks as listTrashedTasksImpl,
+  restoreDashboardTask as restoreDashboardTaskImpl,
   editComment as editCommentImpl,
   fetchTaskHandoff as fetchTaskHandoffImpl,
   moveDashboardTask as moveDashboardTaskImpl,
@@ -205,6 +207,18 @@ export async function deleteDashboardTask(
   ...args: Parameters<typeof deleteDashboardTaskImpl>
 ) {
   return deleteDashboardTaskImpl(...args)
+}
+
+export async function restoreDashboardTask(
+  ...args: Parameters<typeof restoreDashboardTaskImpl>
+) {
+  return restoreDashboardTaskImpl(...args)
+}
+
+export async function listTrashedTasks(
+  ...args: Parameters<typeof listTrashedTasksImpl>
+) {
+  return listTrashedTasksImpl(...args)
 }
 
 export async function duplicateDashboardTask(

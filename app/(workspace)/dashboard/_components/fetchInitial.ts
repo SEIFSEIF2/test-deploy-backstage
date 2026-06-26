@@ -12,8 +12,10 @@ import {
   mapTasks,
   mapTeamActivity,
   mapMeetingActivity,
+  mapTaskDeletionActivity,
   type TeamUpdate,
-  type MeetingUpdate
+  type MeetingUpdate,
+  type TaskDeletionUpdate
 } from './mappers'
 import type { DashboardInitial } from './DashboardShell'
 
@@ -41,6 +43,9 @@ export async function fetchInitial(
   )
   const meetingUpdates: MeetingUpdate[] = mapMeetingActivity(
     data.meetingActivity
+  )
+  const taskDeletionUpdates: TaskDeletionUpdate[] = mapTaskDeletionActivity(
+    data.taskDeletionActivity
   )
 
   const projectExists = projectParam
@@ -78,6 +83,7 @@ export async function fetchInitial(
     activityByTask,
     teamUpdates,
     meetingUpdates,
+    taskDeletionUpdates,
     externalRefsByTask,
     externalRefsByProject,
     projectAssigneeIds: data.projectAssigneeIds,

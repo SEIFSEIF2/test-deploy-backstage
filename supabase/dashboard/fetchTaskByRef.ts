@@ -50,6 +50,7 @@ export async function fetchTaskByRef(
     `
     )
     .eq('ref', ref)
+    .is('deleted_at', null)
     .maybeSingle()
 
   if (error || !data) return null

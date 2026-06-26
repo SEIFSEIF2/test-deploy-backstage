@@ -134,6 +134,7 @@ async function ensureTaskAccess(
     .select('assignee_id')
     .eq('id', taskId)
     .eq('company_id', member.companyId)
+    .is('deleted_at', null)
     .maybeSingle()
   if (!task) return { error: 'Task not found.' }
   if (task.assignee_id === member.id) return { member }
@@ -286,6 +287,7 @@ export async function createDashboardTask(
       .select('id, ref')
       .eq('company_id', member.companyId)
       .in('ref', refs)
+      .is('deleted_at', null)
     const idByRef = new Map((targets ?? []).map((t) => [t.ref ?? '', t.id]))
     const rows = data.relations
       .map((r) => {
@@ -331,10 +333,12 @@ export async function addTaskDependency(
   const [sourceRes, targetRes] = await Promise.all([
     supabase
       .from('tasks').select('id')
-      .eq('id', parsed.data.taskId).eq('company_id', member.companyId).maybeSingle(),
+      .eq('id', parsed.data.taskId).eq('company_id', member.companyId)
+      .is('deleted_at', null).maybeSingle(),
     supabase
       .from('tasks').select('id, ref')
-      .eq('ref', parsed.data.dependsOnRef).eq('company_id', member.companyId).maybeSingle()
+      .eq('ref', parsed.data.dependsOnRef).eq('company_id', member.companyId)
+      .is('deleted_at', null).maybeSingle()
   ])
   const source = sourceRes.data
   const target = targetRes.data
@@ -381,7 +385,8 @@ export async function removeTaskDependency(input: z.input<typeof RemoveDepInput>
 
   const { data: target } = await supabase
     .from('tasks').select('id')
-    .eq('ref', parsed.data.dependsOnRef).eq('company_id', member.companyId).maybeSingle()
+    .eq('ref', parsed.data.dependsOnRef).eq('company_id', member.companyId)
+    .is('deleted_at', null).maybeSingle()
   if (!target) return { error: 'Ref not found.' }
 
   await supabase
@@ -499,6 +504,7 @@ export async function createBulkDashboardTasks(
     const { data: targets } = await supabase
       .from('tasks').select('id, ref')
       .eq('company_id', member.companyId).in('ref', refs)
+      .is('deleted_at', null)
     const idByRef = new Map((targets ?? []).map((t) => [t.ref ?? '', t.id]))
     const depRows = pendingDeps
       .map((p) => {
@@ -536,7 +542,8 @@ export async function updateDashboardTaskStatus(
   const { data: task } = await supabase
     .from('tasks')
     .select('id, project_id, status, handoffs!handoff_task_id_fkey(what_it_is, current_status, done_so_far, still_left, file_links, gotchas, who_to_ask)')
-    .eq('id', taskId).eq('company_id', member.companyId).maybeSingle()
+    .eq('id', taskId).eq('company_id', member.companyId)
+    .is('deleted_at', null).maybeSingle()
   if (!task) return { ok: false, reason: 'generic', message: 'Task not found.' }
 
   // handoffs is fetched as an array (1:1 by uniq constraint but the type comes back as array)
@@ -600,7 +607,8 @@ export async function updateDashboardTaskPriority(taskId: string, priority: Task
   const supabase = createAdminClient()
 
   const { data: prev } = await supabase
-    .from('tasks').select('priority').eq('id', taskId).eq('company_id', member.companyId).maybeSingle()
+    .from('tasks').select('priority').eq('id', taskId).eq('company_id', member.companyId)
+    .is('deleted_at', null).maybeSingle()
   if (!prev) return { error: 'Task not found.' }
 
   await supabase.from('tasks').update({ priority }).eq('id', taskId)
@@ -622,7 +630,8 @@ export async function updateDashboardTaskAssignee(taskId: string, assigneeId: st
   const { data: prev } = await supabase
     .from('tasks')
     .select('assignee_id, assignee:team_members!task_assignee_id_fkey(full_name)')
-    .eq('id', taskId).eq('company_id', member.companyId).maybeSingle()
+    .eq('id', taskId).eq('company_id', member.companyId)
+    .is('deleted_at', null).maybeSingle()
   if (!prev) return { error: 'Task not found.' }
 
   await supabase.from('tasks').update({ assignee_id: assigneeId }).eq('id', taskId)
@@ -644,7 +653,8 @@ export async function updateDashboardTaskAssignee(taskId: string, assigneeId: st
     // Ping the new assignee (never yourself) via web-push + email.
     if (assigneeId && assigneeId !== member.id) {
       const { data: t } = await supabase
-        .from('tasks').select('ref, title').eq('id', taskId).maybeSingle()
+        .from('tasks').select('ref, title').eq('id', taskId)
+        .is('deleted_at', null).maybeSingle()
       if (t?.ref) {
         await sendPushToMember(assigneeId, {
           title: `Assigned to you: ${t.ref}`,
@@ -722,7 +732,8 @@ export async function updateDashboardTaskLead(taskId: string, leadId: string | n
   const { data: prev } = await supabase
     .from('tasks')
     .select('lead_id, lead:team_members!task_lead_id_fkey(full_name)')
-    .eq('id', taskId).eq('company_id', member.companyId).maybeSingle()
+    .eq('id', taskId).eq('company_id', member.companyId)
+    .is('deleted_at', null).maybeSingle()
   if (!prev) return { error: 'Task not found.' }
 
   await supabase.from('tasks').update({ lead_id: leadId }).eq('id', taskId)
@@ -744,7 +755,8 @@ export async function updateDashboardTaskLead(taskId: string, leadId: string | n
     // Ping the new lead (never yourself).
     if (leadId && leadId !== member.id) {
       const { data: t } = await supabase
-        .from('tasks').select('ref, title').eq('id', taskId).maybeSingle()
+        .from('tasks').select('ref, title').eq('id', taskId)
+        .is('deleted_at', null).maybeSingle()
       if (t?.ref) {
         await sendPushToMember(leadId, {
           title: `You're now lead on ${t.ref}`,
@@ -797,6 +809,7 @@ export async function updateDashboardTaskDetails(
     .select('title, description')
     .eq('id', parsed.data.taskId)
     .eq('company_id', member.companyId)
+    .is('deleted_at', null)
     .maybeSingle()
   if (!prev) return { error: 'Task not found.' }
 
@@ -863,6 +876,7 @@ export async function updateDashboardTaskProject(
       .select('id, project_id, ref')
       .eq('id', taskId)
       .eq('company_id', member.companyId)
+      .is('deleted_at', null)
       .maybeSingle(),
     supabase
       .from('projects')
@@ -954,6 +968,7 @@ export async function updateDashboardTaskDueDate(
     .select('due_date')
     .eq('id', taskId)
     .eq('company_id', member.companyId)
+    .is('deleted_at', null)
     .maybeSingle()
   if (!prev) return { error: 'Task not found.' }
 
@@ -1039,6 +1054,7 @@ export async function updateTaskTags(
     .select('id, created_by')
     .eq('id', taskId)
     .eq('company_id', member.companyId)
+    .is('deleted_at', null)
     .maybeSingle()
   if (!task) return { error: 'Task not found.' }
 
@@ -1151,7 +1167,8 @@ export async function moveDashboardTask(
   const { data: task } = await supabase
     .from('tasks')
     .select('id, project_id, status, handoffs!handoff_task_id_fkey(what_it_is, current_status, done_so_far, still_left, file_links, gotchas, who_to_ask)')
-    .eq('id', taskId).eq('company_id', member.companyId).maybeSingle()
+    .eq('id', taskId).eq('company_id', member.companyId)
+    .is('deleted_at', null).maybeSingle()
   if (!task) return { ok: false, reason: 'generic', message: 'Task not found.' }
 
   const handoffRow = (Array.isArray(task.handoffs) ? task.handoffs[0] : task.handoffs) ?? null
@@ -1194,6 +1211,7 @@ export async function moveDashboardTask(
   const { data: columnTasks } = await supabase
     .from('tasks').select('id')
     .eq('company_id', member.companyId).eq('status', toStatus).neq('id', task.id)
+    .is('deleted_at', null)
     .order('sort_order', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false })
 
@@ -1230,10 +1248,108 @@ export async function deleteDashboardTask(taskId: string) {
   }
   const supabase = createAdminClient()
 
-  await supabase.from('tasks').delete().eq('id', taskId).eq('company_id', member.companyId)
-  await logActivity(supabase, member.companyId, member.id, 'task.deleted', 'task', taskId)
+  // Snapshot the task content into the activity log before flipping the tombstone,
+  // so /dashboard/updates and /dashboard/trash can render it without a join back to the row.
+  const { data: snap } = await supabase
+    .from('tasks')
+    .select('title, ref, status, priority, assignee_id, lead_id, project_id')
+    .eq('id', taskId).eq('company_id', member.companyId)
+    .is('deleted_at', null)
+    .maybeSingle()
+  if (!snap) return { error: 'Task not found.' }
+
+  const { error: updateError } = await supabase
+    .from('tasks')
+    .update({ deleted_at: new Date().toISOString(), deleted_by: member.id })
+    .eq('id', taskId).eq('company_id', member.companyId)
+    .is('deleted_at', null)
+  if (updateError) return { error: updateError.message }
+
+  await logActivity(supabase, member.companyId, member.id, 'task.deleted', 'task', taskId, snap)
   revalidatePath('/dashboard')
+  revalidatePath('/dashboard/trash')
   return { ok: true }
+}
+
+export async function restoreDashboardTask(taskId: string) {
+  const member = await getCurrentTeamMember()
+  if (!member) return { error: 'Not signed in.' }
+  if (member.accessTier !== 'admin' && member.accessTier !== 'lead') {
+    return { error: 'Only admins and leads can restore tasks.' }
+  }
+  const supabase = createAdminClient()
+
+  const { data: tombstone } = await supabase
+    .from('tasks')
+    .select('deleted_at, deleted_by, project_id')
+    .eq('id', taskId).eq('company_id', member.companyId)
+    .maybeSingle()
+  if (!tombstone) return { error: 'Task not found.' }
+  if (tombstone.deleted_at == null) return { error: 'Task is not deleted.' }
+
+  const { error: updateError } = await supabase
+    .from('tasks')
+    .update({ deleted_at: null, deleted_by: null })
+    .eq('id', taskId).eq('company_id', member.companyId)
+  if (updateError) return { error: updateError.message }
+
+  await logActivity(supabase, member.companyId, member.id, 'task.restored', 'task', taskId, {
+    deletedAt: tombstone.deleted_at,
+    deletedBy: tombstone.deleted_by
+  })
+  revalidatePath('/dashboard')
+  revalidatePath('/dashboard/trash')
+  revalidatePath(`/projects/${tombstone.project_id}`)
+  return { ok: true }
+}
+
+export interface TrashedTaskRow {
+  id: string
+  ref: string | null
+  title: string
+  status: string
+  deletedAt: string
+  deletedBy: { id: string; fullName: string } | null
+  project: { id: string; name: string } | null
+}
+
+export async function listTrashedTasks(): Promise<
+  { rows: TrashedTaskRow[] } | { error: string }
+> {
+  const member = await getCurrentTeamMember()
+  if (!member) return { error: 'Not signed in.' }
+  if (member.accessTier !== 'admin' && member.accessTier !== 'lead') {
+    return { error: 'Only admins and leads can view trash.' }
+  }
+  const supabase = createAdminClient()
+  const { data, error } = await supabase
+    .from('tasks')
+    .select(
+      'id, ref, title, status, deleted_at, deleted_by_member:team_members!tasks_deleted_by_fkey(id, full_name), project:projects!task_project_id_fkey(id, name)'
+    )
+    .eq('company_id', member.companyId)
+    .not('deleted_at', 'is', null)
+    .order('deleted_at', { ascending: false })
+    .limit(500)
+  if (error) return { error: error.message }
+  const rows: TrashedTaskRow[] = (data ?? []).map((r) => {
+    const deleter = Array.isArray(r.deleted_by_member)
+      ? r.deleted_by_member[0]
+      : r.deleted_by_member
+    const project = Array.isArray(r.project) ? r.project[0] : r.project
+    return {
+      id: r.id,
+      ref: r.ref,
+      title: r.title,
+      status: r.status,
+      deletedAt: r.deleted_at!,
+      deletedBy: deleter
+        ? { id: deleter.id, fullName: deleter.full_name }
+        : null,
+      project: project ? { id: project.id, name: project.name } : null
+    }
+  })
+  return { rows }
 }
 
 export async function duplicateDashboardTask(taskId: string) {
@@ -1242,7 +1358,8 @@ export async function duplicateDashboardTask(taskId: string) {
   const supabase = createAdminClient()
 
   const { data: src } = await supabase
-    .from('tasks').select('*').eq('id', taskId).eq('company_id', member.companyId).maybeSingle()
+    .from('tasks').select('*').eq('id', taskId).eq('company_id', member.companyId)
+    .is('deleted_at', null).maybeSingle()
   if (!src) return { error: 'Task not found.' }
 
   const [{ data: srcLabels }, { data: srcChecklist }, { data: lastTask }, { data: project }] = await Promise.all([
@@ -1334,6 +1451,7 @@ export async function addComment(taskId: string, body: string, mentions?: string
       .select('assignee_id')
       .eq('id', taskId)
       .eq('company_id', member.companyId)
+      .is('deleted_at', null)
       .maybeSingle()
     const { data: candidates } = await supabase
       .from('team_members')
@@ -1365,6 +1483,7 @@ export async function addComment(taskId: string, body: string, mentions?: string
       .from('tasks')
       .select('ref, title')
       .eq('id', taskId)
+      .is('deleted_at', null)
       .maybeSingle()
     if (taskRow?.ref) {
       const trimmedBody = body.length > 140 ? `${body.slice(0, 137)}...` : body
@@ -1631,7 +1750,8 @@ export async function addTaskToSprint(input: z.input<typeof SprintTaskInput>) {
     supabase.from('sprints').select('id')
       .eq('id', parsed.data.sprintId).eq('company_id', member.companyId).maybeSingle(),
     supabase.from('tasks').select('id')
-      .eq('id', parsed.data.taskId).eq('company_id', member.companyId).maybeSingle()
+      .eq('id', parsed.data.taskId).eq('company_id', member.companyId)
+      .is('deleted_at', null).maybeSingle()
   ])
   if (!sprintRes.data || !taskRes.data) return { error: 'Sprint or task not found.' }
 
@@ -1709,7 +1829,8 @@ export async function addTaskExternalRef(input: z.input<typeof AddTaskExternalRe
 
   const { data: task } = await supabase
     .from('tasks').select('id')
-    .eq('id', parsed.data.taskId).eq('company_id', member.companyId).maybeSingle()
+    .eq('id', parsed.data.taskId).eq('company_id', member.companyId)
+    .is('deleted_at', null).maybeSingle()
   if (!task) return { error: 'Task not found.' }
 
   const providedLabel = parsed.data.label?.trim() || null
@@ -1931,7 +2052,8 @@ export async function saveHandoffDraft(
 
   const { data: task } = await supabase
     .from('tasks').select('id')
-    .eq('id', parsed.data.taskId).eq('company_id', member.companyId).maybeSingle()
+    .eq('id', parsed.data.taskId).eq('company_id', member.companyId)
+    .is('deleted_at', null).maybeSingle()
   if (!task) return { error: 'Task not found.' }
 
   await supabase.from('handoffs').upsert({
@@ -1968,7 +2090,8 @@ export async function submitHandoffForReview(
 
   const { data: task } = await supabase
     .from('tasks').select('id')
-    .eq('id', parsed.data.taskId).eq('company_id', member.companyId).maybeSingle()
+    .eq('id', parsed.data.taskId).eq('company_id', member.companyId)
+    .is('deleted_at', null).maybeSingle()
   if (!task) return { error: 'Task not found.' }
 
   const missing: string[] = []
@@ -2274,6 +2397,7 @@ export async function addTaskWatcher(input: z.input<typeof AddWatcherInput>) {
     .select('assignee_id')
     .eq('id', parsed.data.taskId)
     .eq('company_id', member.companyId)
+    .is('deleted_at', null)
     .maybeSingle()
   if (!task) return { error: 'Task not found.' }
   if (task.assignee_id === parsed.data.memberId) {
@@ -2307,6 +2431,7 @@ export async function addTaskWatcher(input: z.input<typeof AddWatcherInput>) {
       .from('tasks')
       .select('ref, title')
       .eq('id', parsed.data.taskId)
+      .is('deleted_at', null)
       .maybeSingle()
     if (t?.ref) {
       await sendPushToMember(parsed.data.memberId, {

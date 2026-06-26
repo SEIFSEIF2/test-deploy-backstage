@@ -130,21 +130,25 @@ async function PortfolioBody({
         .select('id, ref, title, updated_at, projects(name)')
         .eq('assignee_id', target.id)
         .eq('status', 'done')
+        .is('deleted_at', null)
         .order('updated_at', { ascending: false })
         .limit(8),
       supabase
         .from('tasks')
         .select('id', { count: 'exact', head: true })
         .eq('assignee_id', target.id)
-        .eq('status', 'done'),
+        .eq('status', 'done')
+        .is('deleted_at', null),
       supabase
         .from('tasks')
         .select('project_id')
-        .eq('assignee_id', target.id),
+        .eq('assignee_id', target.id)
+        .is('deleted_at', null),
       supabase
         .from('sprint_tasks')
-        .select('sprint_id, tasks!inner(assignee_id)')
+        .select('sprint_id, tasks!inner(assignee_id, deleted_at)')
         .eq('tasks.assignee_id', target.id)
+        .is('tasks.deleted_at', null)
     ]
   )
 

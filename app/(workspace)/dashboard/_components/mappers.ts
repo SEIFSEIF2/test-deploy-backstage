@@ -548,6 +548,56 @@ function meetingActivityTextFor(row: DbActivity): string {
   }
 }
 
+// Task deletion / restore events. Pulled separately from per-task activity
+// because the row no longer matches a visible task ID (or wouldn't, for
+// deletes). Title/ref/status are snapshot into metadata at delete time so
+// the feed can render them without a join back to the (gone or trashed) row.
+export interface TaskDeletionUpdate {
+  id: string;
+  kind: "task-deletion";
+  // 'task.deleted' or 'task.restored'
+  action: "task.deleted" | "task.restored";
+  text: string;
+  at: string;
+  atRaw: string;
+  // taskId is the id of the (now tombstoned) row. Restore actions surface
+  // it so the UI can hide its own row from the Trash list optimistically.
+  taskId: string | null;
+  taskRef: string | null;
+  taskTitle: string | null;
+}
+
+export function mapTaskDeletionActivity(
+  activity: DbActivity[],
+): TaskDeletionUpdate[] {
+  return activity.map((a) => {
+    const created = a.createdAt instanceof Date
+      ? a.createdAt
+      : new Date(a.createdAt);
+    const meta = (a.metadata as Record<string, unknown> | null) ?? null;
+    const title = typeof meta?.title === "string" ? (meta.title as string) : null;
+    const ref = typeof meta?.ref === "string" ? (meta.ref as string) : null;
+    const who = a.actor?.fullName ?? "Someone";
+    const verb = a.action === "task.restored" ? "restored" : "deleted";
+    const refPart = ref ? `${ref} ` : "";
+    const titlePart = title ? `"${title}"` : "a task";
+    const text = `${who} ${verb} ${refPart}${titlePart}`.replace(/\s+/g, " ").trim();
+    return {
+      id: a.id,
+      kind: "task-deletion" as const,
+      action: (a.action === "task.restored" ? "task.restored" : "task.deleted") as
+        | "task.deleted"
+        | "task.restored",
+      text,
+      at: formatTimestamp(a.createdAt),
+      atRaw: created.toISOString(),
+      taskId: a.entityId ?? null,
+      taskRef: ref,
+      taskTitle: title,
+    };
+  });
+}
+
 export function groupActivityByTask(
   activity: DbActivity[],
 ): Record<string, TaskActivity[]> {

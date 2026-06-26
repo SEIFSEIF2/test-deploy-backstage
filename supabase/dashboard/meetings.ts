@@ -1127,6 +1127,7 @@ export async function linkTaskToMeeting(
     .from('tasks')
     .select('id, company_id')
     .eq('id', taskId)
+    .is('deleted_at', null)
     .maybeSingle()
   if (!task || task.company_id !== member.companyId) {
     return { error: 'Task not found.' }

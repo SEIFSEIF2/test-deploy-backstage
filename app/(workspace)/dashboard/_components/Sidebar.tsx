@@ -21,7 +21,8 @@ import {
   Compass,
   UserCog,
   Archive as ArchiveIcon,
-  Palette
+  Palette,
+  Trash2
 } from 'lucide-react'
 import { STATUSES, TaskStatus } from './status'
 import StatusIcon from './StatusIcon'
@@ -65,6 +66,7 @@ const HINTS = {
     'Every task in the active sprint. Disabled when no sprint is current.',
   mentions: 'Tasks where someone @-mentioned you in a comment.',
   archive: 'Completed sprints and old tasks.',
+  trash: 'Soft-deleted tasks. Admins and leads can restore them.',
   projects: 'Discover and switch to another project',
   updates:
     'Recent activity on your projects. Status changes, comments, mentions.',
@@ -87,6 +89,7 @@ type View =
   | 'meetings'
   | 'archive'
   | 'brand'
+  | 'trash'
 
 interface SidebarProps {
   activeView: 'all' | 'mine' | 'inbox' | 'mentions'
@@ -398,6 +401,15 @@ export default function Sidebar({
             onClick={() => onSecondary('archive')}
             hint={showHints ? HINTS.archive : undefined}
           />
+          {(currentAccessTier === 'admin' || currentAccessTier === 'lead') && (
+            <SidebarItem
+              icon={<Trash2 className="size-3.5" />}
+              label="Trash"
+              active={secondary === 'trash'}
+              onClick={() => onSecondary('trash')}
+              hint={showHints ? HINTS.trash : undefined}
+            />
+          )}
         </nav>
 
         <div className="flex flex-col gap-1">

@@ -1060,6 +1060,8 @@ export type Database = {
           company_id: string
           created_at: string
           created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           description: string | null
           due_date: string | null
           id: string
@@ -1078,6 +1080,8 @@ export type Database = {
           company_id: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           due_date?: string | null
           id?: string
@@ -1096,6 +1100,8 @@ export type Database = {
           company_id?: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           due_date?: string | null
           id?: string
@@ -1127,6 +1133,13 @@ export type Database = {
           {
             foreignKeyName: "task_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_deleted_by_fkey"
+            columns: ["deleted_by"]
             isOneToOne: false
             referencedRelation: "team_members"
             referencedColumns: ["id"]

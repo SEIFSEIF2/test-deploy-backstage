@@ -99,6 +99,7 @@ import Timeline from './Timeline'
 import FilterPanel from './FilterPanel'
 import { ProjectsPanel, SettingsPanel, UpdatesPanel } from './Panels'
 import BrandPanel from './BrandPanel'
+import TrashPanel from './TrashPanel'
 import { MeetingsPanel } from './MeetingsPanel'
 import { TeamPanel } from './TeamPanel'
 import SprintsPanel from './SprintsPanel'
@@ -144,6 +145,7 @@ export type View =
   | 'meetings'
   | 'archive'
   | 'brand'
+  | 'trash'
 
 export interface DashboardInitial {
   tasks: BoardTask[]
@@ -189,6 +191,19 @@ export interface DashboardInitial {
     taskTitle: null
     meetingId: string | null
     meetingAction: string | null
+  }[]
+  // Task soft-delete + restore events. Surfaced on the Updates panel even
+  // though the underlying task row no longer matches any visible-task scope.
+  taskDeletionUpdates: {
+    id: string
+    kind: 'task-deletion'
+    action: 'task.deleted' | 'task.restored'
+    text: string
+    at: string
+    atRaw: string
+    taskId: string | null
+    taskRef: string | null
+    taskTitle: string | null
   }[]
   externalRefsByTask: Record<string, TaskExternalRef[]>
   externalRefsByProject: Record<string, ProjectExternalRef[]>
@@ -259,7 +274,8 @@ const PANEL_VIEWS = [
   'team',
   'meetings',
   'archive',
-  'brand'
+  'brand',
+  'trash'
 ] as const
 type PanelView = (typeof PANEL_VIEWS)[number]
 
@@ -315,6 +331,7 @@ function viewTitle(
     if (view === 'team') return 'Team'
     if (view === 'archive') return 'Archive'
     if (view === 'brand') return 'Brand exploration'
+    if (view === 'trash') return 'Trash'
     return 'All tasks'
   })()
   return project ? `${project.name} — ${base}` : base
@@ -2073,9 +2090,43 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
       meetingId: null as string | null,
       meetingAction: null as string | null
     }))
-    const all = [...taskRows, ...teamRows, ...initial.meetingUpdates]
-    return all.sort((a, b) => b.atRaw.localeCompare(a.atRaw))
-  }, [activity, tasks, liveTeamUpdates, initial.teamUpdates, initial.meetingUpdates])
+    const taskDeletionRows = initial.taskDeletionUpdates.map((r) => ({
+      id: r.id,
+      kind: r.kind,
+      text: r.text,
+      at: r.at,
+      atRaw: r.atRaw,
+      taskId: r.taskId,
+      taskRef: r.taskRef,
+      taskTitle: r.taskTitle,
+      meetingId: null as string | null,
+      meetingAction: null as string | null
+    }))
+    const all = [
+      ...taskRows,
+      ...teamRows,
+      ...initial.meetingUpdates,
+      ...taskDeletionRows
+    ]
+    // Defense-in-depth: an activity_logs row should only land here once,
+    // but if a query overlaps (e.g. task.restored visible via both the
+    // per-task feed and the deletion feed) React's key invariant breaks.
+    // Keep the first occurrence and drop duplicates by id.
+    const seen = new Set<string>()
+    const unique = all.filter((row) => {
+      if (seen.has(row.id)) return false
+      seen.add(row.id)
+      return true
+    })
+    return unique.sort((a, b) => b.atRaw.localeCompare(a.atRaw))
+  }, [
+    activity,
+    tasks,
+    liveTeamUpdates,
+    initial.teamUpdates,
+    initial.meetingUpdates,
+    initial.taskDeletionUpdates
+  ])
 
   // Notification-style unread counter for the sidebar Updates entry.
   // We persist the timestamp of the most recent activity row the member
@@ -2298,6 +2349,7 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
             .from('tasks')
             .select('id, ref, title, assignee_id')
             .eq('id', row.entity_id)
+            .is('deleted_at', null)
             .maybeSingle()
           if (!task || !task.ref || !task.title) return
           // Tasks created with me as assignee already trigger the
@@ -2808,7 +2860,8 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                 view === 'team' ||
                 view === 'meetings' ||
                 view === 'archive' ||
-                view === 'brand'
+                view === 'brand' ||
+                view === 'trash'
                   ? 'all'
                   : view
               }
@@ -2851,7 +2904,8 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                   view === 'team' ||
                   view === 'meetings' ||
                   view === 'archive' ||
-                  view === 'brand'
+                  view === 'brand' ||
+                  view === 'trash'
                     ? 'all'
                     : view
                 }
@@ -3565,6 +3619,9 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                 />
               )}
               {view === 'brand' && <BrandPanel />}
+              {view === 'trash' && (
+                <TrashPanel accessTier={initial.currentMember.accessTier} />
+              )}
             </main>
 
             <Sheet

@@ -14,6 +14,7 @@ export interface UpdateRow {
     | 'assignee'
     | 'team'
     | 'meeting'
+    | 'task-deletion'
   text: string
   at: string
   atRaw: string

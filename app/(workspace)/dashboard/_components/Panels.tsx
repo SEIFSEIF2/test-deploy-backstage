@@ -33,6 +33,7 @@ import {
   Sparkles,
   Sun,
   Table as TableIcon,
+  Trash2,
   UserCog,
   X
 } from 'lucide-react'
@@ -1638,6 +1639,7 @@ type UpdateKind =
   | 'assignee'
   | 'team'
   | 'meeting'
+  | 'task-deletion'
 
 interface UpdateRow {
   id: string
@@ -1698,6 +1700,8 @@ function kindIcon(kind: UpdateKind) {
       return UserCog
     case 'meeting':
       return CalendarDays
+    case 'task-deletion':
+      return Trash2
     case 'status':
     default:
       return MoveRight
@@ -1721,6 +1725,8 @@ function kindTone(kind: UpdateKind, mode: 'light' | 'dark') {
         return 'bg-teal-100 text-teal-700 border-teal-200'
       case 'meeting':
         return 'bg-indigo-100 text-indigo-700 border-indigo-200'
+      case 'task-deletion':
+        return 'bg-rose-100 text-rose-700 border-rose-200'
       case 'status':
       default:
         return 'bg-rose-100 text-rose-700 border-rose-200'
@@ -1741,6 +1747,8 @@ function kindTone(kind: UpdateKind, mode: 'light' | 'dark') {
       return 'bg-teal-400/10 text-teal-300 border-teal-400/30'
     case 'meeting':
       return 'bg-indigo-400/10 text-indigo-300 border-indigo-400/30'
+    case 'task-deletion':
+      return 'bg-rose-400/10 text-rose-300 border-rose-400/30'
     case 'status':
     default:
       return 'bg-rose-400/10 text-rose-300 border-rose-400/30'
