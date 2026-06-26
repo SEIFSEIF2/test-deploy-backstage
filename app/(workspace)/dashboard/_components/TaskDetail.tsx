@@ -799,6 +799,8 @@ export default function TaskDetail({
           <MentionInput
             accessTier={accessTier}
             prioritizedIds={spectatorIds}
+            taskId={task.id}
+            onAttachmentAdded={onAttachmentAdded}
             onSubmit={(body, mentions) =>
               onAddComment(task.id, body, mentions)
             }

@@ -1,11 +1,15 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
-import { Send } from 'lucide-react'
+import { useCallback, useMemo, useRef, useState } from 'react'
+import { ImagePlus, Loader2, Send } from 'lucide-react'
+import { toast } from 'sonner'
 import { BoardAssignee } from './boardData'
 import { useTeam } from './TeamContext'
 import Avatar from './Avatar'
 import { useDashTheme } from './theme'
+import { compressImage } from '@/lib/imageCompress'
+import { uploadTaskImage as uploadTaskImageAction } from '../actions'
+import type { TaskAttachmentView } from './TaskImageDropZone'
 
 interface MentionInputProps {
   onSubmit: (body: string, mentions: string[]) => void
@@ -20,7 +24,16 @@ interface MentionInputProps {
   // alphabetical order. Used by TaskDetail to surface the task's
   // spectators first so the author can ping them with one keystroke.
   prioritizedIds?: string[]
+  // When both are present the composer accepts drag/drop/paste/click
+  // image uploads. The image lands in task_attachments via the same
+  // server action the dropzone uses; onAttachmentAdded lets the parent
+  // refresh its attachments grid without a refetch. Omit both to keep
+  // the composer text-only (used by AskLeadSheet).
+  taskId?: string
+  onAttachmentAdded?: (a: TaskAttachmentView) => void
 }
+
+const IMG_MIMES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
 
 interface TriggerState {
   active: boolean
@@ -124,7 +137,9 @@ export default function MentionInput({
   onSubmit,
   placeholder = 'Leave a comment… type @ to mention',
   accessTier,
-  prioritizedIds
+  prioritizedIds,
+  taskId,
+  onAttachmentAdded
 }: MentionInputProps) {
   const { t } = useDashTheme()
   const team = useTeam()
@@ -282,13 +297,100 @@ export default function MentionInput({
   const sharedTextClasses =
     'block px-3 py-2 text-xs leading-relaxed font-[inherit]'
 
+  // Image upload is opt-in: enabled only when the parent passed a taskId
+  // and an onAttachmentAdded callback (TaskDetail does; AskLeadSheet
+  // doesn't). Uploads route through the same server action as the
+  // dropzone, so the image shows up in the attachments grid above.
+  const canUploadImages = Boolean(taskId && onAttachmentAdded)
+  const [uploading, setUploading] = useState<{ id: string; name: string }[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [dragOver, setDragOver] = useState(false)
+
+  const handleImageFiles = useCallback(
+    async (files: File[]) => {
+      if (!taskId || !onAttachmentAdded) return
+      const images = files.filter((f) => IMG_MIMES.includes(f.type))
+      if (images.length === 0) {
+        if (files.length > 0) {
+          toast.error('Only PNG, JPEG, WebP, or GIF images are accepted.')
+        }
+        return
+      }
+      for (const file of images) {
+        const localId = `${Date.now()}-${Math.random().toString(36).slice(2)}`
+        setUploading((cur) => [...cur, { id: localId, name: file.name }])
+        try {
+          const compressed = await compressImage(file)
+          const form = new FormData()
+          form.set('taskId', taskId)
+          form.set(
+            'file',
+            new File([compressed.blob], compressed.fileName, {
+              type: compressed.mimeType
+            })
+          )
+          if (compressed.width) form.set('width', String(compressed.width))
+          if (compressed.height) form.set('height', String(compressed.height))
+          const res = await uploadTaskImageAction(form)
+          if ('error' in res) {
+            toast.error(res.error)
+          } else {
+            onAttachmentAdded(res.attachment)
+          }
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : 'Upload failed.'
+          toast.error(msg)
+        } finally {
+          setUploading((cur) => cur.filter((u) => u.id !== localId))
+        }
+      }
+    },
+    [taskId, onAttachmentAdded]
+  )
+
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      if (!canUploadImages) return
+      const items = Array.from(e.clipboardData.items)
+      const files: File[] = []
+      for (const item of items) {
+        if (item.kind !== 'file') continue
+        const file = item.getAsFile()
+        if (file && IMG_MIMES.includes(file.type)) files.push(file)
+      }
+      if (files.length > 0) {
+        e.preventDefault()
+        void handleImageFiles(files)
+      }
+    },
+    [canUploadImages, handleImageFiles]
+  )
+
   return (
     <div className="flex flex-col gap-2">
       <div
+        onDragOver={(e) => {
+          if (!canUploadImages) return
+          if (Array.from(e.dataTransfer.types).includes('Files')) {
+            e.preventDefault()
+            setDragOver(true)
+          }
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          if (!canUploadImages) return
+          const files = Array.from(e.dataTransfer.files ?? [])
+          if (files.length === 0) return
+          e.preventDefault()
+          setDragOver(false)
+          void handleImageFiles(files)
+        }}
         className={`relative flex min-h-[64px] flex-col rounded-md border transition ${
-          focused
-            ? 'border-zinc-400 dark:border-white/30'
-            : t.input.split(' ').filter((c) => c.startsWith('border-')).join(' ')
+          dragOver
+            ? 'border-emerald-400 dark:border-emerald-400/60'
+            : focused
+              ? 'border-zinc-400 dark:border-white/30'
+              : t.input.split(' ').filter((c) => c.startsWith('border-')).join(' ')
         } ${t.input.split(' ').filter((c) => !c.startsWith('border-') && !c.startsWith('placeholder')).join(' ')}`}
       >
         <div
@@ -328,6 +430,7 @@ export default function MentionInput({
           onScroll={handleScroll}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
+          onPaste={canUploadImages ? handlePaste : undefined}
           onKeyDown={(e) => {
             if (trigger.active && matches.length > 0) {
               if (e.key === 'ArrowDown') {
@@ -400,11 +503,48 @@ export default function MentionInput({
       </div>
 
       <div className="flex items-center justify-between gap-2">
-        <span className={`text-[10px] ${t.textSubtle}`}>
-          Type <kbd className="font-mono">@</kbd> to mention.
-          <kbd className="ml-1 font-mono">⌘</kbd>
-          <kbd className="font-mono">↵</kbd> to send.
-        </span>
+        <div className="flex min-w-0 items-center gap-2">
+          {canUploadImages && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={IMG_MIMES.join(',')}
+                multiple
+                hidden
+                onChange={(e) => {
+                  const files = Array.from(e.target.files ?? [])
+                  if (files.length > 0) void handleImageFiles(files)
+                  e.target.value = ''
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                title="Attach an image"
+                className={`flex h-7 items-center gap-1.5 rounded-md border px-2 text-[11px] transition ${t.tab}`}
+              >
+                <ImagePlus className="size-3.5" />
+                Image
+              </button>
+              {uploading.length > 0 && (
+                <span
+                  className={`flex items-center gap-1 truncate text-[10px] ${t.textSubtle}`}
+                  title={uploading.map((u) => u.name).join(', ')}
+                >
+                  <Loader2 className="size-3 animate-spin" />
+                  Uploading {uploading.length}{' '}
+                  {uploading.length === 1 ? 'image' : 'images'}…
+                </span>
+              )}
+            </>
+          )}
+          <span className={`text-[10px] ${t.textSubtle}`}>
+            Type <kbd className="font-mono">@</kbd> to mention.
+            <kbd className="ml-1 font-mono">⌘</kbd>
+            <kbd className="font-mono">↵</kbd> to send.
+          </span>
+        </div>
         <button
           onClick={submit}
           disabled={!value.trim()}
