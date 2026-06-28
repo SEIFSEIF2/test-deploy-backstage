@@ -23,6 +23,12 @@ interface BoardColumnProps {
   // dnd-kit droppable id for the column body. Drag/drop only activates
   // when this is provided (board view); list/timeline views skip it.
   droppableId?: string
+  // Per-task reactions for the compact emoji strip on each card. Keyed by
+  // task id; missing tasks just don't render a strip.
+  reactionsByTask?: Record<
+    string,
+    { id: string; emoji: string; memberId: string }[]
+  >
 }
 
 export default function BoardColumn({
@@ -34,7 +40,8 @@ export default function BoardColumn({
   onAdd,
   density = 'cozy',
   wipLimit = 0,
-  droppableId
+  droppableId,
+  reactionsByTask
 }: BoardColumnProps) {
   const { t } = useDashTheme()
   const { open } = useContextMenu()
@@ -138,6 +145,7 @@ export default function BoardColumn({
               draggable={Boolean(droppableId)}
               density={density}
               onClick={() => onSelect(task.id)}
+              reactions={reactionsByTask?.[task.id]}
             />
           ))}
         </SortableContext>

@@ -37,6 +37,10 @@ interface TaskCardProps {
   draggable?: boolean
   density?: 'compact' | 'cozy'
   onClick?: () => void
+  // Compact, read-only emoji strip on the card. One row per (task, emoji),
+  // grouped client-side. Clicking the card opens TaskDetail where users
+  // can actually add/remove their own reactions.
+  reactions?: { id: string; emoji: string; memberId: string }[]
 }
 
 const PRIORITIES: TaskPriority[] = ['urgent', 'high', 'medium', 'low', 'none']
@@ -70,7 +74,8 @@ export default function TaskCard({
   selected,
   draggable = true,
   density = 'cozy',
-  onClick
+  onClick,
+  reactions
 }: TaskCardProps) {
   const compact = density === 'compact'
   const { t } = useDashTheme()
@@ -297,6 +302,30 @@ export default function TaskCard({
           {task.assignee && <Avatar user={task.assignee} size={20} />}
         </div>
       </div>
+      {reactions && reactions.length > 0 && (
+        <div className="mt-1 flex flex-wrap items-center gap-1">
+          {(() => {
+            const byEmoji = new Map<string, number>()
+            for (const r of reactions) {
+              byEmoji.set(r.emoji, (byEmoji.get(r.emoji) ?? 0) + 1)
+            }
+            return [...byEmoji.entries()]
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 5)
+              .map(([emoji, count]) => (
+                <span
+                  key={emoji}
+                  className={`inline-flex h-5 items-center gap-0.5 rounded-full border px-1.5 text-[10px] ${t.btn}`}
+                >
+                  <span className="text-[11px] leading-none">{emoji}</span>
+                  {count > 1 && (
+                    <span className="tabular-nums">{count}</span>
+                  )}
+                </span>
+              ))
+          })()}
+        </div>
+      )}
     </button>
   )
 }
