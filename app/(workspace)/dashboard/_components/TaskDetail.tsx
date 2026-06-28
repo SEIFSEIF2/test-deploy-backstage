@@ -40,6 +40,7 @@ import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import TaskImageDropZone, {
   type TaskAttachmentView
 } from './TaskImageDropZone'
+import TaskImageGallery from './TaskImageGallery'
 import { VisuallyHidden } from 'radix-ui'
 import {
   HANDOFF_FIELDS,
@@ -58,6 +59,7 @@ import {
   AlertDialogTrigger
 } from '@/components/ui/alert-dialog'
 import MentionInput, { renderMentionedBody } from './MentionInput'
+import { ReactionBar } from './ReactionBar'
 import { useMeetingRequestSheet } from './MeetingRequestSheet'
 import { useMeetingsSheet } from './MeetingsSheet'
 import { useTaskActions } from './actions'
@@ -118,6 +120,7 @@ export interface TaskActivity {
     | 'created'
     | 'priority'
     | 'assignee'
+    | 'due-soon'
   text: string
   at: string
   atRaw: string
@@ -128,6 +131,32 @@ interface TaskDetailProps {
   comments: TaskComment[]
   activity: TaskActivity[]
   externalRefs: TaskExternalRef[]
+  // Emoji reactions on the task itself + one map of reactions keyed by
+  // comment id (so each rendered comment can pluck its own list).
+  taskReactions: {
+    id: string
+    emoji: string
+    memberId: string
+    memberName: string | null
+  }[]
+  commentReactionsByComment: Record<
+    string,
+    { id: string; emoji: string; memberId: string; memberName: string | null }[]
+  >
+  onToggleTaskReaction: (emoji: string) => void | Promise<void>
+  onToggleCommentReaction: (
+    commentId: string,
+    emoji: string
+  ) => void | Promise<void>
+  // Sprint window of the task's current sprint membership (highest-number
+  // sprint if multiple). null when the task is not in any sprint. Drives
+  // the sprint-aware chip on the due-date picker.
+  taskSprint: {
+    number: number
+    name: string
+    fromIso: string
+    toIso: string
+  } | null
   currentUserId: string
   isAdmin: boolean
   // Access tier of the current user. Planner fields (priority, assignee,
@@ -167,6 +196,7 @@ interface TaskDetailProps {
   attachments: TaskAttachmentView[]
   onAttachmentAdded: (a: TaskAttachmentView) => void
   onAttachmentRemoved: (attachmentId: string) => void
+  onAttachmentSwap: (tempId: string, real: TaskAttachmentView) => void
   // Optional copy-button slot. DashboardShell owns the export context and
   // injects a CopyButton here so the task header gets a Copy task action
   // without TaskDetail having to know about lib/export.
@@ -180,6 +210,11 @@ export default function TaskDetail({
   comments,
   activity,
   externalRefs,
+  taskReactions,
+  commentReactionsByComment,
+  onToggleTaskReaction,
+  onToggleCommentReaction,
+  taskSprint,
   currentUserId,
   isAdmin,
   accessTier,
@@ -205,6 +240,7 @@ export default function TaskDetail({
   attachments,
   onAttachmentAdded,
   onAttachmentRemoved,
+  onAttachmentSwap,
   copySlot
 }: TaskDetailProps) {
   const { t } = useDashTheme()
@@ -347,6 +383,14 @@ export default function TaskDetail({
       </div>
 
       <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-5 py-5">
+        <TaskImageGallery
+          attachments={attachments}
+          currentUserId={currentUserId}
+          isAdmin={isAdmin}
+          onAttachmentAdded={onAttachmentAdded}
+          onAttachmentRemoved={onAttachmentRemoved}
+        />
+
         <EditableTitle
           value={task.title}
           canEdit={canEditOwner}
@@ -363,11 +407,17 @@ export default function TaskDetail({
 
         <TaskImageDropZone
           taskId={task.id}
-          attachments={attachments}
           currentUserId={currentUserId}
-          isAdmin={isAdmin}
           onAttachmentAdded={onAttachmentAdded}
           onAttachmentRemoved={onAttachmentRemoved}
+          onAttachmentSwap={onAttachmentSwap}
+        />
+
+        <ReactionBar
+          reactions={taskReactions}
+          currentMemberId={currentUserId}
+          onToggle={onToggleTaskReaction}
+          size="md"
         />
 
         <div className="grid grid-cols-[88px_1fr] items-center gap-y-2.5 text-xs">
@@ -544,6 +594,7 @@ export default function TaskDetail({
           <DueDateField
             task={task}
             readOnly={!canEditPlanner}
+            sprintWindow={taskSprint}
             onChange={(iso) => onChangeDueDate(task.id, iso)}
           />
 
@@ -752,6 +803,13 @@ export default function TaskDetail({
                       {renderMentionedBody(c.body, team)}
                     </p>
                   )}
+                  <div className="mt-1.5">
+                    <ReactionBar
+                      reactions={commentReactionsByComment[c.id] ?? []}
+                      currentMemberId={currentUserId}
+                      onToggle={(emoji) => onToggleCommentReaction(c.id, emoji)}
+                    />
+                  </div>
                 </div>
               )
             })}
@@ -1383,10 +1441,17 @@ function TagsField({
 function DueDateField({
   task,
   readOnly,
+  sprintWindow,
   onChange
 }: {
   task: BoardTask
   readOnly?: boolean
+  sprintWindow?: {
+    number: number
+    name: string
+    fromIso: string
+    toIso: string
+  } | null
   onChange: (iso: string | null) => void
 }) {
   const { t } = useDashTheme()
@@ -1403,20 +1468,35 @@ function DueDateField({
     setValue(initial)
   }
 
+  // Sprint-aware hint. Renders below the value when the task is in a
+  // sprint AND has a due date set. Soft-warn only - never blocks the save.
+  const activeDateForChip = editing && value ? value : initial
+  const sprintChip = sprintWindow && activeDateForChip
+    ? buildSprintDueChip(activeDateForChip, sprintWindow)
+    : null
+
   if (readOnly) {
-    return <span className={t.text}>{task.due ?? '—'}</span>
+    return (
+      <span className={`flex flex-col gap-1 ${t.text}`}>
+        <span>{task.due ?? '—'}</span>
+        {sprintChip}
+      </span>
+    )
   }
 
   if (!editing) {
     return (
-      <button
-        type="button"
-        onClick={() => setEditing(true)}
-        className={`text-left ${t.text} hover:opacity-80`}
-        title="Edit due date"
-      >
-        {task.due ?? '—'}
-      </button>
+      <span className="flex flex-col gap-1">
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className={`text-left ${t.text} hover:opacity-80`}
+          title="Edit due date"
+        >
+          {task.due ?? '—'}
+        </button>
+        {sprintChip}
+      </span>
     )
   }
 
@@ -1428,38 +1508,82 @@ function DueDateField({
   }
 
   return (
-    <span className="flex items-center gap-1.5">
-      <input
-        type="date"
-        autoFocus
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onBlur={() => commit(value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault()
-            commit(value)
-          }
-          if (e.key === 'Escape') {
-            setValue(initial)
-            setEditing(false)
-          }
-        }}
-        className={`h-6 rounded-md border px-1.5 text-xs ${t.input}`}
-      />
-      {task.dueAt && (
-        <button
-          type="button"
-          onClick={() => {
-            setValue('')
-            commit('')
+    <span className="flex flex-col gap-1">
+      <span className="flex items-center gap-1.5">
+        <input
+          type="date"
+          autoFocus
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onBlur={() => commit(value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              commit(value)
+            }
+            if (e.key === 'Escape') {
+              setValue(initial)
+              setEditing(false)
+            }
           }}
-          className={`text-[10px] underline ${t.textSubtle} hover:opacity-80`}
-          title="Clear due date"
-        >
-          clear
-        </button>
-      )}
+          className={`h-6 rounded-md border px-1.5 text-xs ${t.input}`}
+        />
+        {task.dueAt && (
+          <button
+            type="button"
+            onClick={() => {
+              setValue('')
+              commit('')
+            }}
+            className={`text-[10px] underline ${t.textSubtle} hover:opacity-80`}
+            title="Clear due date"
+          >
+            clear
+          </button>
+        )}
+      </span>
+      {sprintChip}
+    </span>
+  )
+}
+
+function buildSprintDueChip(
+  dueIso: string,
+  sprint: { number: number; name: string; fromIso: string; toIso: string }
+): React.ReactNode {
+  if (dueIso < sprint.fromIso || dueIso > sprint.toIso) {
+    return (
+      <span
+        title={`Sprint ${sprint.number} runs ${sprint.fromIso} to ${sprint.toIso}`}
+        className="inline-flex w-fit items-center gap-1 rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300"
+      >
+        Outside sprint window (ends {sprint.toIso})
+      </span>
+    )
+  }
+  const from = Date.UTC(
+    Number(sprint.fromIso.slice(0, 4)),
+    Number(sprint.fromIso.slice(5, 7)) - 1,
+    Number(sprint.fromIso.slice(8, 10))
+  )
+  const to = Date.UTC(
+    Number(sprint.toIso.slice(0, 4)),
+    Number(sprint.toIso.slice(5, 7)) - 1,
+    Number(sprint.toIso.slice(8, 10))
+  )
+  const due = Date.UTC(
+    Number(dueIso.slice(0, 4)),
+    Number(dueIso.slice(5, 7)) - 1,
+    Number(dueIso.slice(8, 10))
+  )
+  const totalDays = Math.round((to - from) / 86400000) + 1
+  const dayNumber = Math.round((due - from) / 86400000) + 1
+  return (
+    <span
+      title={`Sprint ${sprint.number}: ${sprint.fromIso} to ${sprint.toIso}`}
+      className="inline-flex w-fit items-center gap-1 rounded border border-zinc-300 bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-700 dark:border-white/20 dark:bg-white/5 dark:text-zinc-300"
+    >
+      Day {dayNumber} of {totalDays} in Sprint {sprint.number}
     </span>
   )
 }

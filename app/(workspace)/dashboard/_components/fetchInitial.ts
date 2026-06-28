@@ -3,6 +3,7 @@ import { createAdminClient } from '@/supabase/admin'
 import { getCurrentTeamMember } from '@/lib/dal'
 import { fetchDashboardData } from '../actions'
 import { listTaskAttachmentsForTasks } from '@/supabase/dashboard/taskAttachments'
+import { runDueWarningsIfDue } from '@/supabase/dashboard/dueWarnings'
 import {
   groupActivityByTask,
   groupCommentsByTask,
@@ -14,9 +15,11 @@ import {
   mapTeamActivity,
   mapMeetingActivity,
   mapTaskDeletionActivity,
+  mapSprintActivity,
   type TeamUpdate,
   type MeetingUpdate,
-  type TaskDeletionUpdate
+  type TaskDeletionUpdate,
+  type SprintUpdate
 } from './mappers'
 import type { DashboardInitial } from './DashboardShell'
 
@@ -24,6 +27,13 @@ export async function fetchInitial(
   projectParam: string | undefined
 ): Promise<DashboardInitial> {
   const data = await fetchDashboardData(projectParam)
+
+  // Fire-and-forget the due-soon fan-out. First load of the day wins the
+  // race in Postgres; subsequent loads are no-ops. Failures never block
+  // the dashboard render - the page proceeds regardless.
+  void runDueWarningsIfDue(data.currentMember.companyId).catch((err) => {
+    console.error('[due-warnings] failed', err)
+  })
 
   const members = mapMembers(data.members)
   const tasks = mapTasks(data.tasks, members, data.members)
@@ -48,6 +58,7 @@ export async function fetchInitial(
   const taskDeletionUpdates: TaskDeletionUpdate[] = mapTaskDeletionActivity(
     data.taskDeletionActivity
   )
+  const sprintUpdates: SprintUpdate[] = mapSprintActivity(data.sprintActivity)
 
   const taskIds = tasks.map((t) => t.id)
   const attachmentRows = await listTaskAttachmentsForTasks(taskIds)
@@ -77,6 +88,8 @@ export async function fetchInitial(
     null
 
   return {
+    commentReactionsByComment: data.commentReactionsByComment,
+    taskReactionsByTask: data.taskReactionsByTask,
     tasks,
     members,
     sprints,
@@ -94,6 +107,7 @@ export async function fetchInitial(
     teamUpdates,
     meetingUpdates,
     taskDeletionUpdates,
+    sprintUpdates,
     attachmentsByTask,
     externalRefsByTask,
     externalRefsByProject,

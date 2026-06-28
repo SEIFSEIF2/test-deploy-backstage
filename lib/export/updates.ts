@@ -15,6 +15,8 @@ export interface UpdateRow {
     | 'team'
     | 'meeting'
     | 'task-deletion'
+    | 'sprint'
+    | 'due-soon'
   text: string
   at: string
   atRaw: string

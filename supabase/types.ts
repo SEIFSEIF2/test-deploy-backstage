@@ -83,10 +83,89 @@ export type Database = {
         }
         Relationships: []
       }
+      comment_reactions: {
+        Row: {
+          comment_id: string
+          created_at: string
+          emoji: string
+          id: string
+          member_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          emoji: string
+          id?: string
+          member_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          emoji?: string
+          id?: string
+          member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_reactions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "task_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comment_reactions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          member_id: string
+          task_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          member_id: string
+          task_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          member_id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_reactions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_reactions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           created_at: string
           id: string
+          last_due_warning_date: string | null
           name: string
           owner_id: string | null
           quick_meet_url: string | null
@@ -95,6 +174,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          last_due_warning_date?: string | null
           name: string
           owner_id?: string | null
           quick_meet_url?: string | null
@@ -103,6 +183,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          last_due_warning_date?: string | null
           name?: string
           owner_id?: string | null
           quick_meet_url?: string | null
@@ -712,14 +793,20 @@ export type Database = {
       }
       sprint_tasks: {
         Row: {
+          carried_from_sprint_id: string | null
+          carry_count: number
           sprint_id: string
           task_id: string
         }
         Insert: {
+          carried_from_sprint_id?: string | null
+          carry_count?: number
           sprint_id: string
           task_id: string
         }
         Update: {
+          carried_from_sprint_id?: string | null
+          carry_count?: number
           sprint_id?: string
           task_id?: string
         }
@@ -738,45 +825,73 @@ export type Database = {
             referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "sprint_tasks_carried_from_sprint_id_fkey"
+            columns: ["carried_from_sprint_id"]
+            isOneToOne: false
+            referencedRelation: "sprints"
+            referencedColumns: ["id"]
+          },
         ]
       }
       sprints: {
         Row: {
+          carried_count: number | null
+          closed_at: string | null
+          closed_by: string | null
           company_id: string
           created_at: string
           description: string | null
           doc_url: string | null
           from_date: string
+          goal: string | null
           id: string
           name: string
           number: number
           project_id: string
+          shipped_count: number | null
+          started_at: string | null
+          started_by: string | null
           status: Database["public"]["Enums"]["sprint_status"]
           to_date: string
         }
         Insert: {
+          carried_count?: number | null
+          closed_at?: string | null
+          closed_by?: string | null
           company_id: string
           created_at?: string
           description?: string | null
           doc_url?: string | null
           from_date: string
+          goal?: string | null
           id?: string
           name: string
           number: number
           project_id: string
+          shipped_count?: number | null
+          started_at?: string | null
+          started_by?: string | null
           status?: Database["public"]["Enums"]["sprint_status"]
           to_date: string
         }
         Update: {
+          carried_count?: number | null
+          closed_at?: string | null
+          closed_by?: string | null
           company_id?: string
           created_at?: string
           description?: string | null
           doc_url?: string | null
           from_date?: string
+          goal?: string | null
           id?: string
           name?: string
           number?: number
           project_id?: string
+          shipped_count?: number | null
+          started_at?: string | null
+          started_by?: string | null
           status?: Database["public"]["Enums"]["sprint_status"]
           to_date?: string
         }
@@ -793,6 +908,20 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sprints_started_by_fkey"
+            columns: ["started_by"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sprints_closed_by_fkey"
+            columns: ["closed_by"]
+            isOneToOne: false
+            referencedRelation: "team_members"
             referencedColumns: ["id"]
           },
         ]
@@ -1375,7 +1504,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      claim_due_warning_run: {
+        Args: { p_company_id: string }
+        Returns: string | null
+      }
     }
     Enums: {
       access_tier: "admin" | "lead" | "member"

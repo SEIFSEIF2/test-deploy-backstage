@@ -71,7 +71,11 @@ import {
   createSprint as createSprintImpl,
   deleteComment as deleteCommentImpl,
   deleteDashboardTask as deleteDashboardTaskImpl,
+  bulkMoveTasksToSprint as bulkMoveTasksToSprintImpl,
   deleteSprint as deleteSprintImpl,
+  endSprint as endSprintImpl,
+  listProjectSprintsForMove as listProjectSprintsForMoveImpl,
+  startSprint as startSprintImpl,
   duplicateDashboardTask as duplicateDashboardTaskImpl,
   listTrashedTasks as listTrashedTasksImpl,
   restoreDashboardTask as restoreDashboardTaskImpl,
@@ -106,6 +110,8 @@ import {
   updateTaskTags as updateTaskTagsImpl,
   updateDashboardTaskStatus as updateDashboardTaskStatusImpl,
   updateProjectExternalRefLabel as updateProjectExternalRefLabelImpl,
+  toggleCommentReaction as toggleCommentReactionImpl,
+  toggleTaskReaction as toggleTaskReactionImpl,
   updateSprint as updateSprintImpl,
   updateTaskExternalRefLabel as updateTaskExternalRefLabelImpl,
 } from '@/supabase/dashboard/mutations'
@@ -290,6 +296,42 @@ export async function removeTaskFromSprint(
   ...args: Parameters<typeof removeTaskFromSprintImpl>
 ) {
   return removeTaskFromSprintImpl(...args)
+}
+
+export async function startSprint(
+  ...args: Parameters<typeof startSprintImpl>
+) {
+  return startSprintImpl(...args)
+}
+
+export async function endSprint(
+  ...args: Parameters<typeof endSprintImpl>
+) {
+  return endSprintImpl(...args)
+}
+
+export async function bulkMoveTasksToSprint(
+  ...args: Parameters<typeof bulkMoveTasksToSprintImpl>
+) {
+  return bulkMoveTasksToSprintImpl(...args)
+}
+
+export async function listProjectSprintsForMove(
+  ...args: Parameters<typeof listProjectSprintsForMoveImpl>
+) {
+  return listProjectSprintsForMoveImpl(...args)
+}
+
+export async function toggleCommentReaction(
+  ...args: Parameters<typeof toggleCommentReactionImpl>
+) {
+  return toggleCommentReactionImpl(...args)
+}
+
+export async function toggleTaskReaction(
+  ...args: Parameters<typeof toggleTaskReactionImpl>
+) {
+  return toggleTaskReactionImpl(...args)
 }
 
 export async function setProjectGithubRepo(

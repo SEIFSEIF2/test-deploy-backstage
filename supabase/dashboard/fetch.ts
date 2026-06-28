@@ -61,6 +61,7 @@ interface DepsInRow {
 
 interface SprintLink {
   sprint: { id: string; name: string } | null
+  carryCount: number
 }
 
 export interface DashboardTaskRow {
@@ -129,12 +130,25 @@ export interface DashboardSprintRow {
   projectId: string
   number: number
   name: string
+  goal: string | null
   description: string | null
   docUrl: string | null
   status: SprintStatus
   fromDate: string
   toDate: string
-  tasks: { taskId: string }[]
+  startedAt: string | null
+  closedAt: string | null
+  shippedCount: number | null
+  carriedCount: number | null
+  tasks: { taskId: string; carryCount: number }[]
+}
+
+export interface DashboardReactionRow {
+  id: string
+  emoji: string
+  memberId: string
+  memberName: string | null
+  createdAt: string
 }
 
 export interface DashboardCommentRow {
@@ -182,6 +196,11 @@ export interface DashboardData {
   labels: DashboardLabelRow[]
   sprints: DashboardSprintRow[]
   comments: DashboardCommentRow[]
+  // Emoji reactions grouped by their parent id (comment id / task id). One
+  // entry per (parent, member, emoji) triple. UI groups by emoji client-side
+  // to render pills with counts.
+  commentReactionsByComment: Record<string, DashboardReactionRow[]>
+  taskReactionsByTask: Record<string, DashboardReactionRow[]>
   activity: DashboardActivityRow[]
   // Team-management activity (presence/tier/profile/etc), scoped to the
   // viewer's company. Not bucketable by task, so it lives on its own.
@@ -192,6 +211,10 @@ export interface DashboardData {
   // because by definition the row's entity_id no longer matches any
   // visible task. The title/ref/status snapshot lives in metadata.
   taskDeletionActivity: DashboardActivityRow[]
+  // Sprint lifecycle events (sprint.started, sprint.ended). Scoped to the
+  // viewer's visible projects so a member in project A doesn't see project
+  // B's sprint announcements.
+  sprintActivity: DashboardActivityRow[]
   externalRefs: DashboardTaskExternalRefRow[]
   projectExternalRefs: DashboardProjectExternalRefRow[]
   // Distinct assignee ids per project, computed across all tasks (not
@@ -347,10 +370,13 @@ export async function fetchDashboardData(
     depsInRes,
     sprintTaskJoinForTasksRes,
     commentsRes,
+    commentReactionsRes,
+    taskReactionsRes,
     activityRes,
     teamActivityRes,
     meetingActivityRes,
     taskDeletionActivityRes,
+    sprintActivityRes,
     externalRefsRes,
     projectExternalRefsRes,
     refTasksRes,
@@ -415,7 +441,7 @@ export async function fetchDashboardData(
     // filter once we know the sprint ids.
     supabase
       .from('sprint_tasks')
-      .select('sprint_id, task_id')
+      .select('sprint_id, task_id, carry_count')
       .in('task_id', safeTaskIds),
     // task_labels join rows for visible tasks, including the label name
     supabase
@@ -448,7 +474,7 @@ export async function fetchDashboardData(
     // sprintTasksRes but with the sprint name fetched inline.
     supabase
       .from('sprint_tasks')
-      .select('task_id, sprint:sprints!cycle_task_cycle_id_fkey(id, name)')
+      .select('task_id, carry_count, sprint:sprints!cycle_task_cycle_id_fkey(id, name)')
       .in('task_id', safeTaskIds),
     // comments scoped to visible tasks
     supabase
@@ -457,6 +483,20 @@ export async function fetchDashboardData(
       .eq('company_id', member.companyId)
       .in('task_id', safeTaskIds)
       .order('created_at', { ascending: true }),
+    // Comment reactions joined via the comments table so we can scope
+    // by the visible task ids in a single round-trip. Returns one row per
+    // (comment, member, emoji) tuple.
+    supabase
+      .from('comment_reactions')
+      .select(
+        'id, comment_id, member_id, emoji, created_at, task_comments!comment_reactions_comment_id_fkey!inner(task_id)'
+      )
+      .in('task_comments.task_id', safeTaskIds),
+    // Task-level reactions, scoped to visible task ids directly.
+    supabase
+      .from('task_reactions')
+      .select('id, task_id, member_id, emoji, created_at')
+      .in('task_id', safeTaskIds),
     // activity log scoped to visible tasks (entity_id is generic, but
     // the (entity_type, entity_id) index makes the IN lookup efficient)
     supabase
@@ -498,6 +538,18 @@ export async function fetchDashboardData(
       .eq('company_id', member.companyId)
       .eq('entity_type', 'task')
       .eq('action', 'task.deleted')
+      .order('created_at', { ascending: false })
+      .limit(100),
+    // Sprint lifecycle events. entity_type='sprint', actions are
+    // 'sprint.started' and 'sprint.ended'. We don't pre-filter by
+    // project_id at SQL level because metadata.project_id is a JSON path;
+    // filtering happens client-side when needed.
+    supabase
+      .from('activity_logs')
+      .select('*, actor:team_members!activity_log_actor_id_fkey(id, full_name)')
+      .eq('company_id', member.companyId)
+      .eq('entity_type', 'sprint')
+      .in('action', ['sprint.started', 'sprint.ended'])
       .order('created_at', { ascending: false })
       .limit(100),
     // task external refs scoped to visible tasks
@@ -557,10 +609,13 @@ export async function fetchDashboardData(
     depsInRes.error,
     sprintTaskJoinForTasksRes.error,
     commentsRes.error,
+    commentReactionsRes.error,
+    taskReactionsRes.error,
     activityRes.error,
     teamActivityRes.error,
     meetingActivityRes.error,
     taskDeletionActivityRes.error,
+    sprintActivityRes.error,
     externalRefsRes.error,
     projectExternalRefsRes.error,
     refTasksRes.error,
@@ -599,7 +654,7 @@ export async function fetchDashboardData(
     // single-FK joins always return an object at runtime.
     const sprint = (row.sprint as { id: string; name: string } | null) ?? null
     const list = sprintLinksByTask.get(row.task_id) ?? []
-    list.push({ sprint })
+    list.push({ sprint, carryCount: row.carry_count ?? 0 })
     sprintLinksByTask.set(row.task_id, list)
   }
 
@@ -693,10 +748,13 @@ export async function fetchDashboardData(
 
   // ---- Sprints with their task ids ----------------------------------------
 
-  const sprintTaskIdsBySprint = new Map<string, string[]>()
+  const sprintTaskIdsBySprint = new Map<
+    string,
+    { taskId: string; carryCount: number }[]
+  >()
   for (const link of sprintTasksRes.data ?? []) {
     const list = sprintTaskIdsBySprint.get(link.sprint_id) ?? []
-    list.push(link.task_id)
+    list.push({ taskId: link.task_id, carryCount: link.carry_count ?? 0 })
     sprintTaskIdsBySprint.set(link.sprint_id, list)
   }
   const sprints: DashboardSprintRow[] = (sprintsRes.data ?? []).map((s) => ({
@@ -704,12 +762,17 @@ export async function fetchDashboardData(
     projectId: s.project_id,
     number: s.number,
     name: s.name,
+    goal: s.goal,
     description: s.description,
     docUrl: s.doc_url,
     status: s.status,
     fromDate: s.from_date,
     toDate: s.to_date,
-    tasks: (sprintTaskIdsBySprint.get(s.id) ?? []).map((taskId) => ({ taskId }))
+    startedAt: s.started_at,
+    closedAt: s.closed_at,
+    shippedCount: s.shipped_count,
+    carriedCount: s.carried_count,
+    tasks: sprintTaskIdsBySprint.get(s.id) ?? []
   }))
 
   // ---- Members / Projects / Labels (already camelCased above) -------------
@@ -759,6 +822,35 @@ export async function fetchDashboardData(
       author: author ? { id: author.id, fullName: author.full_name } : null
     }
   })
+
+  const memberNameById = new Map<string, string>()
+  for (const m of membersRes.data ?? []) {
+    memberNameById.set(m.id, m.full_name)
+  }
+  const commentReactionsByComment: Record<string, DashboardReactionRow[]> = {}
+  for (const r of commentReactionsRes.data ?? []) {
+    const list = commentReactionsByComment[r.comment_id] ?? []
+    list.push({
+      id: r.id,
+      emoji: r.emoji,
+      memberId: r.member_id,
+      memberName: memberNameById.get(r.member_id) ?? null,
+      createdAt: r.created_at
+    })
+    commentReactionsByComment[r.comment_id] = list
+  }
+  const taskReactionsByTask: Record<string, DashboardReactionRow[]> = {}
+  for (const r of taskReactionsRes.data ?? []) {
+    const list = taskReactionsByTask[r.task_id] ?? []
+    list.push({
+      id: r.id,
+      emoji: r.emoji,
+      memberId: r.member_id,
+      memberName: memberNameById.get(r.member_id) ?? null,
+      createdAt: r.created_at
+    })
+    taskReactionsByTask[r.task_id] = list
+  }
 
   const activity: DashboardActivityRow[] = (activityRes.data ?? []).map((a) => {
     const actor = a.actor as { id: string; full_name: string } | null
@@ -814,6 +906,33 @@ export async function fetchDashboardData(
     }
   })
 
+  // Scope sprint events to the viewer's visible projects so a member in
+  // project A doesn't see project B's sprint announcements. metadata
+  // carries project_id from logActivity in mutations.ts.
+  const visibleProjectIds = myProjectIds === null
+    ? null
+    : new Set(myProjectIds)
+  const sprintActivity: DashboardActivityRow[] = (sprintActivityRes.data ?? [])
+    .filter((a) => {
+      if (visibleProjectIds === null) return true
+      const meta = a.metadata as Record<string, unknown> | null
+      const pid = meta && typeof meta.project_id === 'string'
+        ? meta.project_id
+        : null
+      return pid !== null && visibleProjectIds.has(pid)
+    })
+    .map((a) => {
+      const actor = a.actor as { id: string; full_name: string } | null
+      return {
+        id: a.id,
+        entityId: a.entity_id,
+        action: a.action,
+        createdAt: a.created_at,
+        metadata: a.metadata,
+        actor: actor ? { id: actor.id, fullName: actor.full_name } : null
+      }
+    })
+
   const externalRefs: DashboardTaskExternalRefRow[] = (
     externalRefsRes.data ?? []
   ).map((r) => ({
@@ -844,10 +963,13 @@ export async function fetchDashboardData(
     labels,
     sprints,
     comments,
+    commentReactionsByComment,
+    taskReactionsByTask,
     activity,
     teamActivity,
     meetingActivity,
     taskDeletionActivity,
+    sprintActivity,
     externalRefs,
     projectExternalRefs,
     projectAssigneeIds,

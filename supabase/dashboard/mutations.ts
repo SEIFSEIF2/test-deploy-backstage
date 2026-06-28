@@ -920,7 +920,9 @@ export async function updateDashboardTaskProject(
 
   const { data: oldSprintMemberships } = await supabase
     .from('sprint_tasks')
-    .select('sprint_id, sprints!inner(project_id)')
+    .select(
+      'sprint_id, sprints!cycle_task_cycle_id_fkey!inner(project_id)'
+    )
     .eq('task_id', task.id)
   const staleSprintIds = (oldSprintMemberships ?? [])
     .filter((row) => row.sprints?.project_id === oldProjectId)
@@ -1627,17 +1629,16 @@ export async function addChecklistItem(taskId: string, text: string) {
 // ─── Sprint CRUD ──────────────────────────────────────────────────────────
 
 const IsoDateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'expected YYYY-MM-DD')
-const SprintStatusEnum = z.enum(['upcoming', 'current', 'completed'])
 
 const CreateSprintInput = z
   .object({
     projectId: z.string().uuid(),
     name: z.string().trim().min(2).max(80),
+    goal: z.string().trim().max(200).optional().nullable(),
     description: z.string().trim().max(1000).optional().nullable(),
     docUrl: z.string().trim().url().max(500).optional().nullable(),
     fromDate: IsoDateStr,
-    toDate: IsoDateStr,
-    status: SprintStatusEnum.optional()
+    toDate: IsoDateStr
   })
   .refine((v) => v.fromDate <= v.toDate, {
     message: 'fromDate must be on or before toDate', path: ['toDate']
@@ -1647,15 +1648,32 @@ const UpdateSprintInput = z
   .object({
     sprintId: z.string().uuid(),
     name: z.string().trim().min(2).max(80).optional(),
+    goal: z.string().trim().max(200).nullable().optional(),
     description: z.string().trim().max(1000).nullable().optional(),
     docUrl: z.string().trim().url().max(500).nullable().optional(),
     fromDate: IsoDateStr.optional(),
-    toDate: IsoDateStr.optional(),
-    status: SprintStatusEnum.optional()
+    toDate: IsoDateStr.optional()
   })
   .refine((v) => !v.fromDate || !v.toDate || v.fromDate <= v.toDate, {
     message: 'fromDate must be on or before toDate', path: ['toDate']
   })
+
+function nextMondayIso(): string {
+  const now = new Date()
+  const today = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+  )
+  const dow = today.getUTCDay()
+  const delta = (1 - dow + 7) % 7
+  today.setUTCDate(today.getUTCDate() + delta)
+  return today.toISOString().slice(0, 10)
+}
+
+function addDaysIso(iso: string, days: number): string {
+  const d = new Date(iso + 'T00:00:00Z')
+  d.setUTCDate(d.getUTCDate() + days)
+  return d.toISOString().slice(0, 10)
+}
 
 export async function createSprint(input: z.input<typeof CreateSprintInput>) {
   const parsed = CreateSprintInput.safeParse(input)
@@ -1681,9 +1699,10 @@ export async function createSprint(input: z.input<typeof CreateSprintInput>) {
       project_id: project.id,
       number: nextNumber,
       name: parsed.data.name,
+      goal: parsed.data.goal ?? null,
       description: parsed.data.description ?? null,
       doc_url: parsed.data.docUrl ?? null,
-      status: parsed.data.status ?? 'upcoming',
+      status: 'upcoming',
       from_date: parsed.data.fromDate,
       to_date: parsed.data.toDate
     })
@@ -1707,11 +1726,11 @@ export async function updateSprint(input: z.input<typeof UpdateSprintInput>) {
 
   const patch: Database['public']['Tables']['sprints']['Update'] = {}
   if (parsed.data.name !== undefined) patch.name = parsed.data.name
+  if (parsed.data.goal !== undefined) patch.goal = parsed.data.goal
   if (parsed.data.description !== undefined) patch.description = parsed.data.description
   if (parsed.data.docUrl !== undefined) patch.doc_url = parsed.data.docUrl
   if (parsed.data.fromDate) patch.from_date = parsed.data.fromDate
   if (parsed.data.toDate) patch.to_date = parsed.data.toDate
-  if (parsed.data.status) patch.status = parsed.data.status
 
   await supabase.from('sprints').update(patch).eq('id', existing.id)
   revalidatePath('/dashboard')
@@ -1781,6 +1800,330 @@ export async function removeTaskFromSprint(input: z.input<typeof SprintTaskInput
     .eq('sprint_id', parsed.data.sprintId).eq('task_id', parsed.data.taskId)
   revalidatePath('/dashboard')
   return { ok: true as const }
+}
+
+// ─── Bulk cross-project move into a target sprint ────────────────────────
+
+const BulkMoveToSprintInput = z.object({
+  taskIds: z.array(z.string().uuid()).min(1).max(100),
+  targetProjectId: z.string().uuid(),
+  targetSprintId: z.string().uuid().nullable()
+})
+
+export async function bulkMoveTasksToSprint(
+  input: z.input<typeof BulkMoveToSprintInput>
+) {
+  const parsed = BulkMoveToSprintInput.safeParse(input)
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
+  }
+  const member = await requireAccessTier(['admin', 'lead'])
+  if (!member) {
+    return { error: 'Only leads or admins can bulk-move tasks.' }
+  }
+  const supabase = createAdminClient()
+
+  const { data: project } = await supabase
+    .from('projects')
+    .select('id')
+    .eq('id', parsed.data.targetProjectId)
+    .eq('company_id', member.companyId)
+    .maybeSingle()
+  if (!project) return { error: 'Target project not found.' }
+
+  let targetSprint: { id: string; project_id: string } | null = null
+  if (parsed.data.targetSprintId) {
+    const { data: sprint } = await supabase
+      .from('sprints')
+      .select('id, project_id')
+      .eq('id', parsed.data.targetSprintId)
+      .eq('company_id', member.companyId)
+      .maybeSingle()
+    if (!sprint) return { error: 'Target sprint not found.' }
+    if (sprint.project_id !== parsed.data.targetProjectId) {
+      return {
+        error: 'Target sprint does not belong to the target project.'
+      }
+    }
+    targetSprint = sprint
+  }
+
+  const errors: { taskId: string; reason: string }[] = []
+  let moved = 0
+  for (const taskId of parsed.data.taskIds) {
+    const projectMove = await updateDashboardTaskProject(
+      taskId,
+      parsed.data.targetProjectId
+    )
+    if ('error' in projectMove && projectMove.error) {
+      errors.push({ taskId, reason: projectMove.error })
+      continue
+    }
+    if (targetSprint) {
+      const { error: linkErr } = await supabase
+        .from('sprint_tasks')
+        .upsert(
+          {
+            sprint_id: targetSprint.id,
+            task_id: taskId,
+            carry_count: 0,
+            carried_from_sprint_id: null
+          },
+          { onConflict: 'sprint_id,task_id', ignoreDuplicates: true }
+        )
+      if (linkErr) {
+        errors.push({ taskId, reason: linkErr.message })
+        continue
+      }
+    }
+    moved++
+  }
+
+  revalidatePath('/dashboard')
+  return { ok: true as const, moved, errors }
+}
+
+const ProjectSprintsInput = z.object({
+  projectId: z.string().uuid(),
+  includeCompleted: z.boolean().optional()
+})
+
+export async function listProjectSprintsForMove(
+  input: z.input<typeof ProjectSprintsInput>
+) {
+  const parsed = ProjectSprintsInput.safeParse(input)
+  if (!parsed.success) return { error: 'Invalid input.' }
+  const member = await getCurrentTeamMember()
+  if (!member) return { error: 'Not signed in.' }
+  const supabase = createAdminClient()
+
+  const { data: project } = await supabase
+    .from('projects')
+    .select('id')
+    .eq('id', parsed.data.projectId)
+    .eq('company_id', member.companyId)
+    .maybeSingle()
+  if (!project) return { error: 'Project not found.' }
+
+  const statuses: Database['public']['Enums']['sprint_status'][] = parsed.data
+    .includeCompleted
+    ? ['upcoming', 'current', 'completed']
+    : ['upcoming', 'current']
+  const { data, error } = await supabase
+    .from('sprints')
+    .select('id, name, number, status, from_date, to_date')
+    .eq('project_id', parsed.data.projectId)
+    .in('status', statuses)
+    .order('status', { ascending: true })
+    .order('number', { ascending: true })
+  if (error) return { error: error.message }
+
+  return {
+    sprints: (data ?? []).map((s) => ({
+      id: s.id,
+      name: s.name,
+      number: s.number,
+      status: s.status as 'upcoming' | 'current' | 'completed',
+      fromIso: s.from_date,
+      toIso: s.to_date
+    }))
+  }
+}
+
+// ─── Sprint lifecycle: start + end + carry-over ──────────────────────────
+
+export async function startSprint(sprintId: string) {
+  const parsed = z.string().uuid().safeParse(sprintId)
+  if (!parsed.success) return { error: 'Invalid sprint id.' }
+  const member = await requireAccessTier(['admin', 'lead'])
+  if (!member) return { error: 'Only leads or admins can start a sprint.' }
+  const supabase = createAdminClient()
+
+  const { data: sprint } = await supabase
+    .from('sprints')
+    .select('id, project_id, number, name, goal, status')
+    .eq('id', parsed.data).eq('company_id', member.companyId).maybeSingle()
+  if (!sprint) return { error: 'Sprint not found.' }
+  if (sprint.status === 'current') return { error: 'Sprint is already current.' }
+  if (sprint.status === 'completed') return { error: 'Sprint is already completed.' }
+
+  await supabase
+    .from('sprints')
+    .update({ status: 'upcoming' })
+    .eq('project_id', sprint.project_id)
+    .eq('status', 'current')
+
+  const nowIso = new Date().toISOString()
+  const { error } = await supabase
+    .from('sprints')
+    .update({
+      status: 'current',
+      started_at: nowIso,
+      started_by: member.id
+    })
+    .eq('id', sprint.id)
+  if (error) return { error: error.message }
+
+  await logActivity(
+    supabase,
+    member.companyId,
+    member.id,
+    'sprint.started',
+    'sprint',
+    sprint.id,
+    {
+      project_id: sprint.project_id,
+      sprint_number: sprint.number,
+      sprint_name: sprint.name,
+      goal: sprint.goal,
+      started_by_name: member.fullName
+    }
+  )
+
+  revalidatePath('/dashboard')
+  return { ok: true as const }
+}
+
+const EndSprintInput = z.object({
+  sprintId: z.string().uuid(),
+  goalMet: z.boolean().optional()
+})
+
+export async function endSprint(input: z.input<typeof EndSprintInput>) {
+  const parsed = EndSprintInput.safeParse(input)
+  if (!parsed.success) return { error: 'Invalid input.' }
+  const member = await requireAccessTier(['admin', 'lead'])
+  if (!member) return { error: 'Only leads or admins can end a sprint.' }
+  const supabase = createAdminClient()
+
+  const { data: sprint } = await supabase
+    .from('sprints')
+    .select('id, project_id, number, name, goal, status')
+    .eq('id', parsed.data.sprintId).eq('company_id', member.companyId).maybeSingle()
+  if (!sprint) return { error: 'Sprint not found.' }
+  if (sprint.status !== 'current') {
+    return { error: 'Only a current sprint can be ended.' }
+  }
+
+  const { data: memberships } = await supabase
+    .from('sprint_tasks')
+    .select('task_id, carry_count, tasks!inner(id, status, deleted_at)')
+    .eq('sprint_id', sprint.id)
+  const rows = (memberships ?? []).filter(
+    (row) => row.tasks && row.tasks.deleted_at === null
+  )
+  const done = rows.filter((row) => row.tasks!.status === 'done')
+  const carry = rows.filter((row) => row.tasks!.status !== 'done')
+  const shippedCount = done.length
+  const carriedCount = carry.length
+
+  let nextSprintId: string | null = null
+  if (carriedCount > 0) {
+    const { data: upcoming } = await supabase
+      .from('sprints')
+      .select('id, number')
+      .eq('project_id', sprint.project_id)
+      .eq('status', 'upcoming')
+      .gt('number', sprint.number)
+      .order('number', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+    if (upcoming) {
+      nextSprintId = upcoming.id
+    } else {
+      const { data: maxRow } = await supabase
+        .from('sprints')
+        .select('number')
+        .eq('project_id', sprint.project_id)
+        .order('number', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      const nextNumber = (maxRow?.number ?? sprint.number) + 1
+      const fromIso = nextMondayIso()
+      const toIso = addDaysIso(fromIso, 6)
+      const { data: created, error: createErr } = await supabase
+        .from('sprints')
+        .insert({
+          company_id: member.companyId,
+          project_id: sprint.project_id,
+          number: nextNumber,
+          name: `Sprint ${nextNumber}`,
+          goal: null,
+          description: null,
+          doc_url: null,
+          status: 'upcoming',
+          from_date: fromIso,
+          to_date: toIso
+        })
+        .select('id').single()
+      if (createErr || !created) {
+        return { error: createErr?.message ?? 'Failed to create next sprint.' }
+      }
+      nextSprintId = created.id
+    }
+
+    const inserts = carry.map((row) => ({
+      sprint_id: nextSprintId!,
+      task_id: row.task_id,
+      carried_from_sprint_id: sprint.id,
+      carry_count: (row.carry_count ?? 0) + 1
+    }))
+    if (inserts.length > 0) {
+      const { error: insErr } = await supabase
+        .from('sprint_tasks')
+        .upsert(inserts, { onConflict: 'sprint_id,task_id' })
+      if (insErr) return { error: insErr.message }
+    }
+
+    const carryTaskIds = carry.map((row) => row.task_id)
+    const { error: delErr } = await supabase
+      .from('sprint_tasks')
+      .delete()
+      .eq('sprint_id', sprint.id)
+      .in('task_id', carryTaskIds)
+    if (delErr) return { error: delErr.message }
+  }
+
+  const closedAtIso = new Date().toISOString()
+  const { error: updErr } = await supabase
+    .from('sprints')
+    .update({
+      status: 'completed',
+      closed_at: closedAtIso,
+      closed_by: member.id,
+      shipped_count: shippedCount,
+      carried_count: carriedCount
+    })
+    .eq('id', sprint.id)
+  if (updErr) return { error: updErr.message }
+
+  await logActivity(
+    supabase,
+    member.companyId,
+    member.id,
+    'sprint.ended',
+    'sprint',
+    sprint.id,
+    {
+      project_id: sprint.project_id,
+      sprint_number: sprint.number,
+      sprint_name: sprint.name,
+      goal: sprint.goal,
+      goal_met: parsed.data.goalMet ?? null,
+      shipped_count: shippedCount,
+      carried_count: carriedCount,
+      next_sprint_id: nextSprintId,
+      closed_by_name: member.fullName
+    }
+  )
+
+  revalidatePath('/dashboard')
+  return {
+    ok: true as const,
+    shipped: shippedCount,
+    carried: carriedCount,
+    nextSprintId
+  }
 }
 
 // ─── Project github repo + external refs ──────────────────────────────────
@@ -2512,4 +2855,110 @@ export async function listTaskWatchers(taskId: string) {
       }
     })
   }
+}
+
+// ─── Emoji reactions (ADR 0041) ──────────────────────────────────────────
+
+const ReactionInput = z.object({
+  emoji: z.string().trim().min(1).max(32),
+  commentId: z.string().uuid().optional(),
+  taskId: z.string().uuid().optional()
+})
+
+export async function toggleCommentReaction(input: {
+  commentId: string
+  emoji: string
+}) {
+  const parsed = ReactionInput.safeParse(input)
+  if (!parsed.success || !parsed.data.commentId) {
+    return { error: 'Invalid input.' }
+  }
+  const member = await getCurrentTeamMember()
+  if (!member) return { error: 'Not signed in.' }
+  const supabase = createAdminClient()
+
+  const { data: comment } = await supabase
+    .from('task_comments')
+    .select('id, task_id, tasks!task_comment_task_id_fkey!inner(company_id, deleted_at)')
+    .eq('id', parsed.data.commentId)
+    .maybeSingle()
+  if (!comment || comment.tasks?.company_id !== member.companyId) {
+    return { error: 'Comment not found.' }
+  }
+  if (comment.tasks?.deleted_at) {
+    return { error: 'Comment is on a deleted task.' }
+  }
+
+  const { data: existing } = await supabase
+    .from('comment_reactions')
+    .select('id')
+    .eq('comment_id', parsed.data.commentId)
+    .eq('member_id', member.id)
+    .eq('emoji', parsed.data.emoji)
+    .maybeSingle()
+
+  if (existing) {
+    await supabase
+      .from('comment_reactions')
+      .delete()
+      .eq('id', existing.id)
+    revalidatePath('/dashboard')
+    return { ok: true as const, added: false }
+  }
+
+  await supabase.from('comment_reactions').insert({
+    comment_id: parsed.data.commentId,
+    member_id: member.id,
+    emoji: parsed.data.emoji
+  })
+  revalidatePath('/dashboard')
+  return { ok: true as const, added: true }
+}
+
+export async function toggleTaskReaction(input: {
+  taskId: string
+  emoji: string
+}) {
+  const parsed = ReactionInput.safeParse(input)
+  if (!parsed.success || !parsed.data.taskId) {
+    return { error: 'Invalid input.' }
+  }
+  const member = await getCurrentTeamMember()
+  if (!member) return { error: 'Not signed in.' }
+  const supabase = createAdminClient()
+
+  const { data: task } = await supabase
+    .from('tasks')
+    .select('id, company_id, deleted_at')
+    .eq('id', parsed.data.taskId)
+    .maybeSingle()
+  if (!task || task.company_id !== member.companyId) {
+    return { error: 'Task not found.' }
+  }
+  if (task.deleted_at) return { error: 'Task is deleted.' }
+
+  const { data: existing } = await supabase
+    .from('task_reactions')
+    .select('id')
+    .eq('task_id', parsed.data.taskId)
+    .eq('member_id', member.id)
+    .eq('emoji', parsed.data.emoji)
+    .maybeSingle()
+
+  if (existing) {
+    await supabase
+      .from('task_reactions')
+      .delete()
+      .eq('id', existing.id)
+    revalidatePath('/dashboard')
+    return { ok: true as const, added: false }
+  }
+
+  await supabase.from('task_reactions').insert({
+    task_id: parsed.data.taskId,
+    member_id: member.id,
+    emoji: parsed.data.emoji
+  })
+  revalidatePath('/dashboard')
+  return { ok: true as const, added: true }
 }

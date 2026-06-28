@@ -22,16 +22,23 @@ import {
   FileText,
   Loader2,
   Pencil,
+  Play,
   Plus,
+  RefreshCw,
+  Square,
   Trash2,
   X
 } from 'lucide-react'
 import type { BoardTask, Sprint, SprintStatus } from './boardData'
 import {
   addTaskToSprint,
+  bulkMoveTasksToSprint,
   createSprint,
   deleteSprint,
+  endSprint,
+  listProjectSprintsForMove,
   removeTaskFromSprint,
+  startSprint,
   updateSprint
 } from '../actions'
 import { useDashTheme } from './theme'
@@ -54,6 +61,9 @@ interface SprintsPanelProps {
   // the background; on error we restore from the snapshot.
   setSprints: React.Dispatch<React.SetStateAction<Sprint[]>>
   tasks: BoardTask[]
+  // Other (non-archived) projects visible to the viewer. Used by the
+  // bulk-move picker as destination project options.
+  otherProjects: { id: string; name: string }[]
   accessTier: 'admin' | 'lead' | 'member'
   onOpenTask: (taskId: string) => void
   // Optional per-sprint copy-button factory. DashboardShell owns the export
@@ -119,6 +129,7 @@ export default function SprintsPanel({
   sprints,
   setSprints,
   tasks,
+  otherProjects,
   accessTier,
   onOpenTask,
   renderSprintCopySlot
@@ -175,25 +186,55 @@ export default function SprintsPanel({
 
   const handleCreate = (input: {
     name: string
+    goal: string
     description: string
     docUrl: string
     fromDate: string
     toDate: string
-    status: SprintStatus
   }) => {
     startTransition(async () => {
       const res = await createSprint({
         projectId,
         name: input.name,
+        goal: input.goal.trim() || null,
         description: input.description.trim() || null,
         docUrl: input.docUrl.trim() || null,
         fromDate: input.fromDate,
-        toDate: input.toDate,
-        status: input.status
+        toDate: input.toDate
       })
       if ('error' in res) {
         toast.error(res.error)
         return
+      }
+      if (res.sprint) {
+        const row = res.sprint
+        const optimistic: Sprint = {
+          id: row.id,
+          projectId: row.project_id,
+          number: row.number,
+          name: row.name,
+          goal: row.goal,
+          description: row.description,
+          docUrl: row.doc_url,
+          status: row.status,
+          from: row.from_date,
+          to: row.to_date,
+          fromIso: row.from_date,
+          toIso: row.to_date,
+          startedAtIso: row.started_at,
+          closedAtIso: row.closed_at,
+          shippedCount: row.shipped_count,
+          carriedCount: row.carried_count,
+          scope: 0,
+          startedCount: 0,
+          startedPct: 0,
+          completedCount: 0,
+          completedPct: 0,
+          percent: 0,
+          taskIds: [],
+          carryCountByTaskId: {}
+        }
+        setSprints((prev) => [...prev, optimistic])
       }
       toast.success('Sprint created.')
       setShowNew(false)
@@ -205,29 +246,122 @@ export default function SprintsPanel({
     sprintId: string,
     input: {
       name: string
+      goal: string
       description: string
       docUrl: string
       fromDate: string
       toDate: string
-      status: SprintStatus
     }
   ) => {
+    const patch = {
+      name: input.name,
+      goal: input.goal.trim() || null,
+      description: input.description.trim() || null,
+      docUrl: input.docUrl.trim() || null,
+      fromIso: input.fromDate,
+      toIso: input.toDate,
+      from: input.fromDate,
+      to: input.toDate
+    }
+    setSprints((prev) =>
+      prev.map((s) => (s.id === sprintId ? { ...s, ...patch } : s))
+    )
+    setEditingId(null)
     startTransition(async () => {
       const res = await updateSprint({
         sprintId,
         name: input.name,
+        goal: input.goal.trim() || null,
         description: input.description.trim() || null,
         docUrl: input.docUrl.trim() || null,
         fromDate: input.fromDate,
-        toDate: input.toDate,
-        status: input.status
+        toDate: input.toDate
       })
+      if ('error' in res) {
+        toast.error(res.error)
+        refreshDashboard()
+        return
+      }
+      toast.success('Sprint updated.')
+      refreshDashboard()
+    })
+  }
+
+  const [pendingStartId, setPendingStartId] = useState<string | null>(null)
+  const [pendingEnd, setPendingEnd] = useState<Sprint | null>(null)
+  const [endGoalMet, setEndGoalMet] = useState(true)
+
+  const handleStart = (sprint: Sprint) => {
+    setPendingStartId(sprint.id)
+    startTransition(async () => {
+      const res = await startSprint(sprint.id)
+      setPendingStartId(null)
       if ('error' in res) {
         toast.error(res.error)
         return
       }
-      toast.success('Sprint updated.')
-      setEditingId(null)
+      toast.success(`Sprint ${sprint.number} started.`)
+      refreshDashboard()
+    })
+  }
+
+  const handleBulkMove = (input: {
+    taskIds: string[]
+    targetProjectId: string
+    targetSprintId: string | null
+  }): Promise<{ ok: boolean; moved: number; errors: number }> => {
+    const moving = new Set(input.taskIds)
+    setSprints((prev) =>
+      prev.map((s) =>
+        s.taskIds.some((id) => moving.has(id))
+          ? recomputeSprintCounts(
+              s,
+              s.taskIds.filter((id) => !moving.has(id)),
+              tasks
+            )
+          : s
+      )
+    )
+    return new Promise((resolve) => {
+      startTransition(async () => {
+        const res = await bulkMoveTasksToSprint(input)
+        if ('error' in res) {
+          toast.error(res.error)
+          refreshDashboard()
+          resolve({ ok: false, moved: 0, errors: input.taskIds.length })
+          return
+        }
+        const errorCount = res.errors.length
+        if (errorCount > 0) {
+          toast.warning(
+            `Moved ${res.moved} task${res.moved === 1 ? '' : 's'}, ${errorCount} failed.`
+          )
+        } else {
+          toast.success(
+            `Moved ${res.moved} task${res.moved === 1 ? '' : 's'}.`
+          )
+        }
+        refreshDashboard()
+        resolve({ ok: true, moved: res.moved, errors: errorCount })
+      })
+    })
+  }
+
+  const confirmEnd = () => {
+    if (!pendingEnd) return
+    const target = pendingEnd
+    const goalMet = endGoalMet
+    startTransition(async () => {
+      const res = await endSprint({ sprintId: target.id, goalMet })
+      if ('error' in res) {
+        toast.error(res.error)
+        return
+      }
+      toast.success(
+        `Sprint ${target.number} ended - ${res.shipped} shipped, ${res.carried} carried.`
+      )
+      setPendingEnd(null)
+      setEndGoalMet(true)
       refreshDashboard()
     })
   }
@@ -235,14 +369,16 @@ export default function SprintsPanel({
   const confirmDelete = () => {
     if (!pendingDelete) return
     const target = pendingDelete
+    setSprints((prev) => prev.filter((s) => s.id !== target.id))
+    setPendingDelete(null)
     startTransition(async () => {
       const res = await deleteSprint(target.id)
       if ('error' in res) {
         toast.error(res.error)
+        refreshDashboard()
         return
       }
       toast.success('Sprint deleted.')
-      setPendingDelete(null)
       refreshDashboard()
     })
   }
@@ -348,11 +484,11 @@ export default function SprintsPanel({
             <SprintForm
               initial={{
                 name: '',
+                goal: '',
                 description: '',
                 docUrl: '',
                 fromDate: todayIso(),
-                toDate: addDaysIso(todayIso(), 13),
-                status: 'upcoming'
+                toDate: addDaysIso(todayIso(), 6)
               }}
               submitLabel="Create sprint"
               submitting={pending}
@@ -372,7 +508,7 @@ export default function SprintsPanel({
                 <AlertDialogTitle>Delete this sprint?</AlertDialogTitle>
                 <AlertDialogDescription>
                   {pendingDelete
-                    ? `"${pendingDelete.name}" will be removed. Its tasks stay in the project — they just go back to Unscheduled.`
+                    ? `"${pendingDelete.name}" will be removed. Its tasks stay in the project - they just go back to Unscheduled.`
                     : ''}
                 </AlertDialogDescription>
               </AlertDialogHeader>
@@ -387,6 +523,77 @@ export default function SprintsPanel({
                   }}
                 >
                   {pending ? 'Deleting…' : 'Delete'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          <AlertDialog
+            open={pendingEnd !== null}
+            onOpenChange={(open) => {
+              if (!open && !pending) {
+                setPendingEnd(null)
+                setEndGoalMet(true)
+              }
+            }}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>End this sprint?</AlertDialogTitle>
+                <AlertDialogDescription asChild>
+                  <div className="flex flex-col gap-2 text-sm">
+                    {pendingEnd ? (
+                      <>
+                        <div>
+                          <span className="font-medium">{pendingEnd.name}</span>{' '}
+                          will be marked completed. Unfinished tasks roll into the
+                          next sprint with a <em>Carried</em> badge.
+                        </div>
+                        <div className="rounded-md border border-zinc-200 bg-zinc-50 p-2 text-xs dark:border-white/10 dark:bg-white/5">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className="size-3.5 text-emerald-500" />
+                            <span>{pendingEnd.completedCount} done · will be archived to this sprint card</span>
+                          </div>
+                          <div className="mt-1 flex items-center gap-2">
+                            <RefreshCw className="size-3.5 text-rose-500" />
+                            <span>
+                              {Math.max(
+                                0,
+                                pendingEnd.scope - pendingEnd.completedCount
+                              )}{' '}
+                              carry to the next sprint
+                            </span>
+                          </div>
+                        </div>
+                        {pendingEnd.goal && (
+                          <label className="mt-1 flex items-center gap-2 text-xs">
+                            <input
+                              type="checkbox"
+                              checked={endGoalMet}
+                              onChange={(e) => setEndGoalMet(e.target.checked)}
+                              disabled={pending}
+                            />
+                            <span>
+                              Goal met:{' '}
+                              <span className="italic">{pendingEnd.goal}</span>
+                            </span>
+                          </label>
+                        )}
+                      </>
+                    ) : null}
+                  </div>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  disabled={pending}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    confirmEnd()
+                  }}
+                >
+                  {pending ? 'Ending…' : 'End sprint'}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -418,14 +625,22 @@ export default function SprintsPanel({
                       canEdit={canEdit}
                       isEditing={editingId === sprint.id}
                       submitting={pending}
+                      starting={pendingStartId === sprint.id}
+                      otherProjects={otherProjects}
                       onStartEdit={() => setEditingId(sprint.id)}
                       onCancelEdit={() => setEditingId(null)}
                       onSave={(input) => handleUpdate(sprint.id, input)}
                       onDelete={() => setPendingDelete(sprint)}
+                      onStart={() => handleStart(sprint)}
+                      onEnd={() => {
+                        setEndGoalMet(true)
+                        setPendingEnd(sprint)
+                      }}
                       onOpenTask={onOpenTask}
                       onRemoveTask={(taskId) =>
                         handleRemoveTask(sprint.id, taskId)
                       }
+                      onBulkMove={handleBulkMove}
                       copySlot={renderSprintCopySlot?.(sprint.id)}
                     />
                   )
@@ -459,18 +674,32 @@ export default function SprintsPanel({
   )
 }
 
+type ProjectSprintForMove = {
+  id: string
+  name: string
+  number: number
+  status: 'upcoming' | 'current' | 'completed'
+  fromIso: string
+  toIso: string
+}
+
 function SprintCard({
   sprint,
   tasksInSprint,
   canEdit,
   isEditing,
   submitting,
+  starting,
+  otherProjects,
   onStartEdit,
   onCancelEdit,
   onSave,
   onDelete,
+  onStart,
+  onEnd,
   onOpenTask,
   onRemoveTask,
+  onBulkMove,
   copySlot
 }: {
   sprint: Sprint
@@ -478,19 +707,28 @@ function SprintCard({
   canEdit: boolean
   isEditing: boolean
   submitting: boolean
+  starting: boolean
+  otherProjects: { id: string; name: string }[]
   onStartEdit: () => void
   onCancelEdit: () => void
   onSave: (input: {
     name: string
+    goal: string
     description: string
     docUrl: string
     fromDate: string
     toDate: string
-    status: SprintStatus
   }) => void
   onDelete: () => void
+  onStart: () => void
+  onEnd: () => void
   onOpenTask: (id: string) => void
   onRemoveTask: (taskId: string) => void
+  onBulkMove: (input: {
+    taskIds: string[]
+    targetProjectId: string
+    targetSprintId: string | null
+  }) => Promise<{ ok: boolean; moved: number; errors: number }>
   copySlot?: React.ReactNode
 }) {
   const { t } = useDashTheme()
@@ -499,16 +737,70 @@ function SprintCard({
   const meta = STATUS_META[sprint.status]
   const Icon = meta.icon
 
+  const [selectMode, setSelectMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [moveTargetProjectId, setMoveTargetProjectId] = useState<string>('')
+  const [moveTargetSprintId, setMoveTargetSprintId] = useState<string>('')
+  const [moveTargetSprints, setMoveTargetSprints] = useState<
+    ProjectSprintForMove[]
+  >([])
+  const [sprintsLoading, setSprintsLoading] = useState(false)
+  const [movePending, setMovePending] = useState(false)
+
+  const toggleTaskSelected = (taskId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(taskId)) next.delete(taskId)
+      else next.add(taskId)
+      return next
+    })
+  }
+
+  const exitSelectMode = () => {
+    setSelectMode(false)
+    setSelectedIds(new Set())
+    setMoveTargetProjectId('')
+    setMoveTargetSprintId('')
+    setMoveTargetSprints([])
+  }
+
+  const handleProjectPicked = async (pid: string) => {
+    setMoveTargetProjectId(pid)
+    setMoveTargetSprintId('')
+    setMoveTargetSprints([])
+    if (!pid) return
+    setSprintsLoading(true)
+    const res = await listProjectSprintsForMove({ projectId: pid })
+    setSprintsLoading(false)
+    if ('error' in res) {
+      toast.error(res.error)
+      return
+    }
+    setMoveTargetSprints(res.sprints)
+  }
+
+  const handleMove = async () => {
+    if (!moveTargetProjectId || selectedIds.size === 0) return
+    setMovePending(true)
+    const result = await onBulkMove({
+      taskIds: [...selectedIds],
+      targetProjectId: moveTargetProjectId,
+      targetSprintId: moveTargetSprintId || null
+    })
+    setMovePending(false)
+    if (result.ok && result.errors === 0) exitSelectMode()
+  }
+
   if (isEditing && canEdit) {
     return (
       <SprintForm
         initial={{
           name: sprint.name,
+          goal: sprint.goal ?? '',
           description: sprint.description ?? '',
           docUrl: sprint.docUrl ?? '',
           fromDate: sprint.fromIso,
-          toDate: sprint.toIso,
-          status: sprint.status
+          toDate: sprint.toIso
         }}
         submitLabel="Save"
         submitting={submitting}
@@ -543,10 +835,33 @@ function SprintCard({
             </span>
           </div>
           <h3 className={`text-sm font-medium ${t.text}`}>{sprint.name}</h3>
-          {sprint.description && (
-            <p className={`text-xs leading-relaxed ${t.textMuted}`}>
-              {sprint.description}
+          {sprint.goal && (
+            <p className={`text-[11px] leading-snug ${t.textMuted}`}>
+              {sprint.goal}
             </p>
+          )}
+          {sprint.description && (
+            <details className={`text-[11px] ${t.textMuted}`}>
+              <summary
+                className={`cursor-pointer list-none text-[10px] tracking-wider uppercase ${t.textSubtle} hover:opacity-80 [&::-webkit-details-marker]:hidden`}
+              >
+                Definition of Done <span className="opacity-60">(click to expand)</span>
+              </summary>
+              <p
+                className={`mt-1.5 leading-snug whitespace-pre-line ${t.textMuted}`}
+              >
+                {sprint.description}
+              </p>
+            </details>
+          )}
+          {sprint.status === 'completed' && (
+            <div className={`mt-1 flex items-center gap-2 text-[11px] ${t.textMuted}`}>
+              <CheckCircle2 className="size-3 text-emerald-500" />
+              <span>
+                Shipped: {sprint.shippedCount ?? sprint.completedCount} · Carried:{' '}
+                {sprint.carriedCount ?? 0}
+              </span>
+            </div>
           )}
           <div
             className={`mt-1 flex items-center gap-1.5 text-[11px] ${t.textMuted}`}
@@ -574,6 +889,44 @@ function SprintCard({
             </a>
           )}
           {copySlot}
+          {canEdit && sprint.status === 'upcoming' && (
+            <button
+              onClick={onStart}
+              disabled={submitting}
+              className={`flex h-7 items-center gap-1.5 rounded-md border px-2 text-[11px] transition disabled:opacity-50 ${t.accent}`}
+            >
+              {starting ? (
+                <Loader2 className="size-3 animate-spin" />
+              ) : (
+                <Play className="size-3" />
+              )}
+              Start sprint
+            </button>
+          )}
+          {canEdit && sprint.status === 'current' && (
+            <button
+              onClick={onEnd}
+              disabled={submitting}
+              className={`flex h-7 items-center gap-1.5 rounded-md border px-2 text-[11px] transition disabled:opacity-50 ${t.btn}`}
+            >
+              <Square className="size-3" />
+              End sprint
+            </button>
+          )}
+          {canEdit && tasksInSprint.length > 0 && otherProjects.length > 0 && (
+            <button
+              onClick={() =>
+                selectMode ? exitSelectMode() : setSelectMode(true)
+              }
+              disabled={submitting}
+              className={`flex h-7 items-center gap-1.5 rounded-md border px-2 text-[11px] transition disabled:opacity-50 ${
+                selectMode ? t.tabActive : t.btn
+              }`}
+            >
+              <CheckCircle2 className="size-3" />
+              {selectMode ? 'Cancel select' : 'Select'}
+            </button>
+          )}
           {canEdit && (
             <>
               <button
@@ -628,33 +981,61 @@ function SprintCard({
               : 'Drop a task here to scope it into this sprint'}
           </li>
         ) : (
-          tasksInSprint.map((task) => (
-            <li
-              key={task.id}
-              className={`group flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs ${t.column}`}
-            >
-              <button
-                onClick={() => onOpenTask(task.id)}
-                className="flex min-w-0 flex-1 items-center gap-2 text-left"
+          tasksInSprint.map((task) => {
+            const carryCount = sprint.carryCountByTaskId[task.id] ?? 0
+            const checked = selectedIds.has(task.id)
+            return (
+              <li
+                key={task.id}
+                className={`group flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs ${t.column} ${
+                  selectMode && checked
+                    ? 'ring-2 ring-teal-500/40'
+                    : ''
+                }`}
               >
-                <span
-                  className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] tracking-wider tabular-nums ${t.metaTag}`}
-                >
-                  {task.ref}
-                </span>
-                <span className={`truncate ${t.text}`}>{task.title}</span>
-              </button>
-              {canEdit && (
+                {selectMode && (
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleTaskSelected(task.id)}
+                    className="size-3.5 shrink-0 accent-teal-500"
+                    aria-label={`Select ${task.ref}`}
+                  />
+                )}
                 <button
-                  onClick={() => onRemoveTask(task.id)}
-                  className={`flex size-5 items-center justify-center rounded opacity-0 transition group-hover:opacity-100 ${t.tab}`}
-                  aria-label="Remove from sprint"
+                  onClick={() =>
+                    selectMode ? toggleTaskSelected(task.id) : onOpenTask(task.id)
+                  }
+                  className="flex min-w-0 flex-1 items-center gap-2 text-left"
                 >
-                  <X className="size-3" />
+                  <span
+                    className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] tracking-wider tabular-nums ${t.metaTag}`}
+                  >
+                    {task.ref}
+                  </span>
+                  <span className={`truncate ${t.text}`}>{task.title}</span>
+                  {carryCount > 0 && (
+                    <span
+                      title={`Carried ${carryCount} time${carryCount === 1 ? '' : 's'} from previous sprints`}
+                      className="inline-flex shrink-0 items-center gap-1 rounded border border-rose-300 bg-rose-100 px-1.5 py-0.5 text-[9px] font-medium text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300"
+                    >
+                      <RefreshCw className="size-2.5" />
+                      Carried {carryCount}x
+                    </span>
+                  )}
                 </button>
-              )}
-            </li>
-          ))
+                {canEdit && !selectMode && (
+                  <button
+                    onClick={() => onRemoveTask(task.id)}
+                    className={`flex size-5 items-center justify-center rounded opacity-0 transition group-hover:opacity-100 ${t.tab}`}
+                    aria-label="Remove from sprint"
+                  >
+                    <X className="size-3" />
+                  </button>
+                )}
+              </li>
+            )
+          })
         )}
         {tasksInSprint.length > 0 && isOver && (
           <li
@@ -664,6 +1045,112 @@ function SprintCard({
           </li>
         )}
       </ul>
+
+      {selectMode && (
+        <div
+          className={`flex flex-col gap-2 rounded-md border-2 border-dashed p-3 ${t.surfaceMuted} border-teal-400/60`}
+        >
+          <div className="flex items-center justify-between">
+            <span className={`text-[11px] font-medium ${t.text}`}>
+              {selectedIds.size === 0
+                ? 'Pick tasks to move...'
+                : `${selectedIds.size} task${selectedIds.size === 1 ? '' : 's'} selected`}
+            </span>
+            {tasksInSprint.length > 0 && (
+              <button
+                onClick={() => {
+                  if (selectedIds.size === tasksInSprint.length) {
+                    setSelectedIds(new Set())
+                  } else {
+                    setSelectedIds(new Set(tasksInSprint.map((t) => t.id)))
+                  }
+                }}
+                className={`text-[10px] underline ${t.textMuted}`}
+              >
+                {selectedIds.size === tasksInSprint.length
+                  ? 'Clear all'
+                  : 'Select all'}
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <label className="flex flex-col gap-1">
+              <span
+                className={`text-[10px] tracking-wider uppercase ${t.textMuted}`}
+              >
+                To project
+              </span>
+              <select
+                value={moveTargetProjectId}
+                onChange={(e) => handleProjectPicked(e.target.value)}
+                disabled={movePending || selectedIds.size === 0}
+                className={`h-9 rounded-md border px-2 text-xs ${t.input}`}
+              >
+                <option value="">Pick a project...</option>
+                {otherProjects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1">
+              <span
+                className={`text-[10px] tracking-wider uppercase ${t.textMuted}`}
+              >
+                Into sprint
+              </span>
+              <select
+                value={moveTargetSprintId}
+                onChange={(e) => setMoveTargetSprintId(e.target.value)}
+                disabled={
+                  movePending ||
+                  !moveTargetProjectId ||
+                  sprintsLoading
+                }
+                className={`h-9 rounded-md border px-2 text-xs ${t.input}`}
+              >
+                <option value="">
+                  {sprintsLoading
+                    ? 'Loading...'
+                    : moveTargetSprints.length === 0 && moveTargetProjectId
+                      ? 'No open sprints - leave Unscheduled'
+                      : 'Unscheduled (no sprint)'}
+                </option>
+                {moveTargetSprints.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({s.status})
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={exitSelectMode}
+              disabled={movePending}
+              className={`h-8 rounded-md border px-3 text-xs ${t.btn}`}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleMove}
+              disabled={
+                movePending ||
+                selectedIds.size === 0 ||
+                !moveTargetProjectId
+              }
+              className={`h-8 rounded-md px-3 text-xs disabled:opacity-50 ${t.accent}`}
+            >
+              {movePending
+                ? 'Moving...'
+                : `Move ${selectedIds.size || ''}`.trim()}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -765,31 +1252,31 @@ function SprintForm({
 }: {
   initial: {
     name: string
+    goal: string
     description: string
     docUrl: string
     fromDate: string
     toDate: string
-    status: SprintStatus
   }
   submitLabel: string
   submitting: boolean
   onSubmit: (input: {
     name: string
+    goal: string
     description: string
     docUrl: string
     fromDate: string
     toDate: string
-    status: SprintStatus
   }) => void
   onCancel: () => void
 }) {
   const { t } = useDashTheme()
   const [name, setName] = useState(initial.name)
+  const [goal, setGoal] = useState(initial.goal)
   const [description, setDescription] = useState(initial.description)
   const [docUrl, setDocUrl] = useState(initial.docUrl)
   const [fromDate, setFromDate] = useState(initial.fromDate)
   const [toDate, setToDate] = useState(initial.toDate)
-  const [status, setStatus] = useState<SprintStatus>(initial.status)
 
   const canSubmit = name.trim().length >= 2 && fromDate <= toDate
 
@@ -800,11 +1287,11 @@ function SprintForm({
         if (!canSubmit) return
         onSubmit({
           name: name.trim(),
+          goal,
           description,
           docUrl,
           fromDate,
-          toDate,
-          status
+          toDate
         })
       }}
       className={`flex flex-col gap-3 rounded-xl border p-4 ${t.column}`}
@@ -829,16 +1316,24 @@ function SprintForm({
         autoFocus
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="Sprint name (e.g. Sprint 1 — Supabase Audit)"
+        placeholder="Sprint name (e.g. Sprint 1)"
         className={`h-9 rounded-md border px-3 text-sm ${t.input}`}
         maxLength={80}
         required
       />
 
+      <input
+        value={goal}
+        onChange={(e) => setGoal(e.target.value)}
+        placeholder="Goal (one sentence: what should this sprint ship?)"
+        className={`h-9 rounded-md border px-3 text-sm ${t.input}`}
+        maxLength={200}
+      />
+
       <textarea
         value={description}
         onChange={(e) => setDescription(e.target.value)}
-        placeholder="Definition of Done — what does this phase deliver?"
+        placeholder="Definition of Done - longer notes (optional)"
         className={`min-h-20 resize-none rounded-md border px-3 py-2 text-xs ${t.input}`}
         maxLength={1000}
       />
@@ -856,7 +1351,7 @@ function SprintForm({
         />
       </label>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <label className="flex flex-col gap-1">
           <span
             className={`text-[10px] tracking-wider uppercase ${t.textMuted}`}
@@ -885,22 +1380,6 @@ function SprintForm({
             className={`h-9 rounded-md border px-2 text-xs ${t.input}`}
             required
           />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span
-            className={`text-[10px] tracking-wider uppercase ${t.textMuted}`}
-          >
-            Status
-          </span>
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value as SprintStatus)}
-            className={`h-9 rounded-md border px-2 text-xs ${t.input}`}
-          >
-            <option value="upcoming">Upcoming</option>
-            <option value="current">Current</option>
-            <option value="completed">Completed</option>
-          </select>
         </label>
       </div>
 

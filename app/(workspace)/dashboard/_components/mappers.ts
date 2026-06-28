@@ -168,12 +168,17 @@ type DashSprint = {
   projectId: string;
   number: number;
   name: string;
+  goal: string | null;
   description: string | null;
   docUrl: string | null;
   status: "completed" | "current" | "upcoming";
   fromDate: Date | string;
   toDate: Date | string;
-  tasks: { taskId: string }[];
+  startedAt: Date | string | null;
+  closedAt: Date | string | null;
+  shippedCount: number | null;
+  carriedCount: number | null;
+  tasks: { taskId: string; carryCount: number }[];
 };
 
 function toIsoDate(d: Date | string): string {
@@ -181,8 +186,18 @@ function toIsoDate(d: Date | string): string {
   return date.toISOString().slice(0, 10);
 }
 
+function toIsoStringOrNull(d: Date | string | null): string | null {
+  if (d === null) return null;
+  const date = d instanceof Date ? d : new Date(d);
+  return date.toISOString();
+}
+
 export function mapSprint(sprint: DashSprint, allTasks: BoardTask[]): Sprint {
   const taskIds = sprint.tasks.map((t) => t.taskId);
+  const carryCountByTaskId: Record<string, number> = {};
+  for (const t of sprint.tasks) {
+    carryCountByTaskId[t.taskId] = t.carryCount ?? 0;
+  }
   const sprintTasks = allTasks.filter((t) => taskIds.includes(t.id));
   const scope = sprintTasks.length;
   const startedCount = sprintTasks.filter(
@@ -195,6 +210,7 @@ export function mapSprint(sprint: DashSprint, allTasks: BoardTask[]): Sprint {
     projectId: sprint.projectId,
     number: sprint.number,
     name: sprint.name,
+    goal: sprint.goal,
     description: sprint.description,
     docUrl: sprint.docUrl,
     status: sprint.status,
@@ -202,6 +218,10 @@ export function mapSprint(sprint: DashSprint, allTasks: BoardTask[]): Sprint {
     to: formatDueDate(sprint.toDate as Date) ?? "",
     fromIso: toIsoDate(sprint.fromDate),
     toIso: toIsoDate(sprint.toDate),
+    startedAtIso: toIsoStringOrNull(sprint.startedAt),
+    closedAtIso: toIsoStringOrNull(sprint.closedAt),
+    shippedCount: sprint.shippedCount,
+    carriedCount: sprint.carriedCount,
     scope,
     startedCount,
     startedPct: scope ? Math.round((startedCount / scope) * 100) : 0,
@@ -209,6 +229,7 @@ export function mapSprint(sprint: DashSprint, allTasks: BoardTask[]): Sprint {
     completedPct: scope ? Math.round((completedCount / scope) * 100) : 0,
     percent: scope ? Math.round((completedCount / scope) * 100) : 0,
     taskIds,
+    carryCountByTaskId,
   };
 }
 
@@ -289,6 +310,7 @@ function activityKindFor(action: string): TaskActivity["kind"] {
   if (action === "task.assignee_changed") return "assignee";
   if (action === "task.lead_changed") return "assignee";
   if (action === "task.attachment_added") return "attachment";
+  if (action === "task.due_soon") return "due-soon";
   return "status";
 }
 
@@ -354,11 +376,25 @@ function activityTextFor(row: DbActivity): string {
       if (!tags || tags.length === 0) return `${who} cleared the tags`;
       return `${who} set tags to ${tags.join(", ")}`;
     }
+    case "task.attachment_added": {
+      const name =
+        typeof meta?.fileName === "string" ? (meta.fileName as string) : null;
+      return name
+        ? `${who} added an image (${name})`
+        : `${who} added an image`;
+    }
+    case "task.attachment_removed":
+      return `${who} removed an image`;
     case "task.due_changed": {
       if (from != null && to != null) return `${who} changed the due date`;
       if (to != null) return `${who} set a due date`;
       if (from != null) return `${who} cleared the due date`;
       return `${who} changed the due date`;
+    }
+    case "task.due_soon": {
+      const ref = typeof meta?.task_ref === "string" ? meta.task_ref : null;
+      const refPart = ref ? `${ref} ` : "";
+      return `Heads up: ${refPart}is due tomorrow`;
     }
     case "comment.added":
       return `${who} left a comment`;
@@ -565,6 +601,93 @@ export interface TaskDeletionUpdate {
   taskId: string | null;
   taskRef: string | null;
   taskTitle: string | null;
+}
+
+export interface SprintUpdate {
+  id: string;
+  kind: "sprint";
+  action: "sprint.started" | "sprint.ended";
+  text: string;
+  at: string;
+  atRaw: string;
+  sprintId: string | null;
+  projectId: string | null;
+  sprintNumber: number | null;
+  goal: string | null;
+  goalMet: boolean | null;
+  shippedCount: number | null;
+  carriedCount: number | null;
+}
+
+export function mapSprintActivity(activity: DbActivity[]): SprintUpdate[] {
+  return activity.map((a) => {
+    const created =
+      a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+    const meta = (a.metadata as Record<string, unknown> | null) ?? null;
+    const who = a.actor?.fullName ?? "Someone";
+    const sprintNumber =
+      meta && typeof meta.sprint_number === "number"
+        ? (meta.sprint_number as number)
+        : null;
+    const sprintLabel =
+      sprintNumber !== null ? `Sprint ${sprintNumber}` : "a sprint";
+    const goal =
+      meta && typeof meta.goal === "string" && meta.goal
+        ? (meta.goal as string)
+        : null;
+    const projectId =
+      meta && typeof meta.project_id === "string"
+        ? (meta.project_id as string)
+        : null;
+    let text: string;
+    const goalMet =
+      meta && typeof meta.goal_met === "boolean"
+        ? (meta.goal_met as boolean)
+        : null;
+    const shippedCount =
+      meta && typeof meta.shipped_count === "number"
+        ? (meta.shipped_count as number)
+        : null;
+    const carriedCount =
+      meta && typeof meta.carried_count === "number"
+        ? (meta.carried_count as number)
+        : null;
+    if (a.action === "sprint.started") {
+      const goalPart = goal ? ` - goal: ${goal}` : "";
+      text = `${who} started ${sprintLabel}${goalPart}`;
+    } else {
+      const parts: string[] = [];
+      if (shippedCount !== null) parts.push(`${shippedCount} shipped`);
+      if (carriedCount !== null && carriedCount > 0)
+        parts.push(`${carriedCount} carried`);
+      const stats = parts.length ? ` - ${parts.join(", ")}` : "";
+      const goalPart = goal
+        ? goalMet === null
+          ? ` (Goal: ${goal})`
+          : goalMet
+            ? ` (Goal met)`
+            : ` (Goal not met)`
+        : "";
+      text = `${who} ended ${sprintLabel}${stats}${goalPart}`;
+    }
+    return {
+      id: a.id,
+      kind: "sprint" as const,
+      action: (a.action === "sprint.ended" ? "sprint.ended" : "sprint.started") as
+        | "sprint.started"
+        | "sprint.ended",
+      text,
+      at: formatTimestamp(a.createdAt),
+      atRaw: created.toISOString(),
+      sprintId: a.entityId ?? null,
+      projectId,
+      sprintNumber,
+      goal,
+      goalMet,
+      shippedCount,
+      carriedCount,
+    };
+  });
 }
 
 export function mapTaskDeletionActivity(

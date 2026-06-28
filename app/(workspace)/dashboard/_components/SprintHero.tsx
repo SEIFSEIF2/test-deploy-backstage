@@ -1,6 +1,15 @@
 'use client'
 
-import { CalendarRange, FileText, Loader2, Pencil, Plus } from 'lucide-react'
+import {
+  CalendarRange,
+  CircleDashed,
+  FileText,
+  Focus,
+  Loader2,
+  Pencil,
+  Play,
+  Plus
+} from 'lucide-react'
 import type { Sprint } from './boardData'
 import { useDashTheme } from './theme'
 
@@ -14,15 +23,24 @@ interface SprintHeroProps {
   onPlan: () => void
   onEdit: () => void
   copySlot?: React.ReactNode
+  // When set, renders a "Focus" toggle that filters the board down to the
+  // current sprint's tasks. Driven by DashboardShell's boardSprintLens
+  // state so other views (List, Timeline) aren't affected.
+  lensActive?: boolean
+  onToggleLens?: () => void
+  // When provided AND the sprint is upcoming, renders a Start sprint
+  // button inline. DashboardShell wires this to the startSprint action.
+  onStart?: () => void
+  starting?: boolean
 }
 
-function daysLeft(toIso: string): number {
+function daysBetweenToday(iso: string): number {
   const now = new Date()
   const today = new Date(
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
   ).getTime()
-  const to = new Date(toIso + 'T00:00:00Z').getTime()
-  return Math.round((to - today) / 86400000)
+  const target = new Date(iso + 'T00:00:00Z').getTime()
+  return Math.round((target - today) / 86400000)
 }
 
 export default function SprintHero({
@@ -30,7 +48,11 @@ export default function SprintHero({
   canEdit,
   onPlan,
   onEdit,
-  copySlot
+  copySlot,
+  lensActive,
+  onToggleLens,
+  onStart,
+  starting
 }: SprintHeroProps) {
   const { t } = useDashTheme()
 
@@ -60,14 +82,44 @@ export default function SprintHero({
     )
   }
 
-  const left = daysLeft(sprint.toIso)
-  const leftLabel =
-    left < 0
-      ? `${Math.abs(left)}d overdue`
-      : left === 0
-        ? 'Ends today'
-        : `${left}d left`
-  const leftClass = left < 0 ? t.accentText : t.textMuted
+  const isUpcoming = sprint.status === 'upcoming'
+  const isCompleted = sprint.status === 'completed'
+  const badgeLabel = isUpcoming
+    ? 'Upcoming sprint'
+    : isCompleted
+      ? 'Completed sprint'
+      : 'Current sprint'
+  const BadgeIcon = isUpcoming
+    ? CircleDashed
+    : isCompleted
+      ? CalendarRange
+      : Loader2
+  const badgeIconClass = !isUpcoming && !isCompleted ? 'animate-spin' : ''
+
+  let leftLabel: string
+  let leftClass: string
+  if (isUpcoming) {
+    const startsIn = daysBetweenToday(sprint.fromIso)
+    leftLabel =
+      startsIn <= 0
+        ? 'Ready to start'
+        : startsIn === 1
+          ? 'Starts tomorrow'
+          : `Starts in ${startsIn}d`
+    leftClass = t.textMuted
+  } else if (isCompleted) {
+    leftLabel = 'Closed'
+    leftClass = t.textSubtle
+  } else {
+    const left = daysBetweenToday(sprint.toIso)
+    leftLabel =
+      left < 0
+        ? `${Math.abs(left)}d overdue`
+        : left === 0
+          ? 'Ends today'
+          : `${left}d left`
+    leftClass = left < 0 ? t.accentText : t.textMuted
+  }
 
   return (
     <div
@@ -80,8 +132,8 @@ export default function SprintHero({
             <span
               className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] font-medium tracking-wider uppercase ${t.metaTag}`}
             >
-              <Loader2 className="size-2.5 animate-spin" />
-              Current sprint
+              <BadgeIcon className={`size-2.5 ${badgeIconClass}`} />
+              {badgeLabel}
             </span>
             <span className={`text-[10px] tabular-nums ${t.textSubtle}`}>
               #{sprint.number}
@@ -92,14 +144,11 @@ export default function SprintHero({
           >
             {sprint.name}
           </h3>
-          {sprint.description && (
-            <p className={`text-[11px] leading-snug ${t.textMuted}`}>
-              <span
-                className={`mr-1 text-[9px] tracking-wider uppercase ${t.textSubtle}`}
-              >
-                DoD
-              </span>
-              {sprint.description}
+          {sprint.goal && (
+            <p
+              className={`line-clamp-2 text-[11px] leading-snug ${t.textMuted}`}
+            >
+              {sprint.goal}
             </p>
           )}
         </div>
@@ -118,6 +167,40 @@ export default function SprintHero({
             </a>
           )}
           {copySlot}
+          {isUpcoming && onStart && canEdit && (
+            <button
+              onClick={onStart}
+              disabled={starting}
+              className={`flex h-7 items-center gap-1 rounded-md px-2 text-[11px] transition disabled:opacity-50 ${t.accent}`}
+            >
+              {starting ? (
+                <Loader2 className="size-3 animate-spin" />
+              ) : (
+                <Play className="size-3" />
+              )}
+              <span className="hidden sm:inline">
+                {starting ? 'Starting...' : 'Start sprint'}
+              </span>
+            </button>
+          )}
+          {onToggleLens && (
+            <button
+              onClick={onToggleLens}
+              title={
+                lensActive
+                  ? 'Show all tasks'
+                  : "Focus the board on this sprint's tasks"
+              }
+              className={`flex h-7 items-center gap-1 rounded-md border px-2 text-[11px] transition ${
+                lensActive ? t.tabActive : t.btn
+              }`}
+            >
+              <Focus className="size-3" />
+              <span className="hidden sm:inline">
+                {lensActive ? 'Showing this sprint' : 'Focus sprint'}
+              </span>
+            </button>
+          )}
           {canEdit && (
             <button
               onClick={onEdit}

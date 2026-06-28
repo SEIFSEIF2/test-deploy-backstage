@@ -53,6 +53,10 @@ interface TopbarProps {
   // The parent (DashboardShell) owns the data, so the slot is a plain
   // ReactNode rather than a callback bag.
   copySlot?: React.ReactNode
+  // Slot for the "Sprint N · Xd left" pill. DashboardShell builds the link
+  // and the days-left math; Topbar just renders the node in a fixed spot
+  // visible across every dashboard view (not just the board).
+  sprintPillSlot?: React.ReactNode
   // Mobile-only hamburger handler. When provided, renders a Menu button
   // at the start of the topbar visible at <md that toggles the Sidebar
   // sheet. Omit on desktop-only contexts.
@@ -111,6 +115,7 @@ export default function Topbar({
   feedView,
   onFeedViewChange,
   copySlot,
+  sprintPillSlot,
   onOpenMobileNav,
   onOpenSearch
 }: TopbarProps) {
@@ -301,6 +306,9 @@ export default function Topbar({
       </div>
 
       <div className="flex items-center gap-1.5 sm:gap-2">
+        {sprintPillSlot && (
+          <div className="mr-1 hidden lg:block">{sprintPillSlot}</div>
+        )}
         <div className="mr-1 hidden items-center gap-1 xl:mr-2 xl:flex">
           <StatButton
             kind="open"

@@ -73,6 +73,7 @@ export interface Sprint {
   projectId: string
   number: number
   name: string
+  goal: string | null
   description: string | null
   docUrl: string | null
   status: SprintStatus
@@ -80,6 +81,10 @@ export interface Sprint {
   to: string
   fromIso: string
   toIso: string
+  startedAtIso: string | null
+  closedAtIso: string | null
+  shippedCount: number | null
+  carriedCount: number | null
   scope: number
   startedCount: number
   startedPct: number
@@ -87,6 +92,7 @@ export interface Sprint {
   completedPct: number
   percent: number
   taskIds: string[]
+  carryCountByTaskId: Record<string, number>
 }
 
 export type TaskExternalRefKind =

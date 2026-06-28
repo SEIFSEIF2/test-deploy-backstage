@@ -29,7 +29,14 @@ export interface TaskCommentLite {
 
 export interface TaskActivityLite {
   id: string
-  kind: 'status' | 'comment' | 'attachment' | 'created' | 'priority' | 'assignee'
+  kind:
+    | 'status'
+    | 'comment'
+    | 'attachment'
+    | 'created'
+    | 'priority'
+    | 'assignee'
+    | 'due-soon'
   text: string
   at: string
 }

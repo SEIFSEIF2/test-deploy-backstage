@@ -165,6 +165,16 @@ export interface DashboardInitial {
   allActiveProjects: { id: string; name: string }[]
   labels: { id: string; name: string }[]
   commentsByTask: Record<string, TaskComment[]>
+  // Emoji reactions, ungrouped (one row per (parent, member, emoji) triple).
+  // ReactionBar groups + dedupes client-side.
+  commentReactionsByComment: Record<
+    string,
+    { id: string; emoji: string; memberId: string; memberName: string | null }[]
+  >
+  taskReactionsByTask: Record<
+    string,
+    { id: string; emoji: string; memberId: string; memberName: string | null }[]
+  >
   activityByTask: Record<string, TaskActivity[]>
   // Team-management activity (presence flips, tier changes, etc).
   // Surface alongside task activity in the Updates panel.
@@ -208,6 +218,21 @@ export interface DashboardInitial {
     taskId: string | null
     taskRef: string | null
     taskTitle: string | null
+  }[]
+  sprintUpdates: {
+    id: string
+    kind: 'sprint'
+    action: 'sprint.started' | 'sprint.ended'
+    text: string
+    at: string
+    atRaw: string
+    sprintId: string | null
+    projectId: string | null
+    sprintNumber: number | null
+    goal: string | null
+    goalMet: boolean | null
+    shippedCount: number | null
+    carriedCount: number | null
   }[]
   externalRefsByTask: Record<string, TaskExternalRef[]>
   externalRefsByProject: Record<string, ProjectExternalRef[]>
@@ -612,6 +637,10 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
   const [attachments, setAttachments] = useState<
     Record<string, TaskAttachmentView[]>
   >(initial.attachmentsByTask)
+  const [commentReactions, setCommentReactions] = useState(
+    initial.commentReactionsByComment
+  )
+  const [taskReactions, setTaskReactions] = useState(initial.taskReactionsByTask)
 
   // Resync local state when the server hands us fresh data via router.refresh
   // (bulk create, "reset board", project switch). Per-mutation flows update
@@ -627,7 +656,25 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
     setSprints(initial.sprints)
     setExternalRefs(initial.externalRefsByTask)
     setProjectExternalRefs(initial.externalRefsByProject)
-    setAttachments(initial.attachmentsByTask)
+    // Merge attachments by id per task instead of replacing wholesale.
+    // A bulk image upload fires revalidatePath after each file, so a
+    // mid-bulk refetch could land with a stale snapshot (missing the
+    // last few). Union by id keeps optimistic adds visible until the
+    // server catches up.
+    setAttachments((prev) => {
+      const merged: typeof prev = { ...initial.attachmentsByTask }
+      for (const [taskId, prevList] of Object.entries(prev)) {
+        const serverList = merged[taskId] ?? []
+        const seen = new Set(serverList.map((a) => a.id))
+        const extras = prevList.filter((a) => !seen.has(a.id))
+        if (extras.length > 0) {
+          merged[taskId] = [...serverList, ...extras]
+        }
+      }
+      return merged
+    })
+    setCommentReactions(initial.commentReactionsByComment)
+    setTaskReactions(initial.taskReactionsByTask)
   }
 
   const handleAttachmentAdded = useCallback((a: TaskAttachmentView) => {
@@ -644,6 +691,23 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
           next[taskId] = list.filter((a) => a.id !== attachmentId)
         }
         return next
+      })
+    },
+    []
+  )
+  // Swap an optimistic temp attachment (id starting with 'local-') for the
+  // server-assigned row. Preserves position so the gallery doesn't jump.
+  const handleAttachmentSwap = useCallback(
+    (tempId: string, real: TaskAttachmentView) => {
+      setAttachments((prev) => {
+        const list = prev[real.taskId] ?? []
+        const idx = list.findIndex((a) => a.id === tempId)
+        if (idx === -1) {
+          return { ...prev, [real.taskId]: [...list, real] }
+        }
+        const next = [...list]
+        next[idx] = real
+        return { ...prev, [real.taskId]: next }
       })
     },
     []
@@ -895,6 +959,21 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
     return set
   }, [sprints])
 
+  // Board-level "Focus this sprint" toggle. Driven by SprintHero so the
+  // lens only affects the board view (List/Timeline keep their own filter
+  // semantics). The lens auto-no-ops when the in-scope project changes or
+  // has no current sprint - no reset effect needed.
+  const [boardSprintLens, setBoardSprintLens] = useState(false)
+  const boardSprintLensTaskIdSet = useMemo<Set<string> | null>(() => {
+    if (!boardSprintLens || !initial.currentProjectId) return null
+    const sprint = sprints.find(
+      (s) =>
+        s.projectId === initial.currentProjectId && s.status === 'current'
+    )
+    if (!sprint) return null
+    return new Set(sprint.taskIds)
+  }, [boardSprintLens, sprints, initial.currentProjectId])
+
   const filtered = useMemo(() => {
     let list = visibleTasks
 
@@ -945,6 +1024,11 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
       }
       list = list.filter((task) => allowed.has(task.id))
     }
+    // Board-only "Focus this sprint" lens. Applies on top of any other
+    // filters when toggled on via SprintHero.
+    if (boardSprintLensTaskIdSet && tab === 'board') {
+      list = list.filter((task) => boardSprintLensTaskIdSet.has(task.id))
+    }
     if (query.trim()) {
       const q = query.toLowerCase()
       list = list.filter(
@@ -968,7 +1052,9 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
     query,
     currentUserId,
     mentionedTaskIds,
-    activeSprintTaskIdSet
+    activeSprintTaskIdSet,
+    boardSprintLensTaskIdSet,
+    tab
   ])
 
   const counts = {
@@ -1350,6 +1436,66 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
       }
     })
   }
+
+  const toggleCommentReactionLocal = useCallback(
+    async (commentId: string, emoji: string) => {
+      const snapshot = commentReactions
+      const memberId = currentUserId
+      const list = commentReactions[commentId] ?? []
+      const existing = list.find(
+        (r) => r.memberId === memberId && r.emoji === emoji
+      )
+      const next = existing
+        ? list.filter((r) => r.id !== existing.id)
+        : [
+            ...list,
+            {
+              id: `temp-${Date.now()}`,
+              emoji,
+              memberId,
+              memberName: initial.currentMember.fullName
+            }
+          ]
+      setCommentReactions({ ...commentReactions, [commentId]: next })
+      const { toggleCommentReaction } = await import('../actions')
+      const res = await toggleCommentReaction({ commentId, emoji })
+      if ('error' in res) {
+        toast.error(res.error)
+        setCommentReactions(snapshot)
+      }
+    },
+    [commentReactions, currentUserId, initial.currentMember.fullName]
+  )
+
+  const toggleTaskReactionLocal = useCallback(
+    async (taskId: string, emoji: string) => {
+      const snapshot = taskReactions
+      const memberId = currentUserId
+      const list = taskReactions[taskId] ?? []
+      const existing = list.find(
+        (r) => r.memberId === memberId && r.emoji === emoji
+      )
+      const next = existing
+        ? list.filter((r) => r.id !== existing.id)
+        : [
+            ...list,
+            {
+              id: `temp-${Date.now()}`,
+              emoji,
+              memberId,
+              memberName: initial.currentMember.fullName
+            }
+          ]
+      setTaskReactions({ ...taskReactions, [taskId]: next })
+      const { toggleTaskReaction } = await import('../actions')
+      const res = await toggleTaskReaction({ taskId, emoji })
+      if ('error' in res) {
+        toast.error(res.error)
+        setTaskReactions(snapshot)
+      }
+    },
+    [taskReactions, currentUserId, initial.currentMember.fullName]
+  )
 
   const addComment = (id: string, body: string, mentions?: string[]) => {
     // Track the temp id so we can swap it for the server-assigned UUID
@@ -2129,11 +2275,24 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
       meetingId: null as string | null,
       meetingAction: null as string | null
     }))
+    const sprintRows = initial.sprintUpdates.map((r) => ({
+      id: r.id,
+      kind: r.kind,
+      text: r.text,
+      at: r.at,
+      atRaw: r.atRaw,
+      taskId: null as string | null,
+      taskRef: null as string | null,
+      taskTitle: null as string | null,
+      meetingId: null as string | null,
+      meetingAction: null as string | null
+    }))
     const all = [
       ...taskRows,
       ...teamRows,
       ...initial.meetingUpdates,
-      ...taskDeletionRows
+      ...taskDeletionRows,
+      ...sprintRows
     ]
     // Defense-in-depth: an activity_logs row should only land here once,
     // but if a query overlaps (e.g. task.restored visible via both the
@@ -2152,7 +2311,8 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
     liveTeamUpdates,
     initial.teamUpdates,
     initial.meetingUpdates,
-    initial.taskDeletionUpdates
+    initial.taskDeletionUpdates,
+    initial.sprintUpdates
   ])
 
   // Notification-style unread counter for the sidebar Updates entry.
@@ -3050,6 +3210,48 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
               }
               onOpenMobileNav={() => setMobileNavOpen(true)}
               onOpenSearch={() => setPaletteOpen(true)}
+              sprintPillSlot={(() => {
+                const currentSprint = initial.currentProjectId
+                  ? sprints.find(
+                      (s) =>
+                        s.projectId === initial.currentProjectId &&
+                        s.status === 'current'
+                    ) ?? null
+                  : null
+                if (!currentSprint) return null
+                const now = new Date()
+                const today = new Date(
+                  Date.UTC(
+                    now.getUTCFullYear(),
+                    now.getUTCMonth(),
+                    now.getUTCDate()
+                  )
+                ).getTime()
+                const to = new Date(
+                  currentSprint.toIso + 'T00:00:00Z'
+                ).getTime()
+                const left = Math.round((to - today) / 86400000)
+                const label =
+                  left < 0
+                    ? `${Math.abs(left)}d overdue`
+                    : left === 0
+                      ? 'Ends today'
+                      : `${left}d left`
+                return (
+                  <button
+                    onClick={() => setTab('sprints')}
+                    title={
+                      currentSprint.goal
+                        ? `Goal: ${currentSprint.goal}`
+                        : 'Open Sprints panel'
+                    }
+                    className="inline-flex h-7 items-center gap-1.5 rounded-md border border-teal-200 bg-teal-50 px-2 text-[11px] font-medium text-teal-700 transition hover:bg-teal-100 dark:border-teal-400/30 dark:bg-teal-400/10 dark:text-teal-300 dark:hover:bg-teal-400/20"
+                  >
+                    <span className="size-1.5 animate-pulse rounded-full bg-teal-500" />
+                    Sprint {currentSprint.number} · {label}
+                  </button>
+                )
+              })()}
             />
 
             <FilterPanel
@@ -3306,21 +3508,63 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                     <div className="flex h-full min-h-0 flex-col">
                       {initial.currentProjectId &&
                         (() => {
+                          const projectSprints = sprints.filter(
+                            (c) => c.projectId === initial.currentProjectId
+                          )
+                          if (projectSprints.length === 0) return null
                           const currentSprint =
-                            sprints.find(
-                              (c) =>
-                                c.projectId === initial.currentProjectId &&
-                                c.status === 'current'
-                            ) ?? null
+                            projectSprints.find((c) => c.status === 'current') ??
+                            null
+                          // Fall back to the nearest upcoming sprint when no
+                          // current one is running. PM intent: "I planned a
+                          // sprint, show me what's queued up + a Start
+                          // button" instead of the generic empty state.
+                          const upcomingSprint =
+                            currentSprint
+                              ? null
+                              : [...projectSprints]
+                                  .filter((c) => c.status === 'upcoming')
+                                  .sort((a, b) => a.number - b.number)[0] ??
+                                null
+                          const heroSprint = currentSprint ?? upcomingSprint
                           return (
                             <SprintHero
-                              sprint={currentSprint}
+                              sprint={heroSprint}
                               canEdit={
                                 initial.currentMember.accessTier === 'admin' ||
                                 initial.currentMember.accessTier === 'lead'
                               }
                               onPlan={() => setTab('sprints')}
                               onEdit={() => setTab('sprints')}
+                              onStart={
+                                upcomingSprint
+                                  ? async () => {
+                                      const { startSprint } = await import(
+                                        '../actions'
+                                      )
+                                      const res = await startSprint(
+                                        upcomingSprint.id
+                                      )
+                                      if ('error' in res) {
+                                        toast.error(res.error)
+                                        return
+                                      }
+                                      toast.success(
+                                        `Sprint ${upcomingSprint.number} started.`
+                                      )
+                                      router.refresh()
+                                      queryClient.invalidateQueries({
+                                        queryKey: ['dashboardInitial']
+                                      })
+                                    }
+                                  : undefined
+                              }
+                              lensActive={boardSprintLens}
+                              onToggleLens={
+                                currentSprint
+                                  ? () => setBoardSprintLens((v) => !v)
+                                  : undefined
+                              }
                               copySlot={
                                 currentSprint ? (
                                   <CopyButton
@@ -3409,6 +3653,7 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                                 tasks={g.items}
                                 selectedTaskId={selectedId}
                                 onSelect={setSelectedId}
+                                reactionsByTask={taskReactions}
                                 onAdd={() => {
                                   if (groupBy === 'status') {
                                     openNewTask(g.key as TaskStatus)
@@ -3448,6 +3693,7 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                                       task={t}
                                       draggable={false}
                                       density={density}
+                                      reactions={taskReactions[t.id]}
                                     />
                                   </div>
                                 ) : null
@@ -3473,6 +3719,12 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                       tasks={tasks.filter(
                         (t) => t.projectId === initial.currentProjectId
                       )}
+                      otherProjects={initial.projects
+                        .filter(
+                          (p) =>
+                            !p.isArchived && p.id !== initial.currentProjectId
+                        )
+                        .map((p) => ({ id: p.id, name: p.name }))}
                       accessTier={initial.currentMember.accessTier}
                       onOpenTask={setSelectedId}
                       renderSprintCopySlot={(sprintId) => {
@@ -3674,6 +3926,29 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                     comments={comments[selected.id] ?? []}
                     activity={activity[selected.id] ?? []}
                     externalRefs={externalRefs[selected.id] ?? []}
+                    taskReactions={taskReactions[selected.id] ?? []}
+                    commentReactionsByComment={commentReactions}
+                    onToggleTaskReaction={(emoji) =>
+                      toggleTaskReactionLocal(selected.id, emoji)
+                    }
+                    onToggleCommentReaction={(commentId, emoji) =>
+                      toggleCommentReactionLocal(commentId, emoji)
+                    }
+                    taskSprint={(() => {
+                      const candidates = sprints.filter((s) =>
+                        s.taskIds.includes(selected.id)
+                      )
+                      if (candidates.length === 0) return null
+                      const pick = candidates.reduce((a, b) =>
+                        b.number > a.number ? b : a
+                      )
+                      return {
+                        number: pick.number,
+                        name: pick.name,
+                        fromIso: pick.fromIso,
+                        toIso: pick.toIso
+                      }
+                    })()}
                     currentUserId={currentUserId}
                     isAdmin={isAdmin}
                     accessTier={initial.currentMember.accessTier}
@@ -3710,6 +3985,7 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                     attachments={attachments[selected.id] ?? []}
                     onAttachmentAdded={handleAttachmentAdded}
                     onAttachmentRemoved={handleAttachmentRemoved}
+                    onAttachmentSwap={handleAttachmentSwap}
                     copySlot={
                       <CopyButton
                         primaryLabel="Copy"

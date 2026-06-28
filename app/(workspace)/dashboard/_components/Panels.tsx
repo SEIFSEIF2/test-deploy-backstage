@@ -7,8 +7,11 @@ import { toast } from 'sonner'
 import {
   Archive as ArchiveIcon,
   ArchiveRestore,
+  AlarmClock,
   Bell,
   CalendarDays,
+  CalendarRange,
+  CheckCircle2,
   Check,
   Compass,
   ExternalLink,
@@ -1640,6 +1643,8 @@ type UpdateKind =
   | 'team'
   | 'meeting'
   | 'task-deletion'
+  | 'sprint'
+  | 'due-soon'
 
 interface UpdateRow {
   id: string
@@ -1673,6 +1678,7 @@ type UpdateFilter =
   | 'assignee'
   | 'team'
   | 'meeting'
+  | 'sprint'
 
 const FILTERS: { id: UpdateFilter; label: string; match: UpdateKind[] }[] = [
   { id: 'all', label: 'All', match: [] },
@@ -1681,7 +1687,8 @@ const FILTERS: { id: UpdateFilter; label: string; match: UpdateKind[] }[] = [
   { id: 'priority', label: 'Priority', match: ['priority'] },
   { id: 'assignee', label: 'Assignees', match: ['assignee'] },
   { id: 'team', label: 'Team', match: ['team'] },
-  { id: 'meeting', label: 'Meetings', match: ['meeting'] }
+  { id: 'meeting', label: 'Meetings', match: ['meeting'] },
+  { id: 'sprint', label: 'Sprints', match: ['sprint'] }
 ]
 
 function kindIcon(kind: UpdateKind) {
@@ -1702,6 +1709,10 @@ function kindIcon(kind: UpdateKind) {
       return CalendarDays
     case 'task-deletion':
       return Trash2
+    case 'sprint':
+      return CalendarRange
+    case 'due-soon':
+      return AlarmClock
     case 'status':
     default:
       return MoveRight
@@ -1727,6 +1738,10 @@ function kindTone(kind: UpdateKind, mode: 'light' | 'dark') {
         return 'bg-indigo-100 text-indigo-700 border-indigo-200'
       case 'task-deletion':
         return 'bg-rose-100 text-rose-700 border-rose-200'
+      case 'sprint':
+        return 'bg-teal-100 text-teal-700 border-teal-200'
+      case 'due-soon':
+        return 'bg-amber-100 text-amber-700 border-amber-200'
       case 'status':
       default:
         return 'bg-rose-100 text-rose-700 border-rose-200'
@@ -1749,6 +1764,10 @@ function kindTone(kind: UpdateKind, mode: 'light' | 'dark') {
       return 'bg-indigo-400/10 text-indigo-300 border-indigo-400/30'
     case 'task-deletion':
       return 'bg-rose-400/10 text-rose-300 border-rose-400/30'
+    case 'sprint':
+      return 'bg-teal-400/10 text-teal-300 border-teal-400/30'
+    case 'due-soon':
+      return 'bg-amber-400/10 text-amber-300 border-amber-400/30'
     case 'status':
     default:
       return 'bg-rose-400/10 text-rose-300 border-rose-400/30'
@@ -1877,7 +1896,8 @@ export function UpdatesPanel({
       priority: 0,
       assignee: 0,
       team: 0,
-      meeting: 0
+      meeting: 0,
+      sprint: 0
     }
     for (const a of activity) {
       if (a.kind === 'comment') c.comment++
@@ -1886,6 +1906,7 @@ export function UpdatesPanel({
       else if (a.kind === 'assignee') c.assignee++
       else if (a.kind === 'team') c.team++
       else if (a.kind === 'meeting') c.meeting++
+      else if (a.kind === 'sprint') c.sprint++
     }
     return c
   }, [activity])
