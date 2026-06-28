@@ -1,21 +1,11 @@
 'use client'
 
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState
-} from 'react'
-import { ImagePlus, Loader2, Trash2, Upload, X } from 'lucide-react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { ImagePlus, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { compressImage } from '@/lib/imageCompress'
-import {
-  deleteTaskAttachment as deleteTaskAttachmentAction,
-  uploadTaskImage as uploadTaskImageAction
-} from '../actions'
+import { uploadTaskImage as uploadTaskImageAction } from '../actions'
 import { useDashTheme } from './theme'
 
 export interface TaskAttachmentView {
@@ -32,41 +22,31 @@ export interface TaskAttachmentView {
   url: string | null
 }
 
-interface Pending {
-  localId: string
-  name: string
-  state: 'compressing' | 'uploading' | 'error'
-  error?: string
-}
-
 interface Props {
   taskId: string
-  attachments: TaskAttachmentView[]
   currentUserId: string
-  isAdmin: boolean
-  // Append + remove callbacks so DashboardShell can keep its local
-  // attachments-by-task store in sync without a refetch.
+  // Insert a temp attachment (with a local object URL) for optimistic
+  // display in the gallery, then swap to the server-issued row when the
+  // upload completes. Remove on error.
   onAttachmentAdded: (a: TaskAttachmentView) => void
   onAttachmentRemoved: (attachmentId: string) => void
+  onAttachmentSwap: (tempId: string, real: TaskAttachmentView) => void
 }
 
 const IMG_MIMES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
 
 export default function TaskImageDropZone({
   taskId,
-  attachments,
   currentUserId,
-  isAdmin,
   onAttachmentAdded,
-  onAttachmentRemoved
+  onAttachmentRemoved,
+  onAttachmentSwap
 }: Props) {
   const { t } = useDashTheme()
   const inputId = useId()
   const wrapRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragOver, setDragOver] = useState(false)
-  const [pending, setPending] = useState<Pending[]>([])
-  const [lightboxId, setLightboxId] = useState<string | null>(null)
 
   const handleFiles = useCallback(
     async (files: File[]) => {
@@ -78,18 +58,22 @@ export default function TaskImageDropZone({
         return
       }
       for (const file of images) {
-        const localId = `${Date.now()}-${Math.random().toString(36).slice(2)}`
-        setPending((cur) => [
-          ...cur,
-          { localId, name: file.name, state: 'compressing' }
-        ])
+        const localId = `local-${Date.now()}-${Math.random().toString(36).slice(2)}`
+        const objectUrl = URL.createObjectURL(file)
+        onAttachmentAdded({
+          id: localId,
+          taskId,
+          fileName: file.name,
+          mimeType: file.type,
+          sizeBytes: file.size,
+          width: null,
+          height: null,
+          createdAt: new Date().toISOString(),
+          uploadedBy: { id: currentUserId, fullName: '' },
+          url: objectUrl
+        })
         try {
           const compressed = await compressImage(file)
-          setPending((cur) =>
-            cur.map((p) =>
-              p.localId === localId ? { ...p, state: 'uploading' } : p
-            )
-          )
           const form = new FormData()
           form.set('taskId', taskId)
           form.set(
@@ -103,31 +87,27 @@ export default function TaskImageDropZone({
           const res = await uploadTaskImageAction(form)
           if ('error' in res) {
             toast.error(res.error)
-            setPending((cur) =>
-              cur.map((p) =>
-                p.localId === localId
-                  ? { ...p, state: 'error', error: res.error }
-                  : p
-              )
-            )
+            onAttachmentRemoved(localId)
+            URL.revokeObjectURL(objectUrl)
             continue
           }
-          onAttachmentAdded(res.attachment)
-          setPending((cur) => cur.filter((p) => p.localId !== localId))
+          onAttachmentSwap(localId, res.attachment)
+          URL.revokeObjectURL(objectUrl)
         } catch (e) {
           const msg = e instanceof Error ? e.message : 'Upload failed.'
           toast.error(msg)
-          setPending((cur) =>
-            cur.map((p) =>
-              p.localId === localId
-                ? { ...p, state: 'error', error: msg }
-                : p
-            )
-          )
+          onAttachmentRemoved(localId)
+          URL.revokeObjectURL(objectUrl)
         }
       }
     },
-    [taskId, onAttachmentAdded]
+    [
+      taskId,
+      currentUserId,
+      onAttachmentAdded,
+      onAttachmentRemoved,
+      onAttachmentSwap
+    ]
   )
 
   // Drag-and-drop on the dashed zone.
@@ -173,23 +153,6 @@ export default function TaskImageDropZone({
     document.addEventListener('paste', onPaste)
     return () => document.removeEventListener('paste', onPaste)
   }, [handleFiles])
-
-  const lightboxAttachment = useMemo(
-    () => attachments.find((a) => a.id === lightboxId) ?? null,
-    [attachments, lightboxId]
-  )
-
-  const handleDelete = async (id: string) => {
-    const snapshot = attachments
-    onAttachmentRemoved(id)
-    const res = await deleteTaskAttachmentAction(id)
-    if ('error' in res) {
-      toast.error(res.error)
-      // Rollback: re-append the row at the same spot.
-      const removed = snapshot.find((a) => a.id === id)
-      if (removed) onAttachmentAdded(removed)
-    }
-  }
 
   return (
     <div ref={wrapRef} className="flex flex-col gap-2">
@@ -247,128 +210,6 @@ export default function TaskImageDropZone({
         </span>
       </div>
 
-      {(attachments.length > 0 || pending.length > 0) && (
-        <div className="grid grid-cols-3 gap-2">
-          {attachments.map((a) => {
-            const canDelete = isAdmin || a.uploadedBy?.id === currentUserId
-            return (
-              <div
-                key={a.id}
-                className={`group relative aspect-square overflow-hidden rounded-md border ${t.borderSoft}`}
-              >
-                <button
-                  type="button"
-                  onClick={() => setLightboxId(a.id)}
-                  className="block size-full"
-                  title={a.fileName}
-                >
-                  {a.url ? (
-                    <img
-                      src={a.url}
-                      alt={a.fileName}
-                      loading="lazy"
-                      className="size-full object-cover transition group-hover:scale-105"
-                    />
-                  ) : (
-                    <div
-                      className={`flex size-full items-center justify-center ${t.textMuted} text-[10px]`}
-                    >
-                      Loading…
-                    </div>
-                  )}
-                </button>
-                {canDelete && (
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(a.id)}
-                    aria-label={`Remove ${a.fileName}`}
-                    className="absolute top-1 right-1 hidden size-6 items-center justify-center rounded-md border border-white/20 bg-black/60 text-white transition hover:bg-black/80 group-hover:flex"
-                  >
-                    <Trash2 className="size-3" />
-                  </button>
-                )}
-              </div>
-            )
-          })}
-          {pending.map((p) => (
-            <div
-              key={p.localId}
-              className={`flex aspect-square flex-col items-center justify-center gap-1.5 rounded-md border border-dashed ${t.borderSoft} ${t.surfaceMuted}`}
-            >
-              {p.state === 'error' ? (
-                <>
-                  <span className="text-[10px] text-rose-500">Failed</span>
-                  <span
-                    className={`px-1 text-center text-[9px] ${t.textSubtle}`}
-                  >
-                    {p.name}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <Loader2
-                    className={`size-4 animate-spin ${t.textSubtle}`}
-                  />
-                  <span className={`text-[10px] ${t.textSubtle}`}>
-                    {p.state === 'compressing' ? 'Compressing' : 'Uploading'}
-                  </span>
-                </>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {lightboxAttachment && (
-        <Lightbox
-          attachment={lightboxAttachment}
-          onClose={() => setLightboxId(null)}
-        />
-      )}
-    </div>
-  )
-}
-
-function Lightbox({
-  attachment,
-  onClose
-}: {
-  attachment: TaskAttachmentView
-  onClose: () => void
-}) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
-
-  return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 p-4"
-      role="dialog"
-      aria-modal="true"
-    >
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Close image preview"
-        className="absolute top-4 right-4 flex size-9 items-center justify-center rounded-full border border-white/20 bg-black/40 text-white"
-      >
-        <X className="size-4" />
-      </button>
-      {attachment.url ? (
-        <img
-          src={attachment.url}
-          alt={attachment.fileName}
-          onClick={(e) => e.stopPropagation()}
-          className="max-h-full max-w-full object-contain"
-        />
-      ) : (
-        <div className="text-white/70 text-sm">Preview unavailable.</div>
-      )}
     </div>
   )
 }
