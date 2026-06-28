@@ -699,3 +699,60 @@ export function inviteMemberEmail(input: InviteMemberEmailInput): {
   ].join('\n')
   return { subject, html, text }
 }
+
+export interface TaskDueSoonEmailInput {
+  recipientName: string
+  // Why the recipient is on this email: assignee or lead.
+  role: 'assignee' | 'lead'
+  taskRef: string
+  taskTitle: string
+  // YYYY-MM-DD interpreted in Europe/Malta. Display uses this string as-is.
+  dueDate: string
+  // Pretty version, e.g. "Mon, Jul 15".
+  dueDatePretty: string
+  taskUrl: string
+  unsubscribeUrl?: string
+}
+
+export function taskDueSoonEmail(input: TaskDueSoonEmailInput): {
+  subject: string
+  html: string
+  text: string
+} {
+  const subject = `Heads up: ${input.taskRef} is due tomorrow`
+  const roleLine =
+    input.role === 'assignee'
+      ? `You're assigned to <strong>${escape(input.taskRef)} - ${escape(input.taskTitle)}</strong>.`
+      : `You lead on <strong>${escape(input.taskRef)} - ${escape(input.taskTitle)}</strong>.`
+  const firstName = input.recipientName.split(' ')[0] || input.recipientName
+
+  const html = shell({
+    preheader: `${input.taskRef} is due ${input.dueDatePretty}`,
+    bodyHtml:
+      `<p style="margin:0 0 8px">Hi ${escape(firstName)},</p>` +
+      `<p style="margin:0 0 12px">${roleLine}</p>` +
+      `<p style="margin:0 0 12px">It's due <strong>${escape(input.dueDatePretty)}</strong> (tomorrow).</p>` +
+      `<p style="margin:0 0 12px;color:#52525b">If the date needs to slip, bump it now so the rest of the team has the right picture.</p>`,
+    ctaLabel: 'Open task',
+    ctaUrl: input.taskUrl,
+    unsubscribeUrl: input.unsubscribeUrl
+  })
+
+  const text = [
+    `Hi ${firstName},`,
+    '',
+    input.role === 'assignee'
+      ? `You're assigned to ${input.taskRef} - ${input.taskTitle}.`
+      : `You lead on ${input.taskRef} - ${input.taskTitle}.`,
+    `It's due ${input.dueDatePretty} (tomorrow).`,
+    '',
+    'If the date needs to slip, bump it now so the rest of the team has the right picture.',
+    '',
+    `Open task: ${input.taskUrl}`,
+    input.unsubscribeUrl ? `\nUnsubscribe: ${input.unsubscribeUrl}` : ''
+  ]
+    .filter(Boolean)
+    .join('\n')
+
+  return { subject, html, text }
+}
