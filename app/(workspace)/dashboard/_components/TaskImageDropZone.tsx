@@ -1,7 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useId, useRef, useState } from 'react'
-import { ImagePlus, Upload } from 'lucide-react'
+import { useCallback, useEffect, useId, useRef } from 'react'
+import { ImagePlus } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { compressImage } from '@/lib/imageCompress'
@@ -44,9 +44,7 @@ export default function TaskImageDropZone({
 }: Props) {
   const { t } = useDashTheme()
   const inputId = useId()
-  const wrapRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const [dragOver, setDragOver] = useState(false)
 
   const handleFiles = useCallback(
     async (files: File[]) => {
@@ -110,17 +108,6 @@ export default function TaskImageDropZone({
     ]
   )
 
-  // Drag-and-drop on the dashed zone.
-  const onDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault()
-      setDragOver(false)
-      const files = Array.from(e.dataTransfer.files ?? [])
-      if (files.length > 0) handleFiles(files)
-    },
-    [handleFiles]
-  )
-
   // Clipboard paste anywhere in the document while this component is
   // mounted. Skipped when the paste target is an input/textarea/contenteditable
   // so text paste into the description, comment box, etc. stays intact.
@@ -155,7 +142,7 @@ export default function TaskImageDropZone({
   }, [handleFiles])
 
   return (
-    <div ref={wrapRef} className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <span
           className={`text-[10px] tracking-[0.22em] uppercase ${t.textSubtle}`}
@@ -183,33 +170,6 @@ export default function TaskImageDropZone({
           />
         </label>
       </div>
-
-      <div
-        onDragOver={(e) => {
-          e.preventDefault()
-          setDragOver(true)
-        }}
-        onDragLeave={(e) => {
-          if (e.currentTarget === e.target) setDragOver(false)
-        }}
-        onDrop={onDrop}
-        onClick={() => inputRef.current?.click()}
-        role="button"
-        tabIndex={0}
-        className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed px-3 py-4 text-center transition ${
-          dragOver
-            ? 'border-teal-500/60 bg-teal-500/10'
-            : `${t.borderSoft} ${t.surfaceMuted}`
-        }`}
-      >
-        <Upload
-          className={`size-4 ${dragOver ? 'text-teal-500' : t.textSubtle}`}
-        />
-        <span className={`text-[11px] ${t.textMuted}`}>
-          Drop, paste, or click to upload. Max 10 MB after compression.
-        </span>
-      </div>
-
     </div>
   )
 }

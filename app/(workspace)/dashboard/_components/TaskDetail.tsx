@@ -340,24 +340,28 @@ export default function TaskDetail({
   return (
     <div className={`flex h-full flex-col ${t.detail}`}>
       <div
-        className={`flex h-12 shrink-0 items-center justify-between gap-2 border-b px-4 ${t.border}`}
+        className={`flex h-11 shrink-0 items-center justify-between gap-2 border-b px-3 ${t.border}`}
       >
         <div className="flex min-w-0 items-center gap-2">
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className={`flex size-7 items-center justify-center rounded-md transition ${t.btn}`}
+            className={`flex size-7 items-center justify-center rounded-md transition hover:bg-zinc-100 dark:hover:bg-white/10`}
           >
             <X className="size-3.5" />
           </button>
           <span
-            className={`rounded border px-1.5 py-0.5 text-[10px] tracking-[0.22em] uppercase tabular-nums ${t.metaTag}`}
+            aria-hidden
+            className={`h-4 w-px ${t.border} border-l`}
+          />
+          <span
+            className={`rounded-md border px-1.5 py-0.5 text-[10px] tracking-[0.2em] uppercase tabular-nums ${t.metaTag}`}
           >
             {task.ref}
           </span>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1">
           <button
             type="button"
             onClick={() => {
@@ -366,10 +370,10 @@ export default function TaskDetail({
             }}
             aria-label="Copy share link"
             title={shareCopied ? 'Copied!' : 'Copy share link'}
-            className={`flex size-7 items-center justify-center rounded-md border transition ${
+            className={`flex size-7 items-center justify-center rounded-md transition ${
               shareCopied
-                ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                : t.btn
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : `hover:bg-zinc-100 dark:hover:bg-white/10 ${t.textMuted}`
             }`}
           >
             {shareCopied ? (
@@ -382,7 +386,7 @@ export default function TaskDetail({
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-5 py-5">
+      <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-5 py-5">
         <TaskImageGallery
           attachments={attachments}
           currentUserId={currentUserId}
@@ -420,7 +424,7 @@ export default function TaskDetail({
           size="md"
         />
 
-        <div className="grid grid-cols-[88px_1fr] items-center gap-y-2.5 text-xs">
+        <div className="grid grid-cols-1 gap-x-5 gap-y-1.5 text-xs sm:grid-cols-[60px_1fr_60px_1fr]">
           <FieldLabel>Status</FieldLabel>
           <Popover
             disabled={!canEditOwner}
@@ -607,6 +611,9 @@ export default function TaskDetail({
             onChange={(next) => onChangeTags(task.id, next)}
           />
 
+        </div>
+
+        <div className="grid grid-cols-[60px_1fr] items-start gap-x-5 gap-y-1.5 text-xs">
           <FieldLabel>Relations</FieldLabel>
           <RelationPicker
             relations={task.relations ?? []}
@@ -666,13 +673,13 @@ export default function TaskDetail({
           onOpenEditor={() => onOpenHandoff(task)}
         />
 
-        <div>
+        <div className={`border-t pt-4 ${t.borderSoft}`}>
           <div
             className={`mb-2 text-[10px] tracking-[0.22em] uppercase ${t.textMuted}`}
           >
             Comments ({comments.length})
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5">
             {comments.length === 0 && (
               <p className={`text-xs italic ${t.textSubtle}`}>
                 No comments yet.
@@ -685,9 +692,9 @@ export default function TaskDetail({
               return (
                 <div
                   key={c.id}
-                  className={`group rounded-md border px-3 py-2 text-xs ${t.border} ${t.surfaceMuted}`}
+                  className={`group rounded-md border px-2.5 py-1.5 text-xs ${t.border} ${t.surfaceMuted}`}
                 >
-                  <div className="mb-1.5 flex items-center justify-between">
+                  <div className="mb-1 flex items-center justify-between">
                     <div className="flex min-w-0 items-center gap-1.5">
                       <span
                         className={`flex size-5 shrink-0 items-center justify-center rounded-full text-[9px] font-semibold ${t.surface} border ${t.border} ${t.text}`}
@@ -699,8 +706,8 @@ export default function TaskDetail({
                         {c.author}
                       </span>
                       {c.editedAt && (
-                        <span className={`text-[10px] italic ${t.textSubtle}`}>
-                          (edited)
+                        <span className={`text-[9px] ${t.textSubtle} opacity-60`}>
+                          edited
                         </span>
                       )}
                     </div>
@@ -803,11 +810,12 @@ export default function TaskDetail({
                       {renderMentionedBody(c.body, team)}
                     </p>
                   )}
-                  <div className="mt-1.5">
+                  <div className="mt-1">
                     <ReactionBar
                       reactions={commentReactionsByComment[c.id] ?? []}
                       currentMemberId={currentUserId}
                       onToggle={(emoji) => onToggleCommentReaction(c.id, emoji)}
+                      hideAddUntilHover
                     />
                   </div>
                 </div>

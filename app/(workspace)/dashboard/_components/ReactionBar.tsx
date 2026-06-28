@@ -25,6 +25,10 @@ interface ReactionBarProps {
   onToggle: (emoji: string) => Promise<void> | void
   disabled?: boolean
   size?: 'sm' | 'md'
+  // When true, the "+ add reaction" trigger fades in only on hover or
+  // keyboard focus of the parent (parent must have `group` class).
+  // Existing reaction pills stay visible. Slack-style.
+  hideAddUntilHover?: boolean
 }
 
 interface Grouped {
@@ -62,7 +66,8 @@ export function ReactionBar({
   currentMemberId,
   onToggle,
   disabled,
-  size = 'sm'
+  size = 'sm',
+  hideAddUntilHover = false
 }: ReactionBarProps) {
   const { t } = useDashTheme()
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -104,7 +109,13 @@ export function ReactionBar({
         </button>
       ))}
 
-      <div className="relative">
+      <div
+        className={`relative ${
+          hideAddUntilHover
+            ? 'opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100'
+            : ''
+        }`}
+      >
         <button
           type="button"
           onClick={() => setShowQuick((v) => !v)}
