@@ -180,7 +180,14 @@ export default function SprintsPanel({
   }, [sprints])
 
   const unscheduledTasks = useMemo(
-    () => tasks.filter((task) => !scheduledTaskIds.has(task.id)),
+    () =>
+      tasks.filter(
+        (task) =>
+          !scheduledTaskIds.has(task.id) &&
+          task.status !== 'done' &&
+          task.status !== 'canceled' &&
+          task.status !== 'duplicate'
+      ),
     [tasks, scheduledTaskIds]
   )
 

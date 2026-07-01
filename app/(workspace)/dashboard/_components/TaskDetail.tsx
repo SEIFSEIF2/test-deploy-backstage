@@ -260,6 +260,25 @@ export default function TaskDetail({
   const [assigneeOpen, setAssigneeOpen] = useState(false)
   const [leadOpen, setLeadOpen] = useState(false)
   const [askLeadOpen, setAskLeadOpen] = useState(false)
+  // ponytail: per-open session visibility for the optional sections. Init
+  // from content presence so tasks that already have stuff still show it;
+  // empty ones stay quiet behind chips. Click X on any section to hide it
+  // (and its content stays; chip lets you show it again).
+  const [showLinks, setShowLinks] = useState(() => externalRefs.length > 0)
+  const [showHandoff, setShowHandoff] = useState(false)
+  const [showMeetings, setShowMeetings] = useState(false)
+  const [showReactions, setShowReactions] = useState(
+    () => taskReactions.length > 0
+  )
+  const [showRelations, setShowRelations] = useState(
+    () => (task?.relations?.length ?? 0) > 0
+  )
+  const [showWatchers, setShowWatchers] = useState(false)
+  const [showImages, setShowImages] = useState(() => attachments.length > 0)
+  const [showBrief, setShowBrief] = useState(
+    () => (task?.description ?? '').trim().length > 0
+  )
+  const [activityExpanded, setActivityExpanded] = useState(false)
 
   // Spectators are fetched per-task and cached so re-opening a task
   // shows the existing list instantly. The cache stays warm across
@@ -368,32 +387,42 @@ export default function TaskDetail({
               taskActions.copyShareLink(task.ref)
               setShareCopied(true)
             }}
-            aria-label="Copy share link"
-            title={shareCopied ? 'Copied!' : 'Copy share link'}
-            className={`flex size-7 items-center justify-center rounded-md transition ${
+            aria-label="Share task"
+            title={shareCopied ? 'Link copied!' : 'Copy share link'}
+            className={`flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[11px] transition ${
               shareCopied
-                ? 'text-emerald-600 dark:text-emerald-400'
-                : `hover:bg-zinc-100 dark:hover:bg-white/10 ${t.textMuted}`
+                ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                : `${t.accent}`
             }`}
           >
             {shareCopied ? (
-              <Check className="size-3.5" />
+              <>
+                <Check className="size-3.5" />
+                Copied
+              </>
             ) : (
-              <Share2 className="size-3.5" />
+              <>
+                <Share2 className="size-3.5" />
+                Share
+              </>
             )}
           </button>
-          {copySlot}
+          <span className={`flex items-center ${t.textMuted}`}>{copySlot}</span>
         </div>
       </div>
 
       <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-5 py-5">
-        <TaskImageGallery
-          attachments={attachments}
-          currentUserId={currentUserId}
-          isAdmin={isAdmin}
-          onAttachmentAdded={onAttachmentAdded}
-          onAttachmentRemoved={onAttachmentRemoved}
-        />
+        {showImages && (
+          <DismissWrap onDismiss={() => setShowImages(false)}>
+            <TaskImageGallery
+              attachments={attachments}
+              currentUserId={currentUserId}
+              isAdmin={isAdmin}
+              onAttachmentAdded={onAttachmentAdded}
+              onAttachmentRemoved={onAttachmentRemoved}
+            />
+          </DismissWrap>
+        )}
 
         <EditableTitle
           value={task.title}
@@ -401,28 +430,66 @@ export default function TaskDetail({
           onSave={(next) => onChangeTitle(task.id, next)}
         />
 
-        <EditableDescription
-          value={task.description ?? ''}
-          canEdit={canEditOwner}
-          onSave={(next) =>
-            onChangeDescription(task.id, next.trim() ? next : null)
-          }
-        />
+        {showBrief && (
+          <DismissWrap onDismiss={() => setShowBrief(false)}>
+            <EditableDescription
+              value={task.description ?? ''}
+              canEdit={canEditOwner}
+              onSave={(next) =>
+                onChangeDescription(task.id, next.trim() ? next : null)
+              }
+            />
+          </DismissWrap>
+        )}
 
-        <TaskImageDropZone
-          taskId={task.id}
-          currentUserId={currentUserId}
-          onAttachmentAdded={onAttachmentAdded}
-          onAttachmentRemoved={onAttachmentRemoved}
-          onAttachmentSwap={onAttachmentSwap}
-        />
+        {showImages && (
+          <TaskImageDropZone
+            taskId={task.id}
+            currentUserId={currentUserId}
+            onAttachmentAdded={onAttachmentAdded}
+            onAttachmentRemoved={onAttachmentRemoved}
+            onAttachmentSwap={onAttachmentSwap}
+          />
+        )}
 
-        <ReactionBar
-          reactions={taskReactions}
-          currentMemberId={currentUserId}
-          onToggle={onToggleTaskReaction}
-          size="md"
-        />
+        {showReactions && (
+          <DismissWrap onDismiss={() => setShowReactions(false)}>
+            <ReactionBar
+              reactions={taskReactions}
+              currentMemberId={currentUserId}
+              onToggle={onToggleTaskReaction}
+              size="md"
+            />
+          </DismissWrap>
+        )}
+
+        <div className={`flex flex-wrap items-center gap-1.5 border-y py-2 ${t.borderSoft}`}>
+          <span className={`text-[10px] tracking-wider uppercase ${t.textSubtle}`}>Add:</span>
+          {!showBrief && (
+            <AddChip label="Brief" onClick={() => setShowBrief(true)} />
+          )}
+          {!showHandoff && (
+            <AddChip label="Handoff" onClick={() => { setShowHandoff(true); onOpenHandoff(task) }} />
+          )}
+          {!showMeetings && (
+            <AddChip label="Meeting" onClick={() => setShowMeetings(true)} />
+          )}
+          {!showLinks && (
+            <AddChip label="Link" onClick={() => setShowLinks(true)} />
+          )}
+          {!showRelations && (
+            <AddChip label="Relations" onClick={() => setShowRelations(true)} />
+          )}
+          {!showWatchers && (
+            <AddChip label="Spectators" onClick={() => setShowWatchers(true)} />
+          )}
+          {!showImages && (
+            <AddChip label="Image" onClick={() => setShowImages(true)} />
+          )}
+          {!showReactions && (
+            <AddChip label="Reaction" onClick={() => setShowReactions(true)} />
+          )}
+        </div>
 
         <div className="grid grid-cols-1 gap-x-5 gap-y-1.5 text-xs sm:grid-cols-[60px_1fr_60px_1fr]">
           <FieldLabel>Status</FieldLabel>
@@ -613,65 +680,82 @@ export default function TaskDetail({
 
         </div>
 
-        <div className="grid grid-cols-[60px_1fr] items-start gap-x-5 gap-y-1.5 text-xs">
-          <FieldLabel>Relations</FieldLabel>
-          <RelationPicker
-            relations={task.relations ?? []}
-            candidates={candidateTasks}
-            selfRef={task.ref}
-            disabled={!canEditPlanner}
-            onAdd={(rel) => onAddRelation(task.id, rel)}
-            onRemove={(rel) => onRemoveRelation(task.id, rel)}
-            onSelectRef={(ref) => {
-              const hit = candidateTasks.find((c) => c.ref === ref)
-              if (hit) taskActions.openDetail(hit.id)
-            }}
-            variant="compact"
-          />
-        </div>
+        {showRelations && (
+          <DismissWrap onDismiss={() => setShowRelations(false)}>
+            <div className="grid grid-cols-[60px_1fr] items-start gap-x-5 gap-y-1.5 text-xs">
+              <FieldLabel>Relations</FieldLabel>
+              <RelationPicker
+                relations={task.relations ?? []}
+                candidates={candidateTasks}
+                selfRef={task.ref}
+                disabled={!canEditPlanner}
+                onAdd={(rel) => onAddRelation(task.id, rel)}
+                onRemove={(rel) => onRemoveRelation(task.id, rel)}
+                onSelectRef={(ref) => {
+                  const hit = candidateTasks.find((c) => c.ref === ref)
+                  if (hit) taskActions.openDetail(hit.id)
+                }}
+                variant="compact"
+              />
+            </div>
+          </DismissWrap>
+        )}
 
-        <LinkedMeetingsSection
-          taskId={task.id}
-          taskRef={task.ref ?? null}
-          taskTitle={task.title}
-          defaultRequesteeId={(() => {
-            // Lead is the typical answer ("ask my lead about this task"),
-            // unless I *am* the lead - then default to the assignee so
-            // we don't try to schedule a meeting with ourselves.
-            const lead = task.lead?.id
-            const assignee = task.assignee?.id
-            if (lead && lead !== currentUserId) return lead
-            if (assignee && assignee !== currentUserId) return assignee
-            return lead ?? assignee ?? null
-          })()}
-          currentUserId={currentUserId}
-          canEdit={canEditOwner}
-        />
+        {showHandoff && (
+          <DismissWrap onDismiss={() => setShowHandoff(false)}>
+            <HandoffReadView
+              taskId={task.id}
+              canEdit={canEditOwner}
+              onOpenEditor={() => onOpenHandoff(task)}
+            />
+          </DismissWrap>
+        )}
 
-        <WatchersSection
-          taskId={task.id}
-          assigneeId={task.assignee?.id ?? null}
-          canInvite={canEditOwner}
-          currentUserId={currentUserId}
-          team={team}
-          watchers={spectators}
-          loading={spectatorsLoading}
-          onChanged={refreshSpectators}
-        />
+        {showMeetings && (
+          <DismissWrap onDismiss={() => setShowMeetings(false)}>
+            <LinkedMeetingsSection
+              taskId={task.id}
+              taskRef={task.ref ?? null}
+              taskTitle={task.title}
+              defaultRequesteeId={(() => {
+                const lead = task.lead?.id
+                const assignee = task.assignee?.id
+                if (lead && lead !== currentUserId) return lead
+                if (assignee && assignee !== currentUserId) return assignee
+                return lead ?? assignee ?? null
+              })()}
+              currentUserId={currentUserId}
+              canEdit={canEditOwner}
+            />
+          </DismissWrap>
+        )}
 
-        <LinksSection
-          task={task}
-          refs={externalRefs}
-          canEdit={canEditOwner}
-          onAdd={(url) => onAddExternalRef(task.id, url)}
-          onRemove={(refId) => onRemoveExternalRef(task.id, refId)}
-        />
+        {showLinks && (
+          <DismissWrap onDismiss={() => setShowLinks(false)}>
+            <LinksSection
+              task={task}
+              refs={externalRefs}
+              canEdit={canEditOwner}
+              onAdd={(url) => onAddExternalRef(task.id, url)}
+              onRemove={(refId) => onRemoveExternalRef(task.id, refId)}
+            />
+          </DismissWrap>
+        )}
 
-        <HandoffReadView
-          taskId={task.id}
-          canEdit={canEditOwner}
-          onOpenEditor={() => onOpenHandoff(task)}
-        />
+        {showWatchers && (
+          <DismissWrap onDismiss={() => setShowWatchers(false)}>
+            <WatchersSection
+              taskId={task.id}
+              assigneeId={task.assignee?.id ?? null}
+              canInvite={canEditOwner}
+              currentUserId={currentUserId}
+              team={team}
+              watchers={spectators}
+              loading={spectatorsLoading}
+              onChanged={refreshSpectators}
+            />
+          </DismissWrap>
+        )}
 
         <div className={`border-t pt-4 ${t.borderSoft}`}>
           <div
@@ -825,15 +909,29 @@ export default function TaskDetail({
         </div>
 
         <div className="flex flex-col gap-2 text-xs">
-          <div
-            className={`text-[10px] tracking-[0.22em] uppercase ${t.textMuted}`}
-          >
-            Activity
+          <div className="flex items-center justify-between">
+            <div className={`text-[10px] tracking-[0.22em] uppercase ${t.textMuted}`}>
+              Activity {activity.length > 0 && `(${activity.length})`}
+            </div>
+            {activity.length > 1 && (
+              <button
+                type="button"
+                onClick={() => setActivityExpanded((v) => !v)}
+                className={`text-[10px] underline ${t.textMuted}`}
+              >
+                {activityExpanded ? 'Collapse' : `Show ${activity.length - 1} more`}
+              </button>
+            )}
           </div>
           {activity.length === 0 && (
             <p className={`text-xs italic ${t.textSubtle}`}>Nothing yet.</p>
           )}
-          {activity.map((a) => {
+          {(() => {
+            const sorted = [...activity].sort((a, b) =>
+              b.atRaw.localeCompare(a.atRaw)
+            )
+            return activityExpanded ? sorted : sorted.slice(0, 1)
+          })().map((a) => {
             const Icon =
               a.kind === 'comment'
                 ? MessageSquare
@@ -1033,6 +1131,44 @@ function AskLeadSheet({
         )}
       </SheetContent>
     </Sheet>
+  )
+}
+
+function DismissWrap({
+  onDismiss,
+  children
+}: {
+  onDismiss: () => void
+  children: React.ReactNode
+}) {
+  const { t } = useDashTheme()
+  return (
+    <div className="group/dismiss relative">
+      {children}
+      <button
+        type="button"
+        onClick={onDismiss}
+        aria-label="Hide section"
+        title="Hide section (chip lets you show it again)"
+        className={`absolute -top-1 -right-1 hidden size-5 items-center justify-center rounded-full border ${t.btn} group-hover/dismiss:flex`}
+      >
+        <X className="size-2.5" />
+      </button>
+    </div>
+  )
+}
+
+function AddChip({ label, onClick }: { label: string; onClick: () => void }) {
+  const { t } = useDashTheme()
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex h-6 items-center gap-1 rounded-full border px-2 text-[11px] transition ${t.btn}`}
+    >
+      <Plus className="size-3" />
+      {label}
+    </button>
   )
 }
 
@@ -1559,16 +1695,7 @@ function buildSprintDueChip(
   dueIso: string,
   sprint: { number: number; name: string; fromIso: string; toIso: string }
 ): React.ReactNode {
-  if (dueIso < sprint.fromIso || dueIso > sprint.toIso) {
-    return (
-      <span
-        title={`Sprint ${sprint.number} runs ${sprint.fromIso} to ${sprint.toIso}`}
-        className="inline-flex w-fit items-center gap-1 rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300"
-      >
-        Outside sprint window (ends {sprint.toIso})
-      </span>
-    )
-  }
+  const outside = dueIso < sprint.fromIso || dueIso > sprint.toIso
   const from = Date.UTC(
     Number(sprint.fromIso.slice(0, 4)),
     Number(sprint.fromIso.slice(5, 7)) - 1,
@@ -1586,12 +1713,18 @@ function buildSprintDueChip(
   )
   const totalDays = Math.round((to - from) / 86400000) + 1
   const dayNumber = Math.round((due - from) / 86400000) + 1
+  const tone = outside
+    ? 'text-amber-700 dark:text-amber-300'
+    : 'text-zinc-500 dark:text-zinc-400'
+  const label = outside
+    ? `Outside S${sprint.number}`
+    : `S${sprint.number} · d${dayNumber}/${totalDays}`
   return (
     <span
       title={`Sprint ${sprint.number}: ${sprint.fromIso} to ${sprint.toIso}`}
-      className="inline-flex w-fit items-center gap-1 rounded border border-zinc-300 bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-700 dark:border-white/20 dark:bg-white/5 dark:text-zinc-300"
+      className={`text-[10px] tabular-nums ${tone}`}
     >
-      Day {dayNumber} of {totalDays} in Sprint {sprint.number}
+      {label}
     </span>
   )
 }
@@ -1600,18 +1733,22 @@ function LinksSection({
   refs,
   canEdit,
   onAdd,
-  onRemove
+  onRemove,
+  hideWhenEmpty
 }: {
   task: BoardTask
   refs: TaskExternalRef[]
   canEdit: boolean
   onAdd: (url: string) => void
   onRemove: (refId: string) => void
+  hideWhenEmpty?: boolean
 }) {
   const { t, mode } = useDashTheme()
   const [adding, setAdding] = useState(false)
   const [url, setUrl] = useState('')
   const [err, setErr] = useState<string | null>(null)
+
+  if (hideWhenEmpty && refs.length === 0 && !adding) return null
 
   const submit = () => {
     const trimmed = url.trim()
@@ -1812,11 +1949,13 @@ function LinksSection({
 function HandoffReadView({
   taskId,
   canEdit,
-  onOpenEditor
+  onOpenEditor,
+  hideWhenEmpty
 }: {
   taskId: string
   canEdit: boolean
   onOpenEditor: () => void
+  hideWhenEmpty?: boolean
 }) {
   const { t } = useDashTheme()
   const [loading, setLoading] = useState(true)
@@ -1853,6 +1992,8 @@ function HandoffReadView({
     : 0
   const hasAny = filled > 0
   const total = HANDOFF_FIELDS.length
+
+  if (hideWhenEmpty && !loading && !hasAny) return null
 
   return (
     <div className="flex flex-col gap-2 text-xs">
@@ -2088,7 +2229,8 @@ function LinkedMeetingsSection({
   taskTitle,
   defaultRequesteeId,
   currentUserId,
-  canEdit
+  canEdit,
+  hideWhenEmpty
 }: {
   taskId: string
   taskRef: string | null
@@ -2099,6 +2241,8 @@ function LinkedMeetingsSection({
   currentUserId: string
   // Mirrors LinksSection: admin/lead/assignee can manage, members can't.
   canEdit: boolean
+  // ponytail: return null when no meetings + not opted-in via chip
+  hideWhenEmpty?: boolean
 }) {
   const { t } = useDashTheme()
   const meetingRequest = useMeetingRequestSheet()
@@ -2175,6 +2319,8 @@ function LinkedMeetingsSection({
       }
     })
   }
+
+  if (hideWhenEmpty && hasFetched && items.length === 0) return null
 
   return (
     <div>

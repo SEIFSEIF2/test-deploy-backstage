@@ -2,11 +2,48 @@
 // Used by the Copy view button on the Topbar. Honors time scopes by
 // pre-filtering the task list before handing it here.
 
-import { STATUSES } from '@/app/(workspace)/dashboard/_components/status'
+import { PRIORITY_LABEL, STATUSES, STATUS_BY_ID } from '@/app/(workspace)/dashboard/_components/status'
 import { taskToJsonObject, taskToMarkdown } from './task'
 import type { ExportContext, ExportOptions } from './types'
 import { EXPORT_VERSION } from './types'
-import type { BoardTask } from '@/app/(workspace)/dashboard/_components/boardData'
+import type { BoardTask, Sprint } from '@/app/(workspace)/dashboard/_components/boardData'
+
+// ponytail: brief per-task line for the AI paste. One line, sprint on every
+// row so the reader can see sprint context without a group section.
+function taskBriefLine(task: BoardTask, sprint: Sprint | null): string {
+  const status = STATUS_BY_ID[task.status]?.label ?? task.status
+  const bits = [
+    `[${status}]`,
+    task.ref,
+    task.title,
+    task.assignee ? `@${task.assignee.name}` : '@unassigned',
+    task.priority !== 'none' ? `p:${PRIORITY_LABEL[task.priority]}` : null,
+    sprint ? `sprint:${sprint.name}` : null,
+    task.due ? `due:${task.due}` : null
+  ].filter(Boolean)
+  return `- ${bits.join(' · ')}`
+}
+
+function sprintSummarySection(
+  tasks: BoardTask[],
+  sprints: Sprint[]
+): string[] {
+  const inPlay = new Set<string>()
+  for (const t of tasks) {
+    const s = sprints.find((sp) => sp.taskIds.includes(t.id))
+    if (s) inPlay.add(s.id)
+  }
+  if (inPlay.size === 0) return []
+  const rows = sprints.filter((s) => inPlay.has(s.id))
+  const lines: string[] = ['', '## Sprints in play']
+  for (const s of rows) {
+    const scope = s.taskIds.length
+    lines.push(
+      `- **${s.name}** · ${s.status}${s.goal ? ` · goal: ${s.goal}` : ''} · ${s.completedCount}/${scope} done`
+    )
+  }
+  return lines
+}
 
 export interface ViewMeta {
   // Free-form title for the heading (e.g. "All tasks", "Mine - this week",
@@ -40,9 +77,18 @@ export function viewToMarkdown(
     return lines.join('\n') + '\n'
   }
 
+  // Sprints summary at the top (visible regardless of grouping) so any AI
+  // paste knows which sprints these tasks belong to at a glance.
+  for (const l of sprintSummarySection(tasks, ctx.sprints)) lines.push(l)
+
   const grouping = meta.groupBy ?? 'status'
 
   const renderTask = (task: BoardTask) => {
+    if (options.brief) {
+      const sprint = ctx.sprints.find((c) => c.taskIds.includes(task.id)) ?? null
+      lines.push(taskBriefLine(task, sprint))
+      return
+    }
     lines.push('')
     lines.push('---')
     lines.push('')

@@ -30,6 +30,10 @@ export interface TaskActions {
   // Members can't hard-delete tasks; they can only flip status to
   // canceled/duplicate. Admins + leads keep the delete actions.
   canDeleteTasks: boolean
+  // Right-click "Add to sprint": all sprints in the task's project,
+  // returned by projectId. Empty array = no sprints planned there.
+  sprintsForProject: (projectId: string) => { id: string; name: string; status: 'upcoming' | 'current' | 'completed' }[]
+  addToSprint: (taskId: string, sprintId: string) => void
 }
 
 const TaskActionsContext = createContext<TaskActions | null>(null)

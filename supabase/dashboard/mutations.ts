@@ -84,6 +84,33 @@ function toCamelProjectRef(r: ProjectExternalRefRow) {
   }
 }
 
+// ponytail: auto-add the task to the project's current sprint on create/
+// status change. Silent if there's no current sprint or the task is
+// already in it. Skips canceled/duplicate transitions - those aren't
+// active work and shouldn't clutter the sprint.
+async function autoAddToCurrentSprint(
+  supabase: ReturnType<typeof createAdminClient>,
+  taskId: string,
+  projectId: string,
+  companyId: string,
+  newStatus: TaskStatus
+): Promise<void> {
+  if (newStatus === 'canceled' || newStatus === 'duplicate') return
+  const { data: sprint } = await supabase
+    .from('sprints')
+    .select('id')
+    .eq('company_id', companyId)
+    .eq('project_id', projectId)
+    .eq('status', 'current')
+    .limit(1)
+    .maybeSingle()
+  if (!sprint) return
+  await supabase.from('sprint_tasks').upsert(
+    { sprint_id: sprint.id, task_id: taskId, carry_count: 0 },
+    { onConflict: 'sprint_id,task_id', ignoreDuplicates: true }
+  )
+}
+
 // ─── Activity log helper ─────────────────────────────────────────────────
 export async function logActivity(
   supabase: ReturnType<typeof createAdminClient>,
@@ -307,6 +334,7 @@ export async function createDashboardTask(
   }
 
   await logActivity(supabase, member.companyId, member.id, 'task.created', 'task', task.id)
+  await autoAddToCurrentSprint(supabase, task.id, task.project_id, member.companyId, task.status)
   revalidatePath('/dashboard')
   return { task: toCamelTask(task) }
 }
@@ -594,6 +622,7 @@ export async function updateDashboardTaskStatus(
     await logActivity(supabase, member.companyId, member.id, 'task.status_changed', 'task', task.id, {
       from: prevStatus, to: status
     })
+    await autoAddToCurrentSprint(supabase, task.id, task.project_id, member.companyId, status)
   }
   revalidatePath('/dashboard')
   revalidatePath(`/projects/${task.project_id}`)
@@ -1236,6 +1265,7 @@ export async function moveDashboardTask(
     await logActivity(supabase, member.companyId, member.id, 'task.status_changed', 'task', task.id, {
       from: task.status, to: toStatus
     })
+    await autoAddToCurrentSprint(supabase, task.id, task.project_id, member.companyId, toStatus)
   }
   revalidatePath('/dashboard')
   revalidatePath(`/projects/${task.project_id}`)

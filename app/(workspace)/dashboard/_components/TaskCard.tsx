@@ -7,7 +7,8 @@ import {
   ExternalLink,
   Files,
   Filter,
-  Share2
+  Share2,
+  Target
 } from 'lucide-react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -171,6 +172,25 @@ export default function TaskCard({
             onSelect: () => a.changeProject(task.id, p.id)
           }))
       },
+      ...(task.projectId
+        ? (() => {
+            const sprints = a.sprintsForProject(task.projectId as string)
+            if (sprints.length === 0) return []
+            return [
+              {
+                id: 'add-to-sprint',
+                label: 'Add to sprint',
+                icon: <Target className="size-3.5" />,
+                submenu: sprints.map((s) => ({
+                  id: `sprint-${s.id}`,
+                  label: `${s.name}${s.status === 'current' ? ' · now' : s.status === 'upcoming' ? '' : ' · done'}`,
+                  icon: <Target className="size-3.5" />,
+                  onSelect: () => a.addToSprint(task.id, s.id)
+                }))
+              }
+            ]
+          })()
+        : []),
       { id: 'sep1', label: '', separator: true },
       {
         id: 'duplicate',

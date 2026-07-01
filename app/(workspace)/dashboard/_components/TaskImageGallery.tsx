@@ -41,10 +41,17 @@ export default function TaskImageGallery({
 
   return (
     <div className="flex flex-col gap-2">
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => setOpenIndex(0)}
-        className={`group relative block w-full overflow-hidden rounded-lg border ${t.borderSoft}`}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            setOpenIndex(0)
+          }
+        }}
+        className={`group relative block w-full cursor-pointer overflow-hidden rounded-lg border ${t.borderSoft}`}
         title={hero.fileName}
       >
         {hero.url ? (
@@ -74,7 +81,7 @@ export default function TaskImageGallery({
             <Trash2 className="size-3.5" />
           </button>
         )}
-      </button>
+      </div>
 
       {rest.length > 0 && (
         <div className="grid grid-cols-4 gap-1.5">
