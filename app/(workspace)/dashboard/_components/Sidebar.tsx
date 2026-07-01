@@ -20,6 +20,7 @@ import {
   Shapes,
   Compass,
   UserCog,
+  UserPlus,
   Archive as ArchiveIcon,
   Palette,
   Trash2
@@ -73,7 +74,9 @@ const HINTS = {
   symbols: 'Reference for the status and priority icons used on cards.',
   settings: 'Card density, WIP limits, notifications, and help hints.',
   brand:
-    'Explore sub-brand directions and export the SVG logo pack for every tool.'
+    'Explore sub-brand directions and export the SVG logo pack for every tool.',
+  onboarding:
+    'Per-member onboarding + offboarding checklist. Tracks who has access to which tool.'
 } as const
 
 type View =
@@ -90,6 +93,7 @@ type View =
   | 'archive'
   | 'brand'
   | 'trash'
+  | 'onboarding'
 
 interface SidebarProps {
   activeView: 'all' | 'mine' | 'inbox' | 'mentions'
@@ -569,6 +573,17 @@ export default function Sidebar({
                   ? 'Invite, remove, and manage roles for everyone in the workspace.'
                   : undefined
               }
+            />
+          )}
+          {(currentIsOwner ||
+            currentAccessTier === 'admin' ||
+            currentAccessTier === 'lead') && (
+            <SidebarItem
+              icon={<UserPlus className="size-3.5" />}
+              label="Onboarding"
+              active={secondary === 'onboarding'}
+              onClick={() => onSecondary('onboarding')}
+              hint={showHints ? HINTS.onboarding : undefined}
             />
           )}
           <SidebarItem

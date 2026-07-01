@@ -120,6 +120,16 @@ import {
   deleteTaskAttachment as deleteTaskAttachmentImpl,
   listTaskAttachmentsForTasks as listTaskAttachmentsForTasksImpl,
 } from '@/supabase/dashboard/taskAttachments'
+import {
+  listOnboardingProgress as listOnboardingProgressImpl,
+  listMemberChecklist as listMemberChecklistImpl,
+  markStep as markStepImpl,
+  createTemplate as createTemplateImpl,
+  updateTemplate as updateTemplateImpl,
+  archiveTemplate as archiveTemplateImpl,
+  seedDefaultTemplates as seedDefaultTemplatesImpl,
+  listAllTemplates as listAllTemplatesImpl,
+} from '@/supabase/dashboard/onboarding'
 
 export async function fetchDashboardData(
   ...args: Parameters<typeof fetchDashboardDataImpl>
@@ -710,4 +720,52 @@ export async function listTaskAttachmentsForTasks(
   ...args: Parameters<typeof listTaskAttachmentsForTasksImpl>
 ) {
   return listTaskAttachmentsForTasksImpl(...args)
+}
+
+export async function listOnboardingProgress(
+  ...args: Parameters<typeof listOnboardingProgressImpl>
+) {
+  return listOnboardingProgressImpl(...args)
+}
+
+export async function listMemberChecklist(
+  ...args: Parameters<typeof listMemberChecklistImpl>
+) {
+  return listMemberChecklistImpl(...args)
+}
+
+export async function markStep(
+  ...args: Parameters<typeof markStepImpl>
+) {
+  return markStepImpl(...args)
+}
+
+export async function createTemplate(
+  ...args: Parameters<typeof createTemplateImpl>
+) {
+  return createTemplateImpl(...args)
+}
+
+export async function updateTemplate(
+  ...args: Parameters<typeof updateTemplateImpl>
+) {
+  return updateTemplateImpl(...args)
+}
+
+export async function archiveTemplate(
+  ...args: Parameters<typeof archiveTemplateImpl>
+) {
+  return archiveTemplateImpl(...args)
+}
+
+export async function seedDefaultTemplates(
+  ...args: Parameters<typeof seedDefaultTemplatesImpl>
+) {
+  return seedDefaultTemplatesImpl(...args)
+}
+
+export async function listAllTemplates(
+  ...args: Parameters<typeof listAllTemplatesImpl>
+) {
+  return listAllTemplatesImpl(...args)
 }

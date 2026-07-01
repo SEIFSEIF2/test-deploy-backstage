@@ -100,6 +100,7 @@ import FilterPanel from './FilterPanel'
 import { ProjectsPanel, SettingsPanel, UpdatesPanel } from './Panels'
 import BrandPanel from './BrandPanel'
 import TrashPanel from './TrashPanel'
+import OnboardingPanel from './OnboardingPanel'
 import { type TaskAttachmentView } from './TaskImageDropZone'
 import { MeetingsPanel } from './MeetingsPanel'
 import { TeamPanel } from './TeamPanel'
@@ -147,6 +148,7 @@ export type View =
   | 'archive'
   | 'brand'
   | 'trash'
+  | 'onboarding'
 
 export interface DashboardInitial {
   tasks: BoardTask[]
@@ -304,7 +306,8 @@ const PANEL_VIEWS = [
   'meetings',
   'archive',
   'brand',
-  'trash'
+  'trash',
+  'onboarding'
 ] as const
 type PanelView = (typeof PANEL_VIEWS)[number]
 
@@ -361,6 +364,7 @@ function viewTitle(
     if (view === 'archive') return 'Archive'
     if (view === 'brand') return 'Brand exploration'
     if (view === 'trash') return 'Trash'
+    if (view === 'onboarding') return 'Onboarding'
     return 'All tasks'
   })()
   return project ? `${project.name} — ${base}` : base
@@ -374,10 +378,15 @@ function buildViewMarkdown(args: {
   currentProjectId: string | null
   projects: { id: string; name: string }[]
 }): string {
-  return viewToMarkdown(args.tasks, args.ctx, {
-    title: viewTitle(args.view, args.currentProjectId, args.projects),
-    groupBy: args.groupBy
-  })
+  return viewToMarkdown(
+    args.tasks,
+    args.ctx,
+    {
+      title: viewTitle(args.view, args.currentProjectId, args.projects),
+      groupBy: args.groupBy
+    },
+    { brief: true, withoutCommentsAndActivity: true }
+  )
 }
 
 function scopedTasks(
@@ -409,20 +418,21 @@ function buildViewCopyMenu(args: {
   })
   const items: CopyMenuItem[] = [
     {
-      id: 'md-full',
+      id: 'md-brief',
       label: 'Copy as Markdown',
-      description: 'Filtered tasks, comments + activity',
-      getContent: () => viewToMarkdown(args.filtered, args.ctx, meta()),
+      description: 'One line per task, sprint context up top',
+      getContent: () =>
+        viewToMarkdown(args.filtered, args.ctx, meta(), {
+          brief: true,
+          withoutCommentsAndActivity: true
+        }),
       toastLabel: 'page as Markdown'
     },
     {
-      id: 'md-slim',
-      label: 'Copy as Markdown (no comments)',
-      description: 'Filtered tasks, metadata only',
-      getContent: () =>
-        viewToMarkdown(args.filtered, args.ctx, meta(), {
-          withoutCommentsAndActivity: true
-        }),
+      id: 'md-detailed',
+      label: 'Copy as Markdown (detailed)',
+      description: 'Full task blocks with comments + activity',
+      getContent: () => viewToMarkdown(args.filtered, args.ctx, meta()),
       toastLabel: 'page as Markdown'
     },
     {
@@ -456,7 +466,8 @@ function buildViewCopyMenu(args: {
         viewToMarkdown(
           scopedTasks(args.allTasks, 'today'),
           args.ctx,
-          meta('today')
+          meta('today'),
+          { brief: true, withoutCommentsAndActivity: true }
         ),
       toastLabel: "today's tasks"
     },
@@ -468,7 +479,8 @@ function buildViewCopyMenu(args: {
         viewToMarkdown(
           scopedTasks(args.allTasks, 'week'),
           args.ctx,
-          meta('this week')
+          meta('this week'),
+          { brief: true, withoutCommentsAndActivity: true }
         ),
       toastLabel: "this week's tasks"
     },
@@ -480,7 +492,8 @@ function buildViewCopyMenu(args: {
         viewToMarkdown(
           scopedTasks(args.allTasks, 'month'),
           args.ctx,
-          meta('this month')
+          meta('this month'),
+          { brief: true, withoutCommentsAndActivity: true }
         ),
       toastLabel: "this month's tasks"
     }
@@ -2786,7 +2799,37 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
     clearAssigneeFilter: () => setAssigneeFilter([]),
     canDeleteTasks:
       initial.currentMember.accessTier === 'admin' ||
-      initial.currentMember.accessTier === 'lead'
+      initial.currentMember.accessTier === 'lead',
+    sprintsForProject: (projectId: string) =>
+      sprints
+        .filter((s) => s.projectId === projectId && s.status !== 'completed')
+        .sort((a, b) => {
+          const rank = (s: typeof a) => (s.status === 'current' ? 0 : 1)
+          const r = rank(a) - rank(b)
+          if (r !== 0) return r
+          return a.number - b.number
+        })
+        .map((s) => ({ id: s.id, name: s.name, status: s.status })),
+    addToSprint: (taskId: string, sprintId: string) => {
+      setSprints((prev) =>
+        prev.map((s) =>
+          s.id === sprintId && !s.taskIds.includes(taskId)
+            ? { ...s, taskIds: [...s.taskIds, taskId] }
+            : s
+        )
+      )
+      void (async () => {
+        const { addTaskToSprint } = await import('../actions')
+        const res = await addTaskToSprint({ sprintId, taskId })
+        if ('error' in res) {
+          toast.error(res.error)
+          queryClient.invalidateQueries({ queryKey: ['dashboardInitial'] })
+        } else {
+          const s = sprints.find((x) => x.id === sprintId)
+          toast.success(`Added to ${s?.name ?? 'sprint'}.`)
+        }
+      })()
+    }
   }
 
   const onProjectChange = (projectId: string | null) => {
@@ -3048,7 +3091,8 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                 view === 'meetings' ||
                 view === 'archive' ||
                 view === 'brand' ||
-                view === 'trash'
+                view === 'trash' ||
+                view === 'onboarding'
                   ? 'all'
                   : view
               }
@@ -3092,7 +3136,8 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                   view === 'meetings' ||
                   view === 'archive' ||
                   view === 'brand' ||
-                  view === 'trash'
+                  view === 'trash' ||
+                  view === 'onboarding'
                     ? 'all'
                     : view
                 }
@@ -3901,6 +3946,12 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
               {view === 'trash' && (
                 <TrashPanel accessTier={initial.currentMember.accessTier} />
               )}
+              {view === 'onboarding' && (
+                <OnboardingPanel
+                  currentMemberId={initial.currentMember.id}
+                  currentAccessTier={initial.currentMember.accessTier}
+                />
+              )}
             </main>
 
             <Sheet
@@ -3988,7 +4039,8 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                     onAttachmentSwap={handleAttachmentSwap}
                     copySlot={
                       <CopyButton
-                        primaryLabel="Copy"
+                        primaryLabel=""
+                        iconOnly
                         primaryToastLabel="task as Markdown"
                         primaryGetContent={() =>
                           taskToMarkdown(selected, exportCtx)

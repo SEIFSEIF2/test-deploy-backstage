@@ -592,6 +592,127 @@ export type Database = {
           },
         ]
       }
+      onboarding_step_completions: {
+        Row: {
+          company_id: string
+          completed_at: string
+          completed_by: string | null
+          id: string
+          member_id: string
+          note: string | null
+          status: string
+          template_id: string
+        }
+        Insert: {
+          company_id: string
+          completed_at?: string
+          completed_by?: string | null
+          id?: string
+          member_id: string
+          note?: string | null
+          status?: string
+          template_id: string
+        }
+        Update: {
+          company_id?: string
+          completed_at?: string
+          completed_by?: string | null
+          id?: string
+          member_id?: string
+          note?: string | null
+          status?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_step_completions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_step_completions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_step_completions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_step_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_step_completions_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_step_templates: {
+        Row: {
+          admin_invite_url: string | null
+          archived_at: string | null
+          category: string
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_required: boolean
+          member_help_url: string | null
+          sort_order: number
+          target_skills: string[] | null
+          target_tiers: Database["public"]["Enums"]["access_tier"][]
+          title: string
+          tool_key: string | null
+        }
+        Insert: {
+          admin_invite_url?: string | null
+          archived_at?: string | null
+          category?: string
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_required?: boolean
+          member_help_url?: string | null
+          sort_order?: number
+          target_skills?: string[] | null
+          target_tiers?: Database["public"]["Enums"]["access_tier"][]
+          title: string
+          tool_key?: string | null
+        }
+        Update: {
+          admin_invite_url?: string | null
+          archived_at?: string | null
+          category?: string
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_required?: boolean
+          member_help_url?: string | null
+          sort_order?: number
+          target_skills?: string[] | null
+          target_tiers?: Database["public"]["Enums"]["access_tier"][]
+          title?: string
+          tool_key?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_step_templates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_email_prefs: {
         Row: {
           assigned: boolean
