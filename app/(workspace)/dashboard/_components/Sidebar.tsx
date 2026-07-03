@@ -51,9 +51,12 @@ import { config } from '@/lib/config'
 import {
   useFeature,
   useEnabledFeatures,
-  useCompanyLogoUrl
+  useCompanyLogoUrl,
+  useActiveWorkspace,
+  useMyWorkspaces
 } from '@/lib/features/client'
 import { PLUGINS } from '@/plugins.config'
+import { switchWorkspace } from '../workspace-actions'
 import { pluginFeatureKey } from '@/lib/plugins/types'
 import { useTaskActions } from './actions'
 import { Filter, X } from 'lucide-react'
@@ -190,6 +193,11 @@ export default function Sidebar({
   const logoUrl = useCompanyLogoUrl()
   const [projectMenuOpen, setProjectMenuOpen] = useState(false)
   const projectMenuRef = useRef<HTMLDivElement>(null)
+  const workspaces = useMyWorkspaces()
+  const activeWorkspace = useActiveWorkspace()
+  const [wsMenuOpen, setWsMenuOpen] = useState(false)
+  const [wsSwitching, setWsSwitching] = useState(false)
+  const wsMenuRef = useRef<HTMLDivElement>(null)
   const currentProject = currentProjectId
     ? (projects.find((p) => p.id === currentProjectId) ?? null)
     : null
@@ -203,6 +211,31 @@ export default function Sidebar({
     document.addEventListener('mousedown', onDocClick)
     return () => document.removeEventListener('mousedown', onDocClick)
   }, [projectMenuOpen])
+
+  useEffect(() => {
+    if (!wsMenuOpen) return
+    const onDocClick = (e: MouseEvent) => {
+      if (!wsMenuRef.current?.contains(e.target as Node)) {
+        setWsMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onDocClick)
+    return () => document.removeEventListener('mousedown', onDocClick)
+  }, [wsMenuOpen])
+
+  async function pickWorkspace(companyId: string) {
+    if (wsSwitching || companyId === activeWorkspace?.id) {
+      setWsMenuOpen(false)
+      return
+    }
+    setWsSwitching(true)
+    const res = await switchWorkspace(companyId)
+    setWsSwitching(false)
+    setWsMenuOpen(false)
+    if ('error' in res) return
+    router.push('/dashboard')
+    router.refresh()
+  }
   // Self first; remaining members ordered by how reachable they look right
   // now (online > active today > away > on vacation). Soft-removed members
   // (activity_status='left') drop off the sidebar entirely - they only
@@ -296,12 +329,9 @@ export default function Sidebar({
         data-tour="sidebar"
         className={`flex h-full min-w-0 scrollbar-none flex-col gap-5 overflow-y-auto border-r px-3 py-4 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${t.sidebar}`}
       >
-        <Link
-          href="/dashboard"
-          className={`-mx-1 flex items-center gap-2 rounded-md px-2 py-1 transition ${t.rowHover}`}
-          title="Back to all Tasks"
-        >
-          {logoUrl ? (
+        {(() => {
+          const wsName = activeWorkspace?.name || config.appName
+          const mark = logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={logoUrl}
@@ -313,18 +343,76 @@ export default function Sidebar({
               className={`flex size-6 items-center justify-center rounded bg-[#948CC0]/15 text-[10px] font-bold text-[#6E62B0] dark:bg-[#948CC0]/20 dark:text-[#BCB3DD]`}
               aria-hidden
             >
-              {config.appName.slice(0, 1).toUpperCase()}
+              {wsName.slice(0, 1).toUpperCase()}
             </div>
-          )}
-          <div className="flex flex-col leading-none">
-            <span
-              className={`text-[11px] tracking-[0.25em] uppercase ${t.textMuted}`}
-            >
-              {config.appName}
-            </span>
-            <span className={`text-xs ${t.text}`}>Workspace</span>
-          </div>
-        </Link>
+          )
+          const label = (
+            <div className="flex min-w-0 flex-col leading-none">
+              <span
+                className={`truncate text-[11px] tracking-[0.25em] uppercase ${t.textMuted}`}
+              >
+                {wsName}
+              </span>
+              <span className={`text-xs ${t.text}`}>Workspace</span>
+            </div>
+          )
+          if (workspaces.length <= 1) {
+            return (
+              <Link
+                href="/dashboard"
+                className={`-mx-1 flex items-center gap-2 rounded-md px-2 py-1 transition ${t.rowHover}`}
+                title="Back to all Tasks"
+              >
+                {mark}
+                {label}
+              </Link>
+            )
+          }
+          return (
+            <div className="relative -mx-1" ref={wsMenuRef}>
+              <button
+                type="button"
+                onClick={() => setWsMenuOpen((o) => !o)}
+                aria-haspopup="menu"
+                aria-expanded={wsMenuOpen}
+                title="Switch workspace"
+                className={`flex w-full items-center gap-2 rounded-md px-2 py-1 transition ${t.rowHover}`}
+              >
+                {mark}
+                {label}
+                <ChevronDown
+                  className={`ml-auto size-3 shrink-0 ${t.textSubtle} transition-transform ${
+                    wsMenuOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+              {wsMenuOpen && (
+                <div
+                  role="menu"
+                  className={`absolute top-full right-0 left-0 z-40 mt-1 max-h-72 overflow-auto rounded-md border py-1 shadow-xl ${t.detail}`}
+                >
+                  {workspaces.map((w) => (
+                    <button
+                      key={w.id}
+                      onClick={() => pickWorkspace(w.id)}
+                      disabled={wsSwitching}
+                      className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs disabled:opacity-60 ${
+                        w.id === activeWorkspace?.id ? t.btnActive : t.tab
+                      }`}
+                    >
+                      <Check
+                        className={`size-3 shrink-0 ${
+                          w.id === activeWorkspace?.id ? '' : 'opacity-0'
+                        }`}
+                      />
+                      <span className="truncate">{w.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })()}
 
         <div className="relative -mt-2" ref={projectMenuRef}>
           <div

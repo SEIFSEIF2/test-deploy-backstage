@@ -53,6 +53,12 @@ export const FEATURES = {
     label: 'AI review',
     description: 'AI-assisted review helper.',
     group: 'Advanced'
+  },
+  multiWorkspace: {
+    label: 'Multi-workspace accounts',
+    description:
+      'Inviting an email that already has an account attaches this workspace to it instead of creating a second login.',
+    group: 'Advanced'
   }
 } as const
 
@@ -75,5 +81,7 @@ export const PRESETS: Record<'solo' | 'team' | 'full', FeatureKey[]> = {
     'updatesPanel',
     'onboarding'
   ],
-  full: ALL_FEATURE_KEYS.filter((k) => k !== 'aiReview')
+  full: ALL_FEATURE_KEYS.filter(
+    (k) => k !== 'aiReview' && k !== 'multiWorkspace'
+  )
 }

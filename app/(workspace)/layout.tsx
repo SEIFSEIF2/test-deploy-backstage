@@ -45,6 +45,9 @@ async function Gated({ children }: { children: React.ReactNode }) {
     <FeaturesProvider
       enabled={branding.enabledFeatures}
       logoUrl={branding.logoUrl}
+      companyId={branding.companyId}
+      companyName={branding.companyName}
+      workspaces={branding.workspaces}
     >
       {children}
     </FeaturesProvider>

@@ -639,6 +639,9 @@ export function assignmentEmail(input: AssignmentEmailInput): {
 }
 
 export interface InviteMemberEmailInput {
+  // True when the invite attaches this workspace to an account the
+  // recipient already has: no credentials block, no password copy.
+  existingAccount?: boolean
   recipientName: string
   inviterName: string
   companyName: string
@@ -666,37 +669,53 @@ export function inviteMemberEmail(input: InviteMemberEmailInput): {
     day: 'numeric',
     year: 'numeric'
   })
-  const credsHtml =
-    `<div style="margin:12px 0;padding:14px 16px;border:1px solid #e4e4e7;border-radius:8px;background:#fafafa">` +
-    `<p style="margin:0 0 6px;font-size:11px;color:#71717a;text-transform:uppercase;letter-spacing:0.04em">Your login</p>` +
-    `<p style="margin:0 0 4px"><strong>Email:</strong> <code style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">${escape(input.loginEmail)}</code></p>` +
-    `<p style="margin:0"><strong>Password:</strong> <code style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">${escape(input.initialPassword)}</code></p>` +
-    `</div>`
+  const credsHtml = input.existingAccount
+    ? `<p style="margin:12px 0;color:#444">This workspace will be added to your existing account (<code style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">${escape(input.loginEmail)}</code>) — no new password needed.</p>`
+    : `<div style="margin:12px 0;padding:14px 16px;border:1px solid #e4e4e7;border-radius:8px;background:#fafafa">` +
+      `<p style="margin:0 0 6px;font-size:11px;color:#71717a;text-transform:uppercase;letter-spacing:0.04em">Your login</p>` +
+      `<p style="margin:0 0 4px"><strong>Email:</strong> <code style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">${escape(input.loginEmail)}</code></p>` +
+      `<p style="margin:0"><strong>Password:</strong> <code style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">${escape(input.initialPassword)}</code></p>` +
+      `</div>`
   const html = shell({
     preheader: `${input.inviterName} invited you to join ${input.companyName} as ${tierLabel}`,
     bodyHtml:
       `<p style="margin:0 0 8px">Hi ${escape(input.recipientName.split(' ')[0] || input.recipientName)},</p>` +
       `<p style="margin:0 0 12px"><strong>${escape(input.inviterName)}</strong> invited you to join <strong>${escape(input.companyName)}</strong> on Backstage as ${escape(tierLabel)}.</p>` +
       credsHtml +
-      `<p style="margin:0 0 12px;color:#444">Click below to accept the invite and sign in. You will be asked to change your password on first sign-in. The link expires on ${escape(expiresPretty)}.</p>` +
+      (input.existingAccount
+        ? `<p style="margin:0 0 12px;color:#444">Click below to accept, then sign in with your existing password. The link expires on ${escape(expiresPretty)}.</p>`
+        : `<p style="margin:0 0 12px;color:#444">Click below to accept the invite and sign in. You will be asked to change your password on first sign-in. The link expires on ${escape(expiresPretty)}.</p>`) +
       `<p style="margin:0 0 12px;font-size:12px;color:#71717a">Already accepted, or the link above doesn't work? Sign in directly at <a href="${escape(input.loginUrl)}" style="color:#0f766e;text-decoration:underline">${escape(input.loginUrl)}</a> with the credentials above.</p>`,
     ctaLabel: 'Accept invite',
     ctaUrl: input.acceptUrl
   })
-  const text = [
-    `Hi ${input.recipientName.split(' ')[0] || input.recipientName},`,
-    '',
-    `${input.inviterName} invited you to join ${input.companyName} on Backstage as ${tierLabel}.`,
-    '',
-    `Your login:`,
-    `  Email: ${input.loginEmail}`,
-    `  Password: ${input.initialPassword}`,
-    '',
-    `Accept here: ${input.acceptUrl}`,
-    `Or sign in directly at: ${input.loginUrl}`,
-    `You will be asked to change your password on first sign-in.`,
-    `Link expires on ${expiresPretty}.`
-  ].join('\n')
+  const text = (input.existingAccount
+    ? [
+        `Hi ${input.recipientName.split(' ')[0] || input.recipientName},`,
+        '',
+        `${input.inviterName} invited you to join ${input.companyName} on Backstage as ${tierLabel}.`,
+        '',
+        `This workspace will be added to your existing account (${input.loginEmail}).`,
+        '',
+        `Accept here: ${input.acceptUrl}`,
+        `Then sign in with your existing password at: ${input.loginUrl}`,
+        `Link expires on ${expiresPretty}.`
+      ]
+    : [
+        `Hi ${input.recipientName.split(' ')[0] || input.recipientName},`,
+        '',
+        `${input.inviterName} invited you to join ${input.companyName} on Backstage as ${tierLabel}.`,
+        '',
+        `Your login:`,
+        `  Email: ${input.loginEmail}`,
+        `  Password: ${input.initialPassword}`,
+        '',
+        `Accept here: ${input.acceptUrl}`,
+        `Or sign in directly at: ${input.loginUrl}`,
+        `You will be asked to change your password on first sign-in.`,
+        `Link expires on ${expiresPretty}.`
+      ]
+  ).join('\n')
   return { subject, html, text }
 }
 

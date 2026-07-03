@@ -6,24 +6,53 @@ import { createAdminClient } from '@/supabase/admin'
 import { getCurrentTeamMember } from '@/lib/dal'
 import type { AnyFeatureKey } from './keys'
 
+export type WorkspaceSummary = {
+  id: string
+  name: string
+  logoUrl: string | null
+}
+
 export type WorkspaceBranding = {
   enabledFeatures: AnyFeatureKey[]
   logoUrl: string | null
+  companyId: string | null
+  companyName: string | null
+  // Every workspace this account belongs to (drives the sidebar switcher;
+  // length 1 for classic single-workspace accounts).
+  workspaces: WorkspaceSummary[]
+}
+
+const EMPTY_BRANDING: WorkspaceBranding = {
+  enabledFeatures: [],
+  logoUrl: null,
+  companyId: null,
+  companyName: null,
+  workspaces: []
 }
 
 export const getWorkspaceBranding = cache(
   async (): Promise<WorkspaceBranding> => {
     const member = await getCurrentTeamMember()
-    if (!member) return { enabledFeatures: [], logoUrl: null }
+    if (!member) return EMPTY_BRANDING
     const supabase = createAdminClient()
     const { data } = await supabase
-      .from('companies')
-      .select('enabled_features, logo_url')
-      .eq('id', member.companyId)
-      .maybeSingle()
+      .from('team_members')
+      .select('company_id, companies(id, name, logo_url, enabled_features)')
+      .eq('user_id', member.userId)
+    const rows = data ?? []
+    const workspaces: WorkspaceSummary[] = rows.flatMap((r) =>
+      r.companies
+        ? [{ id: r.companies.id, name: r.companies.name, logoUrl: r.companies.logo_url }]
+        : []
+    )
+    const active = rows.find((r) => r.company_id === member.companyId)?.companies
     return {
-      enabledFeatures: (data?.enabled_features as AnyFeatureKey[] | null) ?? [],
-      logoUrl: data?.logo_url ?? null
+      enabledFeatures:
+        (active?.enabled_features as AnyFeatureKey[] | null) ?? [],
+      logoUrl: active?.logo_url ?? null,
+      companyId: member.companyId,
+      companyName: active?.name ?? null,
+      workspaces
     }
   }
 )

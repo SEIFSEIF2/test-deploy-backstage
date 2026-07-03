@@ -64,6 +64,7 @@ export async function createWorkspace(
 
   const { error: memberError } = await supabase.from('team_members').insert({
     id: userId,
+    user_id: userId,
     company_id: company.id,
     email,
     full_name: fullName,

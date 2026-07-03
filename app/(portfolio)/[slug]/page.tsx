@@ -117,12 +117,15 @@ async function PortfolioBody({
     .maybeSingle()
   if (!target) notFound()
 
+  // Gate: the viewer must hold a membership in the target's company.
+  // (Multi-workspace: one account can have several membership rows.)
   const { data: viewer } = await supabase
     .from('team_members')
     .select('company_id')
-    .eq('id', userId)
+    .eq('user_id', userId)
+    .eq('company_id', target.company_id)
     .maybeSingle()
-  if (!viewer || viewer.company_id !== target.company_id) notFound()
+  if (!viewer) notFound()
 
   const [shippedRes, doneCountRes, projectsRes, sprintsRes] = await Promise.all(
     [

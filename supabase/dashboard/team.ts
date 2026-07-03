@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { createAdminClient } from '@/supabase/admin'
 import { createClient } from '@/supabase/server'
 import { getCurrentTeamMember } from '@/lib/dal'
+import { isFeatureEnabled } from '@/lib/features/server'
 import { config } from '@/lib/config'
 import { absoluteUrl, sendEmail } from '@/lib/email/send'
 import { inviteMemberEmail } from '@/lib/email/templates'
@@ -287,7 +288,25 @@ export async function inviteMember(
     .is('accepted_at', null)
     .ilike('contact_email', parsed.data.contactEmail)
 
-  const loginEmail = await pickLoginEmail(supabase, parsed.data.fullName)
+  // Multi-workspace attach: when the flag is on and the contact email
+  // already belongs to an account (any workspace), the invite reuses that
+  // login instead of minting a synthetic one. loginEmail === contactEmail
+  // is the durable marker acceptInvite/resendInvite key off.
+  let attachAccount = false
+  if (await isFeatureEnabled('multiWorkspace')) {
+    const { data: existingAccount } = await supabase
+      .from('team_members')
+      .select('user_id')
+      .or(
+        `email.ilike.${parsed.data.contactEmail},contact_email.ilike.${parsed.data.contactEmail}`
+      )
+      .limit(1)
+      .maybeSingle()
+    attachAccount = Boolean(existingAccount)
+  }
+  const loginEmail = attachAccount
+    ? parsed.data.contactEmail
+    : await pickLoginEmail(supabase, parsed.data.fullName)
 
   const token = randomBytes(32).toString('hex')
   const expiresAt = new Date(
@@ -325,6 +344,7 @@ export async function inviteMember(
     accessTier: parsed.data.accessTier,
     loginEmail,
     initialPassword: INVITE_DEFAULT_PASSWORD,
+    existingAccount: attachAccount,
     acceptUrl: absoluteUrl(`/invite/${token}`),
     loginUrl: absoluteUrl('/login'),
     expiresAt
@@ -437,6 +457,8 @@ export async function resendInvite(
     accessTier: invite.access_tier,
     loginEmail: invite.email,
     initialPassword: INVITE_DEFAULT_PASSWORD,
+    existingAccount:
+      invite.email.toLowerCase() === (invite.contact_email ?? '').toLowerCase(),
     acceptUrl: absoluteUrl(`/invite/${invite.token}`),
     loginUrl: absoluteUrl('/login'),
     expiresAt: invite.expires_at
@@ -912,7 +934,7 @@ export async function updateMyTimezone(
 export async function acceptInvite(input: {
   token: string
 }): Promise<
-  | { ok: true; loginEmail: string }
+  | { ok: true; loginEmail: string; attached?: boolean }
   | { error: string }
 > {
   if (!input.token) return { error: 'Invite not found.' }
@@ -927,6 +949,60 @@ export async function acceptInvite(input: {
   if (invite.accepted_at) return { error: 'That invite was already used.' }
   if (new Date(invite.expires_at).getTime() < Date.now()) {
     return { error: 'That invite has expired.' }
+  }
+
+  // Attach invite (multi-workspace): loginEmail === contactEmail marks an
+  // invite aimed at an existing account. Add a membership row to that
+  // account — no new auth user, no default password. Profile fields are
+  // copied from the newest membership so the avatar gate doesn't force
+  // re-onboarding; slug stays null (portfolio looks slugs up globally).
+  const isAttach =
+    invite.email.toLowerCase() === (invite.contact_email ?? '').toLowerCase()
+  if (isAttach) {
+    const { data: account } = await supabase
+      .from('team_members')
+      .select('*')
+      .or(`email.ilike.${invite.email},contact_email.ilike.${invite.email}`)
+      .order('last_seen_at', { ascending: false, nullsFirst: false })
+      .limit(1)
+      .maybeSingle()
+    if (account) {
+      const { error: attachErr } = await supabase.from('team_members').insert({
+        user_id: account.user_id,
+        company_id: invite.company_id,
+        email: invite.email,
+        contact_email: invite.contact_email,
+        full_name: invite.full_name,
+        access_tier: invite.access_tier,
+        avatar_url: account.avatar_url,
+        bio: account.bio,
+        timezone: account.timezone,
+        languages: account.languages,
+        work_style: account.work_style,
+        headline: account.headline,
+        skills: account.skills,
+        work_links: account.work_links,
+        onboarding_step: account.onboarding_step
+      })
+      if (attachErr) {
+        // 23505 = unique (user_id, company_id): already a member.
+        return {
+          error:
+            attachErr.code === '23505'
+              ? 'You are already on that team.'
+              : attachErr.message
+        }
+      }
+
+      await supabase
+        .from('team_invites')
+        .update({ accepted_at: new Date().toISOString() })
+        .eq('id', invite.id)
+
+      return { ok: true, loginEmail: invite.email, attached: true }
+    }
+    // Account deleted since the invite was sent: fall through to the
+    // legacy path — the login email is their real address, which works.
   }
 
   // Create the auth.users entry first - the team_members row needs to
@@ -945,6 +1021,7 @@ export async function acceptInvite(input: {
 
   const { error: tmErr } = await supabase.from('team_members').insert({
     id: created.user.id,
+    user_id: created.user.id,
     company_id: invite.company_id,
     email: invite.email,
     contact_email: invite.contact_email,

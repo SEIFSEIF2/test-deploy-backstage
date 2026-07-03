@@ -32,6 +32,9 @@ export default async function InvitePage({
   }
 
   const { invite } = result
+  const existingAccount =
+    invite.loginEmail.toLowerCase() === invite.contactEmail.toLowerCase()
+
   return (
     <div className="flex min-h-svh items-center justify-center p-6">
       <div className="w-full max-w-sm rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
@@ -51,13 +54,22 @@ export default async function InvitePage({
             {invite.loginEmail}
           </p>
           <p className="mt-2 text-[11px] text-zinc-600">
-            Use the password from the invite email we sent to{' '}
-            <span className="font-medium text-zinc-800">{invite.contactEmail}</span>.
+            {existingAccount ? (
+              <>Sign in with your existing account password.</>
+            ) : (
+              <>
+                Use the password from the invite email we sent to{' '}
+                <span className="font-medium text-zinc-800">
+                  {invite.contactEmail}
+                </span>
+                .
+              </>
+            )}
           </p>
         </div>
 
         <div className="mt-5">
-          <InviteAcceptForm token={token} />
+          <InviteAcceptForm token={token} existingAccount={existingAccount} />
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/supabase/server";
 import { createAdminClient } from "@/supabase/admin";
@@ -20,6 +21,8 @@ type TeamMemberRow = Database["public"]["Tables"]["team_members"]["Row"];
 // consumers (DashboardShell, actions.ts, onboarding) don't have to change.
 export interface TeamMember {
   id: string;
+  // The auth account this membership belongs to (auth.users.id).
+  userId: string;
   companyId: string;
   email: string;
   slug: string | null;
@@ -48,6 +51,7 @@ export interface TeamMember {
 export function toTeamMember(row: TeamMemberRow): TeamMember {
   return {
     id: row.id,
+    userId: row.user_id,
     companyId: row.company_id,
     email: row.email,
     slug: row.slug,
@@ -85,22 +89,39 @@ export const verifySession = cache(async () => {
   return data.claims;
 });
 
+// Cookie holding the active workspace's company id for accounts that
+// belong to more than one. Read only here; set only by switchWorkspace.
+const ACTIVE_WORKSPACE_COOKIE = "bs-active-workspace";
+
 export const getCurrentTeamMember = cache(
   async (): Promise<TeamMember | null> => {
     const claims = await verifySession();
-    // INVARIANT: team_member.id === auth.users.id. The cross-schema FK that
-    // enforced this was dropped in slice 2 (decisions 0002, 0016). A miss here
-    // means a writer used the wrong id, not that the user is logged in wrong.
+    // INVARIANT: team_member.user_id === auth.users.id, one membership row
+    // per (user, workspace); founders' rows also have id === user_id for
+    // history (decisions 0002, 0016). A miss here means a writer used the
+    // wrong id, not that the user is logged in wrong.
     const userId = claims.sub as string;
 
     const supabase = await createClient();
-    const { data } = await supabase
+    const { data: rows } = await supabase
       .from("team_members")
       .select("*")
-      .eq("id", userId)
-      .maybeSingle();
+      .eq("user_id", userId);
 
-    return data ? toTeamMember(data) : null;
+    if (!rows || rows.length === 0) return null;
+    if (rows.length === 1) return toTeamMember(rows[0]);
+
+    // Multiple memberships: the per-device cookie picks; a stale or absent
+    // cookie falls back to the most recently used membership.
+    const active = (await cookies()).get(ACTIVE_WORKSPACE_COOKIE)?.value;
+    const pick =
+      rows.find((r) => r.company_id === active) ??
+      [...rows].sort((a, b) =>
+        (b.last_seen_at ?? b.created_at).localeCompare(
+          a.last_seen_at ?? a.created_at,
+        ),
+      )[0];
+    return toTeamMember(pick);
   },
 );
 

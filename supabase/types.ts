@@ -1562,6 +1562,7 @@ export type Database = {
           social_whatsapp: string | null
           timezone: string | null
           work_links: Json | null
+          user_id: string
           work_style: string | null
         }
         Insert: {
@@ -1575,7 +1576,7 @@ export type Database = {
           email: string
           full_name: string
           headline?: string | null
-          id: string
+          id?: string
           languages?: string[]
           last_seen_at?: string | null
           onboarding_step?: number
@@ -1588,6 +1589,7 @@ export type Database = {
           social_whatsapp?: string | null
           timezone?: string | null
           work_links?: Json | null
+          user_id: string
           work_style?: string | null
         }
         Update: {
@@ -1614,6 +1616,7 @@ export type Database = {
           social_whatsapp?: string | null
           timezone?: string | null
           work_links?: Json | null
+          user_id?: string
           work_style?: string | null
         }
         Relationships: [
