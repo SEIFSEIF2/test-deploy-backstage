@@ -159,7 +159,7 @@ export async function updateIdentity(formData: FormData): Promise<ActionResult> 
 // Safety: we constrain the path to `${member.id}/...` after verifying the
 // member via getCurrentTeamMember(), so a user still can't reach anyone
 // else's folder.
-const ALLOWED_AVATAR_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+const ALLOWED_AVATAR_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"] as const;
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 
 export async function uploadAvatar(formData: FormData): Promise<ActionResult> {
@@ -171,7 +171,7 @@ export async function uploadAvatar(formData: FormData): Promise<ActionResult> {
     return { ok: false, error: "Pick an image first." };
   }
   if (!ALLOWED_AVATAR_TYPES.includes(file.type as (typeof ALLOWED_AVATAR_TYPES)[number])) {
-    return { ok: false, error: "Image must be JPG, PNG, or WEBP." };
+    return { ok: false, error: "Image must be JPG, PNG, WEBP, or GIF." };
   }
   if (file.size > MAX_AVATAR_BYTES) {
     return { ok: false, error: "Image must be 5 MB or smaller." };

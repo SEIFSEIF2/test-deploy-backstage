@@ -54,7 +54,8 @@ export type OnboardingInitial = {
 const ALLOWED_AVATAR_TYPES = new Set([
   'image/jpeg',
   'image/png',
-  'image/webp'
+  'image/webp',
+  'image/gif'
 ])
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024
 
@@ -231,7 +232,7 @@ export function OnboardingWizard({ initial }: { initial: OnboardingInitial }) {
     // waiting on a body the server has already capped, leaving the
     // wizard stuck on "Uploading…".
     if (!ALLOWED_AVATAR_TYPES.has(avatarFile.type)) {
-      setError('Image must be JPG, PNG, or WEBP.')
+      setError('Image must be JPG, PNG, WEBP, or GIF.')
       return
     }
     if (avatarFile.size > MAX_AVATAR_BYTES) {
@@ -339,7 +340,7 @@ export function OnboardingWizard({ initial }: { initial: OnboardingInitial }) {
               {step === 0 &&
                 "Replace the shared starter password with one you'll remember."}
               {step === 1 && 'Make sure these match what the team should see.'}
-              {step === 2 && 'JPG, PNG, or WEBP up to 5 MB.'}
+              {step === 2 && 'JPG, PNG, WEBP, or GIF up to 5 MB.'}
               {step === 3 &&
                 "All optional. Leave anything blank you'd rather not share."}
               {step === 4 &&
