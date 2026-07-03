@@ -164,6 +164,7 @@ export type Database = {
       companies: {
         Row: {
           created_at: string
+          enabled_features: string[]
           id: string
           last_due_warning_date: string | null
           name: string
@@ -173,6 +174,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          enabled_features?: string[]
           id?: string
           last_due_warning_date?: string | null
           name: string
@@ -182,6 +184,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          enabled_features?: string[]
           id?: string
           last_due_warning_date?: string | null
           name?: string
