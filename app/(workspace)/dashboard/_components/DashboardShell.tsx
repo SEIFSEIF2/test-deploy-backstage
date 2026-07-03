@@ -101,7 +101,6 @@ import NewTaskModal from './NewTaskModal'
 import Timeline from './Timeline'
 import FilterPanel from './FilterPanel'
 import { ProjectsPanel, SettingsPanel, UpdatesPanel } from './Panels'
-import BrandPanel from './BrandPanel'
 import TrashPanel from './TrashPanel'
 import OnboardingPanel from './OnboardingPanel'
 import { type TaskAttachmentView } from './TaskImageDropZone'
@@ -149,7 +148,6 @@ export type View =
   | 'team'
   | 'meetings'
   | 'archive'
-  | 'brand'
   | 'trash'
   | 'onboarding'
 
@@ -308,7 +306,6 @@ const PANEL_VIEWS = [
   'team',
   'meetings',
   'archive',
-  'brand',
   'trash',
   'onboarding'
 ] as const
@@ -316,9 +313,7 @@ type PanelView = (typeof PANEL_VIEWS)[number]
 
 // Panels with non-flat URLs. The default mapping is /dashboard/<view>;
 // entries here override that for the special-cased segment.
-const PANEL_ROUTE: Partial<Record<PanelView, string>> = {
-  brand: 'settings/brand'
-}
+const PANEL_ROUTE: Partial<Record<PanelView, string>> = {}
 const ROUTE_TO_PANEL: Record<string, PanelView> = Object.fromEntries(
   Object.entries(PANEL_ROUTE).map(([view, seg]) => [seg, view as PanelView])
 )
@@ -365,7 +360,6 @@ function viewTitle(
     if (view === 'settings') return 'Workspace settings'
     if (view === 'team') return 'Team'
     if (view === 'archive') return 'Archive'
-    if (view === 'brand') return 'Brand exploration'
     if (view === 'trash') return 'Trash'
     if (view === 'onboarding') return 'Onboarding'
     return 'All tasks'
@@ -2955,8 +2949,6 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
         return 'Team'
       case 'archive':
         return 'Archive'
-      case 'brand':
-        return 'Brand'
       case 'all':
       default:
         return 'All tasks'
@@ -3103,7 +3095,6 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                 view === 'team' ||
                 view === 'meetings' ||
                 view === 'archive' ||
-                view === 'brand' ||
                 view === 'trash' ||
                 view === 'onboarding'
                   ? 'all'
@@ -3148,7 +3139,6 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                   view === 'team' ||
                   view === 'meetings' ||
                   view === 'archive' ||
-                  view === 'brand' ||
                   view === 'trash' ||
                   view === 'onboarding'
                     ? 'all'
@@ -3955,7 +3945,6 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                   initialQuickMeetUrl={initial.currentMember.quickMeetUrl}
                 />
               )}
-              {view === 'brand' && <BrandPanel />}
               {view === 'trash' && (
                 <TrashPanel accessTier={initial.currentMember.accessTier} />
               )}

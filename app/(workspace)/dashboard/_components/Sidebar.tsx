@@ -22,7 +22,6 @@ import {
   UserCog,
   UserPlus,
   Archive as ArchiveIcon,
-  Palette,
   Trash2
 } from 'lucide-react'
 import { STATUSES, TaskStatus } from './status'
@@ -75,8 +74,6 @@ const HINTS = {
     'Recent activity on your projects. Status changes, comments, mentions.',
   symbols: 'Reference for the status and priority icons used on cards.',
   settings: 'Card density, WIP limits, notifications, and help hints.',
-  brand:
-    'Explore sub-brand directions and export the SVG logo pack for every tool.',
   onboarding:
     'Per-member onboarding + offboarding checklist. Tracks who has access to which tool.'
 } as const
@@ -93,7 +90,6 @@ type View =
   | 'team'
   | 'meetings'
   | 'archive'
-  | 'brand'
   | 'trash'
   | 'onboarding'
 
@@ -168,7 +164,6 @@ export default function Sidebar({
     meetings.pendingApprovalCount + meetings.awaitingPickCount
   const meetingsEnabled = useFeature('meetings')
   const onboardingEnabled = useFeature('onboarding')
-  const brandExporterEnabled = useFeature('brandExporter')
   const updatesEnabled = useFeature('updatesPanel')
   const logoUrl = useCompanyLogoUrl()
   const [projectMenuOpen, setProjectMenuOpen] = useState(false)
@@ -612,15 +607,6 @@ export default function Sidebar({
             onClick={() => onSecondary('settings')}
             hint={showHints ? HINTS.settings : undefined}
           />
-          {brandExporterEnabled && (
-            <SidebarItem
-              icon={<Palette className="size-3.5" />}
-              label="Brand"
-              active={secondary === 'brand'}
-              onClick={() => onSecondary('brand')}
-              hint={showHints ? HINTS.brand : undefined}
-            />
-          )}
         </div>
 
         {!onboardingComplete && (

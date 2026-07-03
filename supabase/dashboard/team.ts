@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { createAdminClient } from '@/supabase/admin'
 import { createClient } from '@/supabase/server'
 import { getCurrentTeamMember } from '@/lib/dal'
+import { config } from '@/lib/config'
 import { absoluteUrl, sendEmail } from '@/lib/email/send'
 import { inviteMemberEmail } from '@/lib/email/templates'
 import { logActivity } from './mutations'
@@ -177,7 +178,7 @@ export async function listTeamRoster(): Promise<
 // app/(authentication)/onboarding/actions.ts updatePassword).
 export const INVITE_DEFAULT_PASSWORD = 'AStrong1!'
 
-const LOGIN_EMAIL_DOMAIN = 'verbivore.app'
+const LOGIN_EMAIL_DOMAIN = config.emailDomain
 
 const InviteInput = z.object({
   // The contact email the admin types - where the invite mail is sent
@@ -205,7 +206,7 @@ function slugifyForLogin(fullName: string): string {
   return parts.join('.')
 }
 
-// Picks an unused jane.doe@verbivore.app handle. Appends a numeric
+// Picks an unused jane.doe@<emailDomain> handle. Appends a numeric
 // suffix on collision (with both existing team_members emails and
 // pending invite emails). The lookup is case-insensitive because the
 // auth schema treats emails that way.

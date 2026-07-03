@@ -49,11 +49,6 @@ export const FEATURES = {
     description: 'Animated greeting bar at the top of the dashboard.',
     group: 'Polish'
   },
-  brandExporter: {
-    label: 'Brand exporter',
-    description: 'Sub-brand SVG pack generator (advanced).',
-    group: 'Advanced'
-  },
   aiReview: {
     label: 'AI review',
     description: 'AI-assisted review helper.',
@@ -75,7 +70,5 @@ export const PRESETS: Record<'solo' | 'team' | 'full', FeatureKey[]> = {
     'updatesPanel',
     'onboarding'
   ],
-  full: ALL_FEATURE_KEYS.filter(
-    (k) => k !== 'brandExporter' && k !== 'aiReview'
-  )
+  full: ALL_FEATURE_KEYS.filter((k) => k !== 'aiReview')
 }

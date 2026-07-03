@@ -2162,7 +2162,7 @@ export async function endSprint(input: z.input<typeof EndSprintInput>) {
 
 const GithubRepoStr = z
   .string().trim()
-  .regex(/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/, 'expected "owner/repo" (e.g. verbivore/web)')
+  .regex(/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/, 'expected "owner/repo" (e.g. acme/web)')
   .max(120)
 
 const SetProjectRepoInput = z.object({
