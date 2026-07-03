@@ -1,12 +1,17 @@
+import { redirect } from 'next/navigation'
 import { LoginForm } from '@/components/login-form'
 import { LoginWordmark } from '@/components/login-wordmark'
-import { getDefaultCompanyLogoUrl } from '@/lib/branding'
+import { getDefaultCompanyLogoUrl, hasAnyCompany } from '@/lib/branding'
 
 export default async function LoginPage({
   searchParams
 }: {
   searchParams: Promise<{ redirect?: string }>
 }) {
+  if (!(await hasAnyCompany())) {
+    redirect('/setup')
+  }
+
   const { redirect: redirectTo } = await searchParams
   const logoUrl = await getDefaultCompanyLogoUrl()
 

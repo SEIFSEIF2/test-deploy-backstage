@@ -12,12 +12,10 @@ import {
   Users,
   Zap
 } from 'lucide-react'
-import { createClient } from '@/supabase/server'
 import { config } from '@/lib/config'
-import { Suspense } from 'react'
 
 const DEPLOY_URL =
-  'https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FSEIFSEIF4%2Fbackstage&integration-ids=oac_VqOgBHqhEoFTPzGkPd7L0iH6&env=NEXT_PUBLIC_APP_NAME,NEXT_PUBLIC_APP_URL,NEXT_PUBLIC_APP_EMAIL_DOMAIN,NEXT_PUBLIC_TIMEZONE&envDescription=Branding%20and%20timezone.%20Supabase%20variables%20are%20provisioned%20automatically%20by%20the%20integration.'
+  'https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FSEIFSEIF4%2Fbackstage&integration-ids=oac_VqOgBHqhEoFTPzGkPd7L0iH6&env=NEXT_PUBLIC_APP_NAME&envDescription=Your%20app%20name%20(e.g.%20Backstage).%20Everything%20else%20is%20configured%20post-deploy.'
 
 export const metadata: Metadata = {
   title: `${config.appName} - ${config.appTagline}`,
@@ -94,13 +92,7 @@ function TopBar() {
           {config.appName}
         </span>
       </div>
-      <nav className="flex items-center gap-1">
-        <Link
-          href="/dashboard-demo"
-          className="rounded-md px-3 py-1.5 text-xs text-zinc-700 transition hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-white/5"
-        >
-          Try demo
-        </Link>
+      <nav className="flex items-center gap-2">
         <a
           href="https://github.com/SEIFSEIF4/backstage"
           target="_blank"
@@ -109,32 +101,15 @@ function TopBar() {
         >
           GitHub
         </a>
-        <Suspense fallback={<SignInPlaceholder />}>
-          <SignInOrDashboard />
-        </Suspense>
+        <Link
+          href="/dashboard-demo"
+          className="inline-flex h-8 items-center gap-1.5 rounded-md bg-zinc-900 px-3 text-xs font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+        >
+          Try demo
+          <ArrowRight className="size-3.5" />
+        </Link>
       </nav>
     </header>
-  )
-}
-
-function SignInPlaceholder() {
-  return (
-    <div className="h-8 w-20 rounded-md bg-zinc-100 dark:bg-white/5" aria-hidden />
-  )
-}
-
-async function SignInOrDashboard() {
-  const supabase = await createClient()
-  const { data } = await supabase.auth.getClaims()
-  const authed = Boolean(data?.claims)
-  return (
-    <Link
-      href={authed ? '/dashboard' : '/login'}
-      className="inline-flex h-8 items-center gap-1.5 rounded-md bg-zinc-900 px-3 text-xs font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
-    >
-      {authed ? 'Dashboard' : 'Sign in'}
-      <ArrowRight className="size-3.5" />
-    </Link>
   )
 }
 
@@ -205,9 +180,8 @@ function DeployBlock() {
         Own the whole stack
       </h2>
       <p className="max-w-lg text-[14px] leading-relaxed text-zinc-600 dark:text-zinc-300">
-        Next.js, Supabase, Tailwind. MIT. One click provisions a fresh
-        Supabase project and deploys to your Vercel. Your data, your
-        rules.
+        MIT-licensed. One click provisions the backend and deploys the
+        app. Your data, your rules.
       </p>
       <a
         href={DEPLOY_URL}
@@ -215,7 +189,7 @@ function DeployBlock() {
         rel="noreferrer"
         className="inline-flex h-10 items-center gap-2 rounded-full bg-zinc-900 px-5 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
       >
-        Deploy with Vercel + Supabase
+        Deploy your own
         <ArrowRight className="size-4" />
       </a>
     </section>

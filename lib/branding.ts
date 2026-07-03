@@ -20,3 +20,14 @@ export const getDefaultCompanyLogoUrl = cache(async (): Promise<
     .maybeSingle()
   return data?.logo_url ?? null
 })
+
+// Fresh install detection: no company row means /setup hasn't run yet.
+// Errors (e.g. migrations not applied) read as "no company" so the user
+// lands on /setup, where the real error surfaces with context.
+export const hasAnyCompany = cache(async (): Promise<boolean> => {
+  const supabase = createAdminClient()
+  const { count } = await supabase
+    .from('companies')
+    .select('id', { count: 'exact', head: true })
+  return (count ?? 0) > 0
+})

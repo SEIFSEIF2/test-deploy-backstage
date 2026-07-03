@@ -7,7 +7,7 @@ One click gets you a live Backstage tied to a fresh Supabase project.
 Use the Deploy button in the repo README, or paste this URL:
 
 ```
-https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FSEIFSEIF4%2Fbackstage&integration-ids=oac_VqOgBHqhEoFTPzGkPd7L0iH6&env=NEXT_PUBLIC_APP_NAME,NEXT_PUBLIC_APP_URL,NEXT_PUBLIC_APP_EMAIL_DOMAIN,NEXT_PUBLIC_TIMEZONE&envDescription=Branding%20and%20timezone.%20Supabase%20variables%20are%20provisioned%20automatically%20by%20the%20integration.
+https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FSEIFSEIF4%2Fbackstage&integration-ids=oac_VqOgBHqhEoFTPzGkPd7L0iH6&env=NEXT_PUBLIC_APP_NAME&envDescription=Your%20app%20name%20(e.g.%20Backstage).%20Everything%20else%20is%20configured%20post-deploy.
 ```
 
 What happens when you click:
@@ -16,30 +16,26 @@ What happens when you click:
 2. The Supabase integration (`integration-ids=oac_...`) opens a modal
    to create a new Supabase project.
 3. Supabase auto-writes `NEXT_PUBLIC_SUPABASE_URL`,
-   `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`
-   into your Vercel env vars, per environment.
-4. You fill in the four branding vars (name, url, email domain, timezone).
-5. Vercel builds and deploys.
+   `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and
+   the `POSTGRES_URL` family into your Vercel env vars.
+4. You type your app name.
+5. Vercel builds. The build step (`scripts/migrate.mjs`) applies every
+   SQL file in `supabase/migrations/` against the fresh database, then
+   `next build` runs.
 
 ## After deploy
 
-The Supabase integration only wires env vars. It does **not** run your
-migrations. Two ways to apply them:
+Open your Vercel URL. With an empty database you land on `/setup`:
+one form creates your workspace and admin account. Log in, and the
+First-Run Wizard prompts you to pick Solo / Small team / Full to
+bulk-enable modules.
 
-**Option A (easy)**: connect the Supabase CLI locally and push:
+No CLI, no SQL editor, no manual seeding.
 
-```bash
-supabase link --project-ref <your-project-ref>
-supabase db push
-```
-
-**Option B**: open the Supabase SQL editor, paste
-`supabase/migrations/*.sql` in order, run each.
-
-Then create the first user via Supabase Auth (email + magic link or
-password), and load your Vercel URL. First render sees
-`companies.enabled_features = '{}'` and prompts the First-Run Wizard —
-pick Solo / Small team / Full to bulk-enable modules.
+Migrations re-run on every deploy but are recorded in
+`supabase_migrations.schema_migrations` (the same table the Supabase
+CLI uses), so already-applied files are skipped and `supabase db push`
+stays interchangeable with the build-time runner.
 
 ## Optional integrations
 

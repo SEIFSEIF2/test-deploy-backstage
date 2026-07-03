@@ -14,6 +14,7 @@ const RESERVED_SLUGS = new Set([
   'projects',
   'public',
   'settings',
+  'setup',
   '_next'
 ])
 
