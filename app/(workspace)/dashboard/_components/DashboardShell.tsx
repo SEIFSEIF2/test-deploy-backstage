@@ -10,7 +10,8 @@ import {
 } from 'react'
 import { createClient as createBrowserSupabase } from '@/supabase/client'
 import { config } from '@/lib/config'
-import { useFeature } from '@/lib/features/client'
+import { useFeature, useEnabledFeatures } from '@/lib/features/client'
+import { FirstRunWizard } from './FirstRunWizard'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
@@ -577,6 +578,10 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
 
   const currentUserId = initial.currentMember.id
   const isAdmin = initial.currentMember.accessTier === 'admin'
+  const enabledFeatures = useEnabledFeatures()
+  const [firstRunOpen, setFirstRunOpen] = useState(
+    () => isAdmin && enabledFeatures.size === 0
+  )
 
   const team = initial.members
   // Local copy of the viewer's saved timezone so TimezoneGate can dismiss
@@ -2964,6 +2969,9 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
         savedTimezone={savedTimezone}
         onSaved={setSavedTimezone}
       />
+      {firstRunOpen && (
+        <FirstRunWizard onDone={() => setFirstRunOpen(false)} />
+      )}
       <div
         className={`fixed inset-0 flex flex-col overflow-hidden font-(--font-favorit) ${t.page}`}
       >
