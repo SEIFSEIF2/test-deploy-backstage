@@ -10,6 +10,7 @@ import {
 } from 'react'
 import { createClient as createBrowserSupabase } from '@/supabase/client'
 import { config } from '@/lib/config'
+import { useFeature } from '@/lib/features/client'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
@@ -628,6 +629,7 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
     const id = setInterval(() => setWordmarkPhase((i) => i + 1), 180_000)
     return () => clearInterval(id)
   }, [])
+  const welcomeBarEnabled = useFeature('welcomeBar')
   const phaseIndex = wordmarkPhase % wordmarkPhases
   const showGreetingPhase = phaseIndex === 0
   const showWordmarkPhase = phaseIndex === 1
@@ -2983,35 +2985,37 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
             <ArrowLeft className="size-3" />
             <span className="hidden sm:inline">Back to overview</span>
           </Link>
-          <span
-            aria-live="polite"
-            className={`pointer-events-none absolute left-1/2 hidden -translate-x-1/2 truncate text-[11px] tracking-wider sm:inline ${t.textMuted}`}
-          >
+          {welcomeBarEnabled && (
             <span
-              key={wordmarkPhase}
-              className="animate-in fade-in duration-700"
+              aria-live="polite"
+              className={`pointer-events-none absolute left-1/2 hidden -translate-x-1/2 truncate text-[11px] tracking-wider sm:inline ${t.textMuted}`}
             >
-              {showGreetingPhase ? (
-                <>
-                  <span aria-hidden className="mr-1">
-                    {greeting.emoji}
+              <span
+                key={wordmarkPhase}
+                className="animate-in fade-in duration-700"
+              >
+                {showGreetingPhase ? (
+                  <>
+                    <span aria-hidden className="mr-1">
+                      {greeting.emoji}
+                    </span>
+                    {greeting.text}, {firstName}
+                  </>
+                ) : showWordmarkPhase ? (
+                  <span className="tracking-[0.25em] uppercase">
+                    {config.appName} · Task Handoff
                   </span>
-                  {greeting.text}, {firstName}
-                </>
-              ) : showWordmarkPhase ? (
-                <span className="tracking-[0.25em] uppercase">
-                  {config.appName} · Task Handoff
-                </span>
-              ) : welcomeName ? (
-                <>
-                  <span aria-hidden className="mr-1">
-                    👋
-                  </span>
-                  Welcome to the team, {welcomeName}
-                </>
-              ) : null}
+                ) : welcomeName ? (
+                  <>
+                    <span aria-hidden className="mr-1">
+                      👋
+                    </span>
+                    Welcome to the team, {welcomeName}
+                  </>
+                ) : null}
+              </span>
             </span>
-          </span>
+          )}
           <div className="flex items-center gap-3">
             {assigneeFilter.length > 0 && (
               <button

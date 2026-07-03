@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Check, Copy, Trash2, X } from 'lucide-react'
 import { STATUSES, TaskPriority, TaskStatus, PRIORITY_LABEL } from './status'
 import { BoardAssignee, BoardTask } from './boardData'
+import { useFeature } from '@/lib/features/client'
 import StatusIcon from './StatusIcon'
 import PriorityIcon from './PriorityIcon'
 import { useDashTheme } from './theme'
@@ -82,6 +83,7 @@ export default function NewTaskModal({
   onCreateBulk
 }: NewTaskModalProps) {
   const { t } = useDashTheme()
+  const aiPasteEnabled = useFeature('aiPasteExport')
   const [tab, setTab] = useState<Tab>('manual')
 
   // Two-phase open/close so the panel can animate in *and* out. The dialog
@@ -128,9 +130,14 @@ export default function NewTaskModal({
             >
               Manual
             </TabButton>
-            <TabButton active={tab === 'ai'} onClick={() => setTab('ai')}>
-              From AI
-            </TabButton>
+            {aiPasteEnabled && (
+              <TabButton
+                active={tab === 'ai'}
+                onClick={() => setTab('ai')}
+              >
+                From AI
+              </TabButton>
+            )}
           </div>
           <button
             onClick={onClose}

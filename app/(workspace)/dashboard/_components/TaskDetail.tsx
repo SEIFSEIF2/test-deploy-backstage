@@ -41,6 +41,7 @@ import TaskImageDropZone, {
   type TaskAttachmentView
 } from './TaskImageDropZone'
 import TaskImageGallery from './TaskImageGallery'
+import { useFeature } from '@/lib/features/client'
 import { VisuallyHidden } from 'radix-ui'
 import {
   HANDOFF_FIELDS,
@@ -267,14 +268,19 @@ export default function TaskDetail({
   const [showLinks, setShowLinks] = useState(() => externalRefs.length > 0)
   const [showHandoff, setShowHandoff] = useState(false)
   const [showMeetings, setShowMeetings] = useState(false)
+  const reactionsEnabled = useFeature('reactions')
+  const meetingsEnabled = useFeature('meetings')
   const [showReactions, setShowReactions] = useState(
-    () => taskReactions.length > 0
+    () => reactionsEnabled && taskReactions.length > 0
   )
   const [showRelations, setShowRelations] = useState(
     () => (task?.relations?.length ?? 0) > 0
   )
   const [showWatchers, setShowWatchers] = useState(false)
-  const [showImages, setShowImages] = useState(() => attachments.length > 0)
+  const imageGalleryEnabled = useFeature('imageGallery')
+  const [showImages, setShowImages] = useState(
+    () => imageGalleryEnabled && attachments.length > 0
+  )
   const [showBrief, setShowBrief] = useState(
     () => (task?.description ?? '').trim().length > 0
   )
@@ -471,7 +477,7 @@ export default function TaskDetail({
           {!showHandoff && (
             <AddChip label="Handoff" onClick={() => { setShowHandoff(true); onOpenHandoff(task) }} />
           )}
-          {!showMeetings && (
+          {meetingsEnabled && !showMeetings && (
             <AddChip label="Meeting" onClick={() => setShowMeetings(true)} />
           )}
           {!showLinks && (
@@ -483,10 +489,10 @@ export default function TaskDetail({
           {!showWatchers && (
             <AddChip label="Spectators" onClick={() => setShowWatchers(true)} />
           )}
-          {!showImages && (
+          {imageGalleryEnabled && !showImages && (
             <AddChip label="Image" onClick={() => setShowImages(true)} />
           )}
-          {!showReactions && (
+          {reactionsEnabled && !showReactions && (
             <AddChip label="Reaction" onClick={() => setShowReactions(true)} />
           )}
         </div>

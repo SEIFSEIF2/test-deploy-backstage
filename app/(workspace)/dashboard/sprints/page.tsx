@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { dashboardMetadata, fetchInitial } from '../_components/fetchInitial'
+import { requireFeature } from '@/lib/features/server'
 
 type RawSearchParams = Promise<
   Record<string, string | string[] | undefined>
@@ -39,6 +40,7 @@ async function SprintsGuard({
 }: {
   searchParams: RawSearchParams
 }) {
+  await requireFeature('sprints')
   const params = await searchParams
   const projectParam =
     typeof params.project === 'string' ? params.project : undefined

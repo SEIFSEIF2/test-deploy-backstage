@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { cache } from 'react'
+import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/supabase/admin'
 import { getCurrentTeamMember } from '@/lib/dal'
 import type { FeatureKey } from './keys'
@@ -20,4 +21,8 @@ export const getEnabledFeatures = cache(async (): Promise<FeatureKey[]> => {
 export async function isFeatureEnabled(key: FeatureKey): Promise<boolean> {
   const enabled = await getEnabledFeatures()
   return enabled.includes(key)
+}
+
+export async function requireFeature(key: FeatureKey): Promise<void> {
+  if (!(await isFeatureEnabled(key))) notFound()
 }

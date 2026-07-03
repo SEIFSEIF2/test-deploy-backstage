@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { dashboardMetadata } from '../_components/fetchInitial'
+import { requireFeature } from '@/lib/features/server'
 
 type SearchParams = Promise<{ project?: string }>
 
@@ -12,6 +13,7 @@ export async function generateMetadata({
   return dashboardMetadata(project)
 }
 
-export default function OnboardingPage() {
+export default async function OnboardingPage() {
+  await requireFeature('onboarding')
   return null
 }

@@ -49,6 +49,7 @@ import {
 import { useDashTheme } from './theme'
 import { useContextMenu } from './ContextMenu'
 import { config } from '@/lib/config'
+import { useFeature } from '@/lib/features/client'
 import { useTaskActions } from './actions'
 import { Filter, X } from 'lucide-react'
 import {
@@ -165,6 +166,10 @@ export default function Sidebar({
   const meetings = useMeetingsSheet()
   const meetingsBadge =
     meetings.pendingApprovalCount + meetings.awaitingPickCount
+  const meetingsEnabled = useFeature('meetings')
+  const onboardingEnabled = useFeature('onboarding')
+  const brandExporterEnabled = useFeature('brandExporter')
+  const updatesEnabled = useFeature('updatesPanel')
   const [projectMenuOpen, setProjectMenuOpen] = useState(false)
   const projectMenuRef = useRef<HTMLDivElement>(null)
   const currentProject = currentProjectId
@@ -532,26 +537,30 @@ export default function Sidebar({
             onClick={() => onSecondary('projects')}
             hint={showHints ? HINTS.projects : undefined}
           />
-          <SidebarItem
-            icon={<Bell className="size-3.5" />}
-            label="Updates"
-            count={updatesUnread > 0 ? updatesUnread : undefined}
-            active={secondary === 'updates'}
-            onClick={() => onSecondary('updates')}
-            hint={showHints ? HINTS.updates : undefined}
-          />
-          <SidebarItem
-            icon={<Calendar className="size-3.5" />}
-            label="Meetings"
-            count={meetingsBadge > 0 ? meetingsBadge : undefined}
-            active={secondary === 'meetings'}
-            onClick={() => onSecondary('meetings')}
-            hint={
-              showHints
-                ? 'Calendar of your meetings + sprints. Badge counts pending approvals and meetings awaiting your pick.'
-                : undefined
-            }
-          />
+          {updatesEnabled && (
+            <SidebarItem
+              icon={<Bell className="size-3.5" />}
+              label="Updates"
+              count={updatesUnread > 0 ? updatesUnread : undefined}
+              active={secondary === 'updates'}
+              onClick={() => onSecondary('updates')}
+              hint={showHints ? HINTS.updates : undefined}
+            />
+          )}
+          {meetingsEnabled && (
+            <SidebarItem
+              icon={<Calendar className="size-3.5" />}
+              label="Meetings"
+              count={meetingsBadge > 0 ? meetingsBadge : undefined}
+              active={secondary === 'meetings'}
+              onClick={() => onSecondary('meetings')}
+              hint={
+                showHints
+                  ? 'Calendar of your meetings + sprints. Badge counts pending approvals and meetings awaiting your pick.'
+                  : undefined
+              }
+            />
+          )}
           <SidebarItem
             icon={<Shapes className="size-3.5" />}
             label="Symbols"
@@ -574,17 +583,18 @@ export default function Sidebar({
               }
             />
           )}
-          {(currentIsOwner ||
-            currentAccessTier === 'admin' ||
-            currentAccessTier === 'lead') && (
-            <SidebarItem
-              icon={<UserPlus className="size-3.5" />}
-              label="Onboarding"
-              active={secondary === 'onboarding'}
-              onClick={() => onSecondary('onboarding')}
-              hint={showHints ? HINTS.onboarding : undefined}
-            />
-          )}
+          {onboardingEnabled &&
+            (currentIsOwner ||
+              currentAccessTier === 'admin' ||
+              currentAccessTier === 'lead') && (
+              <SidebarItem
+                icon={<UserPlus className="size-3.5" />}
+                label="Onboarding"
+                active={secondary === 'onboarding'}
+                onClick={() => onSecondary('onboarding')}
+                hint={showHints ? HINTS.onboarding : undefined}
+              />
+            )}
           <SidebarItem
             icon={<Settings className="size-3.5" />}
             label="Settings"
@@ -592,13 +602,15 @@ export default function Sidebar({
             onClick={() => onSecondary('settings')}
             hint={showHints ? HINTS.settings : undefined}
           />
-          <SidebarItem
-            icon={<Palette className="size-3.5" />}
-            label="Brand"
-            active={secondary === 'brand'}
-            onClick={() => onSecondary('brand')}
-            hint={showHints ? HINTS.brand : undefined}
-          />
+          {brandExporterEnabled && (
+            <SidebarItem
+              icon={<Palette className="size-3.5" />}
+              label="Brand"
+              active={secondary === 'brand'}
+              onClick={() => onSecondary('brand')}
+              hint={showHints ? HINTS.brand : undefined}
+            />
+          )}
         </div>
 
         {!onboardingComplete && (

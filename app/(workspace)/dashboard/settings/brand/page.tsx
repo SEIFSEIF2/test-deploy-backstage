@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { requireOnboardingComplete } from '@/lib/dal'
 import { dashboardMetadata } from '../../_components/fetchInitial'
+import { requireFeature } from '@/lib/features/server'
 
 type SearchParams = Promise<{ project?: string }>
 
@@ -19,5 +20,6 @@ export async function generateMetadata({
 // before the panel paints (members typing the URL get the standard flow).
 export default async function BrandPage() {
   await requireOnboardingComplete()
+  await requireFeature('brandExporter')
   return null
 }
