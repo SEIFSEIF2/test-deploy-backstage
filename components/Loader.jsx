@@ -1,24 +1,25 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
+import { config } from "@/lib/config";
 
 const TEAL = "#6BBBB4";
-const LOGO_ICON = "/logos/verbivore-icon.svg";
 
 const SIZES = {
-  sm: "h-8 w-8",
-  md: "h-14 w-14",
-  lg: "h-20 w-20",
+  sm: "h-8 w-8 text-xs",
+  md: "h-14 w-14 text-lg",
+  lg: "h-20 w-20 text-2xl",
 };
 
 function LogoIcon({ size = "lg", className = "" }) {
+  const letter = config.appName.slice(0, 1).toUpperCase();
   return (
-    <img
-      src={LOGO_ICON}
-      alt=""
+    <div
       aria-hidden="true"
-      className={`${SIZES[size]} ${className}`}
-    />
+      className={`inline-flex items-center justify-center rounded-2xl bg-[#948CC0]/15 font-bold text-[#6E62B0] ${SIZES[size]} ${className}`}
+    >
+      {letter}
+    </div>
   );
 }
 

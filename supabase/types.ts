@@ -167,6 +167,7 @@ export type Database = {
           enabled_features: string[]
           id: string
           last_due_warning_date: string | null
+          logo_url: string | null
           name: string
           owner_id: string | null
           quick_meet_url: string | null
@@ -177,6 +178,7 @@ export type Database = {
           enabled_features?: string[]
           id?: string
           last_due_warning_date?: string | null
+          logo_url?: string | null
           name: string
           owner_id?: string | null
           quick_meet_url?: string | null
@@ -187,6 +189,7 @@ export type Database = {
           enabled_features?: string[]
           id?: string
           last_due_warning_date?: string | null
+          logo_url?: string | null
           name?: string
           owner_id?: string | null
           quick_meet_url?: string | null

@@ -6,17 +6,31 @@ import { createAdminClient } from '@/supabase/admin'
 import { getCurrentTeamMember } from '@/lib/dal'
 import type { FeatureKey } from './keys'
 
-export const getEnabledFeatures = cache(async (): Promise<FeatureKey[]> => {
-  const member = await getCurrentTeamMember()
-  if (!member) return []
-  const supabase = createAdminClient()
-  const { data } = await supabase
-    .from('companies')
-    .select('enabled_features')
-    .eq('id', member.companyId)
-    .maybeSingle()
-  return (data?.enabled_features as FeatureKey[] | null) ?? []
-})
+export type WorkspaceBranding = {
+  enabledFeatures: FeatureKey[]
+  logoUrl: string | null
+}
+
+export const getWorkspaceBranding = cache(
+  async (): Promise<WorkspaceBranding> => {
+    const member = await getCurrentTeamMember()
+    if (!member) return { enabledFeatures: [], logoUrl: null }
+    const supabase = createAdminClient()
+    const { data } = await supabase
+      .from('companies')
+      .select('enabled_features, logo_url')
+      .eq('id', member.companyId)
+      .maybeSingle()
+    return {
+      enabledFeatures: (data?.enabled_features as FeatureKey[] | null) ?? [],
+      logoUrl: data?.logo_url ?? null
+    }
+  }
+)
+
+export async function getEnabledFeatures(): Promise<FeatureKey[]> {
+  return (await getWorkspaceBranding()).enabledFeatures
+}
 
 export async function isFeatureEnabled(key: FeatureKey): Promise<boolean> {
   const enabled = await getEnabledFeatures()

@@ -1,12 +1,12 @@
 'use client'
 
 import { startTransition, useActionState, useState } from 'react'
-import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { Eye, EyeOff } from 'lucide-react'
 import { z } from 'zod'
 
 import { cn } from '@/lib/utils'
+import { config } from '@/lib/config'
 import { signIn, type LoginState } from '@/app/(authentication)/login/actions'
 import { Button } from '@/components/ui/button'
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
@@ -22,8 +22,9 @@ type FieldErrors = Partial<Record<'email' | 'password', string>>
 export function LoginForm({
   className,
   redirectTo,
+  logoUrl,
   ...props
-}: React.ComponentProps<'div'> & { redirectTo: string }) {
+}: React.ComponentProps<'div'> & { redirectTo: string; logoUrl?: string | null }) {
   const [state, formAction, pending] = useActionState<LoginState, FormData>(
     signIn,
     undefined
@@ -78,23 +79,18 @@ export function LoginForm({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15, duration: 0.4 }}
       >
-        <Image
-          src="/logos/verbivore-logo-horizontal.svg"
-          alt="Verbivore"
-          width={240}
-          height={80}
-          priority
-          className="block h-14 w-auto dark:hidden"
-        />
-        <Image
-          src="/logos/verbivore-logo-horizontal-white.svg"
-          alt=""
-          aria-hidden
-          width={240}
-          height={80}
-          priority
-          className="hidden h-14 w-auto dark:block"
-        />
+        {logoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={logoUrl}
+            alt={config.appName}
+            className="h-14 w-auto object-contain"
+          />
+        ) : (
+          <h1 className="font-display text-3xl tracking-tight sm:text-4xl">
+            {config.appName}
+          </h1>
+        )}
         <p className="text-muted-foreground text-base">Welcome back! :)</p>
       </motion.div>
 

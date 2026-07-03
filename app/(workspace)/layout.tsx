@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { after } from "next/server";
 import { requireOnboardingComplete, touchLastSeen } from "@/lib/dal";
-import { getEnabledFeatures } from "@/lib/features/server";
+import { getWorkspaceBranding } from "@/lib/features/server";
 import { FeaturesProvider } from "@/lib/features/client";
 
 // (workspace) — shell-less authenticated route group.
@@ -39,7 +39,14 @@ export default function WorkspaceLayout({
 
 async function Gated({ children }: { children: React.ReactNode }) {
   const member = await requireOnboardingComplete();
-  const enabled = await getEnabledFeatures();
+  const branding = await getWorkspaceBranding();
   after(() => touchLastSeen(member.id));
-  return <FeaturesProvider enabled={enabled}>{children}</FeaturesProvider>;
+  return (
+    <FeaturesProvider
+      enabled={branding.enabledFeatures}
+      logoUrl={branding.logoUrl}
+    >
+      {children}
+    </FeaturesProvider>
+  );
 }

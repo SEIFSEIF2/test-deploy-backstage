@@ -71,8 +71,13 @@ import type { ProjectExternalRef, TaskExternalRefKind } from './boardData'
 import { defaultExternalRefLabel, parseExternalRef } from '@/lib/externalRef'
 import { CopyButton, type CopyMenuItem } from '@/components/ui/copy-button'
 import { FEATURES, ALL_FEATURE_KEYS, type FeatureKey } from '@/lib/features/keys'
-import { useEnabledFeatures } from '@/lib/features/client'
-import { setEnabledFeatures } from '../features-actions'
+import { useEnabledFeatures, useCompanyLogoUrl } from '@/lib/features/client'
+import {
+  clearCompanyLogo,
+  setEnabledFeatures,
+  uploadCompanyLogo
+} from '../features-actions'
+import { config } from '@/lib/config'
 import { updatesToJson, updatesToMarkdown } from '@/lib/export/updates'
 import { isInScope, type TimeScope } from '@/lib/export/timeRange'
 import StatusIcon from './StatusIcon'
@@ -2251,6 +2256,8 @@ export function SettingsPanel({
 
         {accessTier === 'admin' && <FeaturesSection />}
 
+        {accessTier === 'admin' && <AppearanceSection />}
+
         {onboardingComplete && (
           <Row label="Profile">
             <button
@@ -2658,6 +2665,95 @@ function FeaturesSection() {
           })}
         </div>
       ))}
+    </div>
+  )
+}
+
+function AppearanceSection() {
+  const { t } = useDashTheme()
+  const router = useRouter()
+  const logoUrl = useCompanyLogoUrl()
+  const [busy, setBusy] = useState<'upload' | 'clear' | null>(null)
+
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setBusy('upload')
+    const form = new FormData()
+    form.append('logo', file)
+    const res = await uploadCompanyLogo(form)
+    if ('error' in res) toast.error(res.error)
+    else {
+      toast.success('Logo updated.')
+      router.refresh()
+    }
+    setBusy(null)
+  }
+
+  async function onClear() {
+    setBusy('clear')
+    const res = await clearCompanyLogo()
+    if ('error' in res) toast.error(res.error)
+    else {
+      toast.success('Logo removed.')
+      router.refresh()
+    }
+    setBusy(null)
+  }
+
+  return (
+    <div className={`flex flex-col gap-3 border-t pt-4 ${t.border}`}>
+      <div className="flex flex-col gap-1">
+        <h3 className={`text-sm font-medium ${t.text}`}>Appearance</h3>
+        <p className={`text-[11px] leading-relaxed ${t.textSubtle}`}>
+          Upload a workspace logo (PNG, JPG, WEBP, or SVG, 2 MB max). Shown
+          on the sidebar and login screen. Leave blank to fall back to the
+          {' '}{config.appName} wordmark.
+        </p>
+      </div>
+      <div className="flex items-center gap-3">
+        {logoUrl ? (
+          <img
+            src={logoUrl}
+            alt="Workspace logo"
+            className="size-12 rounded-lg border object-contain p-1"
+            style={{ backgroundColor: 'transparent' }}
+          />
+        ) : (
+          <div
+            className={`flex size-12 items-center justify-center rounded-lg border bg-[#948CC0]/15 text-lg font-bold text-[#6E62B0] ${t.border}`}
+            aria-hidden
+          >
+            {config.appName.slice(0, 1).toUpperCase()}
+          </div>
+        )}
+        <div className="flex flex-col gap-1.5">
+          <label
+            className={`inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border px-2 text-[11px] transition disabled:opacity-50 ${t.border} ${t.tab} ${
+              busy ? 'pointer-events-none opacity-50' : ''
+            }`}
+          >
+            {busy === 'upload' ? 'Uploading...' : 'Upload logo'}
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/svg+xml"
+              onChange={onFile}
+              disabled={busy !== null}
+              className="hidden"
+            />
+          </label>
+          {logoUrl && (
+            <button
+              onClick={onClear}
+              disabled={busy !== null}
+              className={`inline-flex h-7 items-center gap-1.5 rounded-md border px-2 text-[11px] transition disabled:opacity-50 ${t.border} ${t.tab}`}
+            >
+              {busy === 'clear' ? 'Removing...' : 'Remove'}
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

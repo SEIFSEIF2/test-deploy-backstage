@@ -49,7 +49,7 @@ import {
 import { useDashTheme } from './theme'
 import { useContextMenu } from './ContextMenu'
 import { config } from '@/lib/config'
-import { useFeature } from '@/lib/features/client'
+import { useFeature, useCompanyLogoUrl } from '@/lib/features/client'
 import { useTaskActions } from './actions'
 import { Filter, X } from 'lucide-react'
 import {
@@ -170,6 +170,7 @@ export default function Sidebar({
   const onboardingEnabled = useFeature('onboarding')
   const brandExporterEnabled = useFeature('brandExporter')
   const updatesEnabled = useFeature('updatesPanel')
+  const logoUrl = useCompanyLogoUrl()
   const [projectMenuOpen, setProjectMenuOpen] = useState(false)
   const projectMenuRef = useRef<HTMLDivElement>(null)
   const currentProject = currentProjectId
@@ -283,12 +284,21 @@ export default function Sidebar({
           className={`-mx-1 flex items-center gap-2 rounded-md px-2 py-1 transition ${t.rowHover}`}
           title="Back to all Tasks"
         >
-          <div
-            className={`flex size-6 items-center justify-center rounded bg-[#948CC0]/15 text-[10px] font-bold text-[#6E62B0] dark:bg-[#948CC0]/20 dark:text-[#BCB3DD]`}
-            aria-hidden
-          >
-            {config.appName.slice(0, 1).toUpperCase()}
-          </div>
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={logoUrl}
+              alt=""
+              className="size-6 shrink-0 rounded object-contain"
+            />
+          ) : (
+            <div
+              className={`flex size-6 items-center justify-center rounded bg-[#948CC0]/15 text-[10px] font-bold text-[#6E62B0] dark:bg-[#948CC0]/20 dark:text-[#BCB3DD]`}
+              aria-hidden
+            >
+              {config.appName.slice(0, 1).toUpperCase()}
+            </div>
+          )}
           <div className="flex flex-col leading-none">
             <span
               className={`text-[11px] tracking-[0.25em] uppercase ${t.textMuted}`}

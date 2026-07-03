@@ -2289,10 +2289,10 @@ GRANT USAGE ON SCHEMA "public" TO "service_role";
 
 
 
-REVOKE ALL ON FUNCTION "public"."claim_due_warning_run"("p_company_id" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."claim_due_warning_run"("p_company_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."claim_due_warning_run"("p_company_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."claim_due_warning_run"("p_company_id" "uuid") TO "service_role";
+REVOKE ALL ON FUNCTION "public"."claim_due_warning_run"("p_company_id" "uuid", "p_timezone" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."claim_due_warning_run"("p_company_id" "uuid", "p_timezone" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."claim_due_warning_run"("p_company_id" "uuid", "p_timezone" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."claim_due_warning_run"("p_company_id" "uuid", "p_timezone" "text") TO "service_role";
 
 
 
