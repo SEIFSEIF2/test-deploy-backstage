@@ -106,26 +106,6 @@ export function SetupForm() {
             </div>
           </Field>
 
-          <Field>
-            <FieldLabel htmlFor="setupKey" className="text-sm">
-              Setup key
-            </FieldLabel>
-            <Input
-              id="setupKey"
-              name="setupKey"
-              type="password"
-              required
-              autoComplete="off"
-              placeholder="Your Supabase service role key"
-              className="h-9 px-3 text-sm md:text-sm"
-            />
-            <p className="text-muted-foreground text-xs">
-              Proves you own this deployment. Copy the service role key from
-              your Supabase dashboard → Project Settings → API keys. It is
-              only compared, never stored.
-            </p>
-          </Field>
-
           {state?.error && (
             <p className="text-destructive text-sm" role="alert">
               {state.error}

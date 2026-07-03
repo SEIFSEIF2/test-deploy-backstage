@@ -26,13 +26,10 @@ What happens when you click:
 ## After deploy
 
 Open your Vercel URL. With an empty database you land on `/setup`:
-one form creates your workspace and admin account. The form asks for a
-**setup key** — paste your Supabase **service role key** (Supabase
-dashboard → Project Settings → API keys). This proves you own the
-deployment, so a stranger who finds your URL before you can't claim it
-as admin. The key is compared server-side, never stored. Log in, and
-the First-Run Wizard prompts you to pick Solo / Small team / Full to
-bulk-enable modules.
+one form creates your workspace and admin account. Complete it right
+after deploying — the page locks itself permanently once the first
+workspace exists. Log in, and the First-Run Wizard prompts you to pick
+Solo / Small team / Full to bulk-enable modules.
 
 No CLI, no SQL editor, no manual seeding.
 
