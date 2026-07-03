@@ -1,3 +1,5 @@
+import { config } from '@/lib/config'
+
 export type ExternalRefKind =
   | 'issue'
   | 'pr'
@@ -7,6 +9,9 @@ export type ExternalRefKind =
   | 'supabase'
   | 'github'
   | 'figma'
+  // The workspace's own web properties (kept as 'verbivore' because the
+  // value lives in the task_external_refs DB enum; renaming it would
+  // need a migration for zero user-facing gain).
   | 'verbivore'
   | 'vercel'
   | 'bunny'
@@ -29,25 +34,31 @@ const DOC_HOSTS = new Set([
   'notion.so'
 ])
 
-// True when the URL points at the deployed Backstage dashboard itself
-// (so the UI can render it as an in-app link: no target="_blank", no
-// ExternalLink icon). Checks NEXT_PUBLIC_SITE_URL when present; falls
-// back to recognizing backstage.verbivore.app + localhost.
+// True when the URL points at the deployed dashboard itself (so the UI
+// can render it as an in-app link: no target="_blank", no ExternalLink
+// icon). Compares against config.appUrl, plus localhost for dev.
 export function isSelfHosted(rawUrl: string): boolean {
   try {
     const url = new URL(rawUrl)
-    const selfBase = process.env.NEXT_PUBLIC_SITE_URL
-    if (selfBase) {
-      const selfHost = new URL(selfBase).host
-      if (url.host === selfHost) return true
-    }
-    return (
-      url.host === 'backstage.verbivore.app' ||
-      url.host === 'localhost:3000' ||
-      url.host === '127.0.0.1:3000'
-    )
+    if (url.host === new URL(config.appUrl).host) return true
+    return url.host === 'localhost:3000' || url.host === '127.0.0.1:3000'
   } catch {
     return false
+  }
+}
+
+// Registrable base domain of the app URL ("backstage.example.com" →
+// "example.com") so sibling subdomains classify as the workspace's own
+// brand. Naive two-label heuristic; fine for the common cases, and a
+// miss just renders the link as a generic chip.
+function appBaseDomain(): string | null {
+  try {
+    const host = new URL(config.appUrl).hostname
+    if (host === 'localhost' || host === '127.0.0.1') return null
+    const labels = host.split('.')
+    return labels.slice(-2).join('.')
+  } catch {
+    return null
   }
 }
 
@@ -134,15 +145,11 @@ export function parseExternalRef(rawUrl: string): ParsedExternalRef | null {
     return { kind: 'figma', url: normalized, identifier: fileName }
   }
 
-  // Verbivore: the project's own properties. Catches the marketing site,
-  // the learn subdomain, the staging/dev hosts, etc. Identifier is the
-  // hostname so the chip can render "learn.verbivore.app" or similar.
-  if (
-    host === 'verbivore.app' ||
-    host === 'verbivore.com' ||
-    host.endsWith('.verbivore.app') ||
-    host.endsWith('.verbivore.com')
-  ) {
+  // The workspace's own properties: any host under the app URL's base
+  // domain (marketing site, docs subdomain, staging hosts, ...).
+  // Identifier is the hostname so the chip can render the subdomain.
+  const ownBase = appBaseDomain()
+  if (ownBase && (host === ownBase || host.endsWith(`.${ownBase}`))) {
     return { kind: 'verbivore', url: normalized, identifier: host }
   }
 
@@ -156,7 +163,7 @@ export function parseExternalRef(rawUrl: string): ParsedExternalRef | null {
   }
 
   // Sentry: <org>.sentry.io. The org slug lives in the subdomain (e.g.
-  // verbivore.sentry.io -> "verbivore"). Plain sentry.io URLs fall back
+  // acme.sentry.io -> "acme"). Plain sentry.io URLs fall back
   // to "Sentry" with no identifier.
   if (host === 'sentry.io' || host === 'www.sentry.io') {
     return { kind: 'sentry', url: normalized }
@@ -264,13 +271,16 @@ export function defaultExternalRefLabel(parsed: ParsedExternalRef): string {
     return parsed.identifier ? `Figma · ${parsed.identifier}` : 'Figma'
   }
   if (parsed.kind === 'verbivore') {
-    // The dashboard runs on backstage.verbivore.app - same brand but a
-    // distinct product. Surface it as "Backstage" so internal task <->
-    // task / sprint / member links don't read as third-party.
-    if (parsed.identifier?.startsWith('backstage.')) {
-      return 'Backstage'
-    }
-    return parsed.identifier ? `Verbivore · ${parsed.identifier}` : 'Verbivore'
+    // Links to the dashboard's own host read as the app itself; sibling
+    // subdomains keep the hostname so they don't read as third-party.
+    try {
+      if (parsed.identifier === new URL(config.appUrl).host) {
+        return config.appName
+      }
+    } catch {}
+    return parsed.identifier
+      ? `${config.appName} · ${parsed.identifier}`
+      : config.appName
   }
   if (parsed.kind === 'vercel') {
     return parsed.identifier ? `Vercel · ${parsed.identifier}` : 'Vercel'

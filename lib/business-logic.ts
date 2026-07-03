@@ -1,7 +1,7 @@
 // Source of truth for runtime business rules. If a Tailwind class, a Prisma
 // enum, or a docs file disagrees with what's here, this file wins.
 
-export const verbivoreTheme = {
+export const brandTheme = {
   page: '#0E1414',
   card: '#1A2424',
   cardRaised: '#22302F',

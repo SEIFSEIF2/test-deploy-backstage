@@ -623,7 +623,7 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
       .map((m) => m.name.split(/\s+/)[0])
   }, [team, currentUserId])
   // Cycles the centered wordmark through phases: time-banded greeting,
-  // the static Verbivore mark, and a "Welcome, <name>!" beat for each
+  // the static brand mark, and a "Welcome, <name>!" beat for each
   // recent joiner. Slow cadence so the swap feels ambient.
   const wordmarkPhases = useMemo(
     () => 2 + newJoinerNames.length,

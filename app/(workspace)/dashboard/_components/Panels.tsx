@@ -20,6 +20,7 @@ import {
   GitBranch,
   GitCommit,
   GitPullRequest,
+  Globe,
   LayoutGrid,
   Link as LinkIcon,
   List as ListIcon,
@@ -57,7 +58,6 @@ import {
   GithubIcon,
   FigmaIcon,
   SupabaseIcon,
-  VerbivoreIcon,
   VercelIcon,
   SentryIcon,
   GoDaddyIcon,
@@ -1250,7 +1250,7 @@ function refIconForKind(kind: DisplayBrand) {
     case 'figma':
       return FigmaIcon
     case 'verbivore':
-      return VerbivoreIcon
+      return Globe
     case 'vercel':
       return VercelIcon
     case 'bunny':
@@ -1317,8 +1317,8 @@ function refChipPalette(
       }
     case 'verbivore':
       return {
-        // Verbivore mark is the company's own brand - light gold tint, no
-        // colour override on the icon since the SVG carries its own.
+        // The workspace's own brand - light gold tint so it reads as
+        // "ours" against the third-party rows.
         wrapper: 'border-amber-400/40 bg-amber-400/5',
         icon: ''
       }

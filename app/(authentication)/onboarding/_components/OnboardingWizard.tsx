@@ -132,7 +132,7 @@ export function OnboardingWizard({ initial }: { initial: OnboardingInitial }) {
   const [timezone, setTimezone] = useState(initial.timezone || guessTimezone())
   const [workStyle, setWorkStyle] = useState(initial.workStyle)
   const [languages, setLanguages] = useState<string[]>(
-    initial.languages.length ? initial.languages : ['Maltese']
+    initial.languages.length ? initial.languages : ['English']
   )
   const [headline, setHeadline] = useState(initial.headline)
   const [workLinks, setWorkLinks] = useState<WorkLink[]>(initial.workLinks)
@@ -638,7 +638,7 @@ export function OnboardingWizard({ initial }: { initial: OnboardingInitial }) {
                             .filter(Boolean)
                         )
                       }
-                      placeholder="Maltese, English, French"
+                      placeholder="English, French, Arabic"
                     />
                     <p className="text-muted-foreground text-[10px]">
                       Comma-separated.

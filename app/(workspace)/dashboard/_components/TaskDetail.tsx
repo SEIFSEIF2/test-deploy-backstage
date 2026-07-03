@@ -69,13 +69,13 @@ import {
   GithubIcon,
   FigmaIcon,
   SupabaseIcon,
-  VerbivoreIcon,
   VercelIcon,
   SentryIcon,
   GoogleCloudIcon,
   StripeIcon
 } from './BrandIcons'
-import { Rabbit } from 'lucide-react'
+import { Globe, Rabbit } from 'lucide-react'
+import { config } from '@/lib/config'
 import { BoardAssignee, BoardTask } from './boardData'
 import { useTeam } from './TeamContext'
 import {
@@ -1254,7 +1254,7 @@ function refIcon(kind: TaskExternalRefKind) {
     case 'supabase':
       return SupabaseIcon
     case 'verbivore':
-      return VerbivoreIcon
+      return Globe
     case 'vercel':
       return VercelIcon
     case 'bunny':
@@ -1273,7 +1273,7 @@ function refIcon(kind: TaskExternalRefKind) {
 
 // Display ordering for ref chips - matches Panels.tsx. GitHub first since
 // it's the most-used surface (PRs, code, issues), then infra (Supabase,
-// Vercel, Bunny), then design (Figma), then brand-own (Verbivore), then
+// Vercel, Bunny), then design (Figma), then the workspace's own links, then
 // the lower-priority generic sub-kinds.
 const REF_KIND_ORDER: TaskExternalRefKind[] = [
   'github',
@@ -1309,7 +1309,7 @@ const REF_KIND_LABEL: Record<TaskExternalRefKind, string> = {
   supabase: 'Supabase',
   github: 'GitHub repo',
   figma: 'Figma',
-  verbivore: 'Verbivore',
+  verbivore: config.appName,
   vercel: 'Vercel',
   bunny: 'Bunny CDN',
   sentry: 'Sentry',
@@ -1821,9 +1821,8 @@ function LinksSection({
             const tone = refTone(ref.kind, mode)
             const sub =
               parsed?.repo ?? hostOf(ref.url) ?? REF_KIND_LABEL[ref.kind]
-            // The Verbivore mark carries its own brand color in the SVG -
-            // the amber border-tile fights with it. Render it borderless
-            // and let the mark fill the tile.
+            // The workspace's own links render borderless so the brand
+            // tile reads as "ours" against the third-party chips.
             const isOwnBrand = ref.kind === 'verbivore'
             // In-app links (the dashboard's own subdomain) shouldn't
             // render as "external" - we drop target=_blank and the

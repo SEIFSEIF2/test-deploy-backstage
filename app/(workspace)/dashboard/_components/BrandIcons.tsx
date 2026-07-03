@@ -3,7 +3,6 @@
 // Each component accepts `className` so the parent can size + color them
 // the same way it sizes lucide icons.
 
-import Image from 'next/image'
 
 interface BrandProps {
   className?: string
@@ -31,24 +30,6 @@ export function FigmaIcon({ className }: BrandProps) {
       <path fill="#FF7262" d="M12 0h4a4 4 0 1 1 0 8h-4V0z" />
       <path fill="#1ABCFE" d="M20 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z" />
     </svg>
-  )
-}
-
-// Verbivore brand mark - sourced from /public/logos/verbivore-icon.svg
-// instead of inlined so the asset stays the single source of truth. Uses a
-// regular <img> tag (not next/image) because brand chips are tiny and the
-// image-optimizer adds no value at 12px.
-export function VerbivoreIcon({ className }: BrandProps) {
-  return (
-    <Image
-      src="/logos/verbivore-icon.svg"
-      alt=""
-      aria-hidden
-      width={12}
-      height={12}
-      unoptimized
-      className={`${className ?? ''} dark:invert`}
-    />
   )
 }
 

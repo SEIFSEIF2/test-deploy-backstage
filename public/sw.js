@@ -1,4 +1,4 @@
-// Verbivore service worker. Goals:
+// Backstage service worker. Goals:
 //   1. Make the app installable (handled by the manifest + a registered SW).
 //   2. Survive offline / flaky network with a useful fallback.
 //   3. Never serve stale auth-bearing HTML — auth state must come from
@@ -10,8 +10,8 @@
 //     stale-while-revalidate.
 //   - Everything else (API, Supabase, server actions): network only.
 
-const SHELL_CACHE = 'verbivore-shell-v3'
-const ASSET_CACHE = 'verbivore-assets-v3'
+const SHELL_CACHE = 'backstage-shell-v1'
+const ASSET_CACHE = 'backstage-assets-v1'
 
 // Pre-cache the minimum needed to render an offline shell. Keep this tiny;
 // every entry here is a forced download on install.
@@ -113,9 +113,9 @@ self.addEventListener('push', (event) => {
   try {
     payload = event.data.json()
   } catch {
-    payload = { title: 'Verbivore', body: event.data.text() }
+    payload = { title: 'Backstage', body: event.data.text() }
   }
-  const title = payload.title || 'Verbivore'
+  const title = payload.title || 'Backstage'
   const options = {
     body: payload.body || '',
     icon: '/logos/pwa-192x192.png',
