@@ -8,12 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "analyze": "ANALYZE=true next build",
-    "postinstall": "prisma generate --no-hints",
-    "prepare": "husky",
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "db:seed": "tsx --env-file=.env.local prisma/seed.ts",
-    "db:studio": "prisma studio"
+    "prepare": "husky"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -22,8 +17,6 @@
     "@emoji-mart/data": "^1.2.1",
     "@emoji-mart/react": "^1.1.1",
     "@hookform/resolvers": "^5.4.0",
-    "@prisma/adapter-pg": "^7.8.0",
-    "@prisma/client": "^7.8.0",
     "@radix-ui/react-popover": "^1.1.15",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.1",
@@ -35,11 +28,9 @@
     "driver.js": "^1.4.0",
     "emoji-mart": "^5.6.0",
     "framer-motion": "^12.40.0",
-    "husky": "^9.1.7",
     "lucide-react": "^1.14.0",
     "next": "16.2.6",
     "next-themes": "^0.4.6",
-    "pg": "^8.21.0",
     "radix-ui": "^1.4.3",
     "react": "19.2.4",
     "react-countup": "^6.5.3",
@@ -55,10 +46,8 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@prisma/config": "^7.8.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
-    "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/web-push": "^3.6.4",
@@ -70,7 +59,6 @@
     "playwright": "^1.60.0",
     "prettier": "^3.8.3",
     "prettier-plugin-tailwindcss": "^0.8.0",
-    "prisma": "^7.8.0",
     "sharp": "^0.35.1",
     "tailwindcss": "^4",
     "tsx": "^4.22.3",
