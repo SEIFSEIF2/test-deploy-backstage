@@ -51,50 +51,16 @@ function buildMentionTargets(team: BoardAssignee[]): MentionTarget[] {
   ]
 }
 
-// Explicit per-name mention colors. Matched on the LOWERCASED FIRST WORD
-// of the target's label so "Maryam Baig" and "maryam" both resolve. Add
-// new entries here when teammates onboard; anyone not listed falls back
-// to the hash palette below so colors stay deterministic + distinct.
+// Explicit per-name mention colors, matched on the lowercased first word
+// of the target's label. Add entries to pin a teammate to a specific
+// color; anyone not listed falls back to the hash palette below so
+// colors stay deterministic + distinct.
 const NAMED_MENTION_COLORS: Record<string, { bg: string; text: string }> = {
   team: {
     // The "everyone" mention - kept visually distinct from any single
     // person so it doesn't blur into one teammate's chip.
     bg: 'bg-teal-500/15',
     text: 'text-teal-700 dark:text-teal-300'
-  },
-  iona: {
-    bg: 'bg-emerald-500/15',
-    text: 'text-emerald-700 dark:text-emerald-300'
-  },
-  maryam: {
-    bg: 'bg-violet-500/15',
-    text: 'text-violet-700 dark:text-violet-300'
-  },
-  seif: {
-    // "Black" requested - use zinc so it reads on both light + dark
-    // backgrounds (true black would vanish in dark mode).
-    bg: 'bg-zinc-500/20',
-    text: 'text-zinc-900 dark:text-zinc-100'
-  },
-  seifelesllam: {
-    bg: 'bg-zinc-500/20',
-    text: 'text-zinc-900 dark:text-zinc-100'
-  },
-  asim: {
-    bg: 'bg-red-500/15',
-    text: 'text-red-700 dark:text-red-300'
-  },
-  corentin: {
-    bg: 'bg-sky-500/15',
-    text: 'text-sky-700 dark:text-sky-300'
-  },
-  oheneba: {
-    bg: 'bg-amber-500/20',
-    text: 'text-amber-700 dark:text-amber-300'
-  },
-  radmila: {
-    bg: 'bg-pink-500/15',
-    text: 'text-pink-700 dark:text-pink-300'
   }
 }
 
@@ -223,7 +189,7 @@ export default function MentionInput({
     const inserted = `@${target.label}`
     // Drop the trailing ", " unless the next thing is already punctuation
     // or whitespace, so picking a mention twice in a row doesn't produce
-    // "@Maryam Baig, , @Asim Selim, ".
+    // "@Jane Doe, , @John Smith, ".
     const trailing = /^[\s,.;:!?]/.test(after) ? '' : ', '
     const next = `${before}${inserted}${trailing}${after}`
     setValue(next)
@@ -564,7 +530,7 @@ export function renderMentionedBody(body: string, team: BoardAssignee[]) {
   // slice is colored - anything after stays plain text.
   //
   // The earlier regex-based approach matched whitespace inside the
-  // mention bracket, so a comment like "@Maryam Baig thanks for the
+  // mention bracket, so a comment like "@Jane Doe thanks for the
   // review" colored the entire tail (target name was a startsWith
   // prefix of the over-greedy match).
   const targets = buildMentionTargets(team)

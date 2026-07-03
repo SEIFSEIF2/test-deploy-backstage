@@ -60,7 +60,7 @@ interface HandoffSheetProps {
   onRemoveRef: (taskId: string, refId: string) => void
   // Team members shown as toggleable chips in the "Who to ask" field.
   // The free-text fallback under the chips lets users add non-team
-  // contacts (e.g. "Maryam (returning 1 June)").
+  // contacts (e.g. "Jane (returning 1 June)").
   members: BoardAssignee[]
 }
 

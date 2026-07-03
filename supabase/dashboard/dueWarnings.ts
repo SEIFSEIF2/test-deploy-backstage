@@ -37,7 +37,7 @@ function todayInAppTzIso(): string {
 }
 
 // Lazy daily check. On first dashboard load of the day for a given company
-// (relative to Europe/Malta), advance the cursor and fan out the warning.
+// (relative to the app timezone), advance the cursor and fan out the warning.
 // All subsequent calls today see the up-to-date cursor and bail.
 // Fire-and-forget from the caller's perspective.
 export async function runDueWarningsIfDue(
@@ -46,7 +46,7 @@ export async function runDueWarningsIfDue(
   const supabase = createAdminClient()
 
   // Atomic race winner. Postgres NOW() runs server-side; converting to
-  // Europe/Malta gives "today" in the user's local calendar.
+  // config.timezone gives "today" in the workspace's local calendar.
   const { data: claim, error: claimErr } = await supabase
     .rpc('claim_due_warning_run', {
       p_company_id: companyId,
@@ -59,10 +59,10 @@ export async function runDueWarningsIfDue(
     return { ran: false, scanned: 0, warned: 0, skipped: 0, errors: 0 }
   }
 
-  // "Tomorrow in Malta" - the date math. claim returns it for symmetry.
+  // "Tomorrow in the app timezone" - the date math. claim returns it for symmetry.
   const tomorrowIso = claim as string
 
-  // Pull live tasks due tomorrow (Malta date), still actionable, not deleted.
+  // Pull live tasks due tomorrow (app-timezone date), still actionable, not deleted.
   const { data: tasks, error: tasksErr } = await supabase
     .from('tasks')
     .select(
