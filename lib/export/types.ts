@@ -39,10 +39,12 @@ export interface ExportOptions {
   // Drop comments + activity from the export. Default false (we include
   // everything by default for max agent context).
   withoutCommentsAndActivity?: boolean
-  // ponytail: brief mode - one line per task in the view export instead of
-  // the full task markdown. Keeps AI-paste output scannable and mentions
-  // sprint on every task line. Default false in serializers, but the
-  // Copy menu default now enables it.
+  // ponytail: brief mode - one line per task. Default false in serializers
+  // (backwards-compatible for existing callers), default true in the
+  // dashboard Copy menu. Convention split lives here.
+  // upgrade when a second consumer defaults to brief: flip the serializer
+  // default to true and make the Copy menu explicit; keeps one source of
+  // truth.
   brief?: boolean
 }
 

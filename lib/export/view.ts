@@ -8,8 +8,12 @@ import type { ExportContext, ExportOptions } from './types'
 import { EXPORT_VERSION } from './types'
 import type { BoardTask, Sprint } from '@/app/(workspace)/dashboard/_components/boardData'
 
-// ponytail: brief per-task line for the AI paste. One line, sprint on every
-// row so the reader can see sprint context without a group section.
+// ponytail: brief per-task line for the AI paste. One line, sprint per row.
+// Drops checklist, links, comments, activity - detail lives behind the
+// "Copy as Markdown (detailed)" menu entry.
+// upgrade when an AI paste consumer needs a middle tier (e.g. include
+// checklist but not comments): add options.briefWith?: ('checklist' |
+// 'links')[] and cherry-pick sections in this function.
 function taskBriefLine(task: BoardTask, sprint: Sprint | null): string {
   const status = STATUS_BY_ID[task.status]?.label ?? task.status
   const bits = [

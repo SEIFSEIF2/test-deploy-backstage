@@ -84,10 +84,12 @@ function toCamelProjectRef(r: ProjectExternalRefRow) {
   }
 }
 
-// ponytail: auto-add the task to the project's current sprint on create/
-// status change. Silent if there's no current sprint or the task is
-// already in it. Skips canceled/duplicate transitions - those aren't
-// active work and shouldn't clutter the sprint.
+// ponytail: auto-add the task to the project's current sprint. Silent if
+// there's no current sprint or the task is already in it. Skips
+// canceled/duplicate - hard-coded, no per-project opt-out.
+// upgrade when someone wants a project to opt out (e.g. an "always in a
+// sprint" project) or when a fourth status needs skipping: add a
+// projects.sprint_auto_add_disabled boolean and consult it here.
 async function autoAddToCurrentSprint(
   supabase: ReturnType<typeof createAdminClient>,
   taskId: string,

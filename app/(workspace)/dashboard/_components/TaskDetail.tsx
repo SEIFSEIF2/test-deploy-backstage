@@ -260,10 +260,10 @@ export default function TaskDetail({
   const [assigneeOpen, setAssigneeOpen] = useState(false)
   const [leadOpen, setLeadOpen] = useState(false)
   const [askLeadOpen, setAskLeadOpen] = useState(false)
-  // ponytail: per-open session visibility for the optional sections. Init
-  // from content presence so tasks that already have stuff still show it;
-  // empty ones stay quiet behind chips. Click X on any section to hide it
-  // (and its content stays; chip lets you show it again).
+  // ponytail: per-open session visibility, useState only (drops on close).
+  // upgrade when someone complains the panel keeps resetting between opens:
+  // persist per (taskId, memberId) in a small prefs table or localStorage
+  // keyed by task id.
   const [showLinks, setShowLinks] = useState(() => externalRefs.length > 0)
   const [showHandoff, setShowHandoff] = useState(false)
   const [showMeetings, setShowMeetings] = useState(false)
@@ -2241,7 +2241,10 @@ function LinkedMeetingsSection({
   currentUserId: string
   // Mirrors LinksSection: admin/lead/assignee can manage, members can't.
   canEdit: boolean
-  // ponytail: return null when no meetings + not opted-in via chip
+  // ponytail: null when no meetings + not opted-in. Loading state collapses
+  // into "hidden" - user sees the section pop in once data lands.
+  // upgrade if a user reports the section flickers or disappears mid-load:
+  // render a 1-line skeleton while hasFetched=false.
   hideWhenEmpty?: boolean
 }) {
   const { t } = useDashTheme()
