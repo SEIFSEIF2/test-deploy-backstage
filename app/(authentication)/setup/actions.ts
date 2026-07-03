@@ -1,10 +1,24 @@
 'use server'
 
+import { createHash, timingSafeEqual } from 'node:crypto'
 import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/supabase/admin'
 import { slugify } from '@/lib/slug'
 
 export type SetupState = { error: string } | undefined
+
+// /setup is necessarily public on a fresh install, so anyone who finds the
+// URL before the owner could claim the instance. Proof of ownership: the
+// deployer pastes the service-role key, which only they can read (Vercel /
+// Supabase dashboard). Hash both sides so timingSafeEqual accepts
+// different lengths.
+function isOwner(providedKey: string): boolean {
+  const actual = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!actual) return false
+  const a = createHash('sha256').update(providedKey).digest()
+  const b = createHash('sha256').update(actual).digest()
+  return timingSafeEqual(a, b)
+}
 
 // First-run bootstrap: creates the admin auth user, the company, and the
 // owning team_members row in one shot. Guarded so it only ever works on an
@@ -19,7 +33,14 @@ export async function createWorkspace(
     .trim()
     .toLowerCase()
   const password = String(formData.get('password') ?? '')
+  const setupKey = String(formData.get('setupKey') ?? '').trim()
 
+  if (!isOwner(setupKey)) {
+    return {
+      error:
+        'Setup key does not match this deployment’s service role key. Copy it from your Supabase dashboard → Project Settings → API keys.'
+    }
+  }
   if (!workspaceName || !fullName || !email) {
     return { error: 'All fields are required.' }
   }
