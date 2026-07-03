@@ -22,3 +22,7 @@ export function FeaturesProvider({
 export function useFeature(key: FeatureKey): boolean {
   return useContext(FeaturesContext).has(key)
 }
+
+export function useEnabledFeatures(): Set<FeatureKey> {
+  return useContext(FeaturesContext)
+}

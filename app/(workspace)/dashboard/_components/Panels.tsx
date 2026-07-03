@@ -70,6 +70,9 @@ import {
 import type { ProjectExternalRef, TaskExternalRefKind } from './boardData'
 import { defaultExternalRefLabel, parseExternalRef } from '@/lib/externalRef'
 import { CopyButton, type CopyMenuItem } from '@/components/ui/copy-button'
+import { FEATURES, ALL_FEATURE_KEYS, type FeatureKey } from '@/lib/features/keys'
+import { useEnabledFeatures } from '@/lib/features/client'
+import { setEnabledFeatures } from '../features-actions'
 import { updatesToJson, updatesToMarkdown } from '@/lib/export/updates'
 import { isInScope, type TimeScope } from '@/lib/export/timeRange'
 import StatusIcon from './StatusIcon'
@@ -2246,6 +2249,8 @@ export function SettingsPanel({
           <QuickMeetUrlSetting initialUrl={initialQuickMeetUrl} />
         )}
 
+        {accessTier === 'admin' && <FeaturesSection />}
+
         {onboardingComplete && (
           <Row label="Profile">
             <button
@@ -2562,6 +2567,97 @@ function QuickMeetUrlSetting({
         7:00-18:00 workspace time. Paste a Meet link you keep open in the
         background or one that auto-admits members.
       </p>
+    </div>
+  )
+}
+
+function FeaturesSection() {
+  const { t } = useDashTheme()
+  const router = useRouter()
+  const initial = useEnabledFeatures()
+  const [enabled, setEnabled] = useState<Set<FeatureKey>>(() => new Set(initial))
+  const [saving, setSaving] = useState<FeatureKey | null>(null)
+
+  const groups = useMemo(() => {
+    const byGroup = new Map<string, FeatureKey[]>()
+    for (const key of ALL_FEATURE_KEYS) {
+      const g = FEATURES[key].group
+      const list = byGroup.get(g) ?? []
+      list.push(key)
+      byGroup.set(g, list)
+    }
+    return Array.from(byGroup.entries())
+  }, [])
+
+  async function toggle(key: FeatureKey) {
+    const next = new Set(enabled)
+    if (next.has(key)) next.delete(key)
+    else next.add(key)
+    setEnabled(next)
+    setSaving(key)
+    const res = await setEnabledFeatures(Array.from(next))
+    if ('error' in res) {
+      toast.error(res.error)
+      setEnabled(new Set(initial))
+    } else {
+      router.refresh()
+    }
+    setSaving(null)
+  }
+
+  return (
+    <div className={`flex flex-col gap-3 border-t pt-4 ${t.border}`}>
+      <div className="flex flex-col gap-1">
+        <h3 className={`text-sm font-medium ${t.text}`}>Features</h3>
+        <p className={`text-[11px] leading-relaxed ${t.textSubtle}`}>
+          Turn modules on or off for this workspace. Disabled modules
+          hide their sidebar entry and 404 direct URLs.
+        </p>
+      </div>
+      {groups.map(([group, keys]) => (
+        <div key={group} className="flex flex-col gap-1.5">
+          <div
+            className={`text-[10px] tracking-[0.2em] uppercase ${t.textSubtle}`}
+          >
+            {group}
+          </div>
+          {keys.map((key) => {
+            const on = enabled.has(key)
+            const busy = saving === key
+            return (
+              <div
+                key={key}
+                className="flex items-start justify-between gap-3 py-1"
+              >
+                <div className="flex min-w-0 flex-col">
+                  <span className={`text-xs font-medium ${t.text}`}>
+                    {FEATURES[key].label}
+                  </span>
+                  <span className={`text-[11px] ${t.textMuted}`}>
+                    {FEATURES[key].description}
+                  </span>
+                </div>
+                <button
+                  onClick={() => toggle(key)}
+                  aria-pressed={on}
+                  disabled={busy}
+                  className={`relative h-6 w-11 shrink-0 rounded-full border transition disabled:opacity-50 ${
+                    on
+                      ? 'border-teal-500 bg-teal-500'
+                      : t.surfaceMuted + ' ' + t.border
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 size-4 rounded-full bg-white transition-transform ${
+                      on ? 'translate-x-6' : 'translate-x-0.5'
+                    }`}
+                  />
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      ))}
     </div>
   )
 }
