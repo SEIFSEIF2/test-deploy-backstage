@@ -8,7 +8,7 @@ import pg from 'pg'
 // Writes to supabase_migrations.schema_migrations, same table the CLI
 // uses, so `supabase db push` and this script stay interchangeable.
 
-const url =
+let url =
   process.env.POSTGRES_URL_NON_POOLING ??
   process.env.POSTGRES_URL ??
   process.env.SUPABASE_DB_URL
@@ -16,6 +16,15 @@ const url =
 if (!url) {
   console.log('[migrate] no database URL set, skipping')
   process.exit(0)
+}
+
+// pg >= 8.16 treats sslmode=require in the URL as full cert verification,
+// which fails on Supabase's cert chain. Drop the param so the ssl config
+// object below (encrypt, don't verify) is what actually applies.
+{
+  const u = new URL(url)
+  u.searchParams.delete('sslmode')
+  url = u.toString()
 }
 
 const client = new pg.Client({
