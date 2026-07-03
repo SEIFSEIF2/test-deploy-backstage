@@ -58,6 +58,11 @@ export const FEATURES = {
 
 export type FeatureKey = keyof typeof FEATURES
 
+// Core keys plus namespaced plugin keys (`plugin:<id>`). Everything that
+// reads/writes companies.enabled_features speaks this wider type; core
+// call sites keep passing literals unchanged.
+export type AnyFeatureKey = FeatureKey | `plugin:${string}`
+
 export const ALL_FEATURE_KEYS = Object.keys(FEATURES) as FeatureKey[]
 
 export const PRESETS: Record<'solo' | 'team' | 'full', FeatureKey[]> = {

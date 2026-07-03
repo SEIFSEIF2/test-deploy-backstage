@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createPortal } from 'react-dom'
 import {
   CalendarDays,
@@ -11,7 +12,8 @@ import {
   Search,
   Settings as SettingsIcon,
   CheckSquare,
-  ChartGantt
+  ChartGantt,
+  Store
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useDashTheme } from './theme'
@@ -20,13 +22,23 @@ import StatusIcon from './StatusIcon'
 import Avatar from './Avatar'
 import type { BoardTask, BoardAssignee } from './boardData'
 import { listMyMeetingRequests, listPendingApprovals } from '../actions'
+import { PLUGINS } from '@/plugins.config'
+import { pluginFeatureKey } from '@/lib/plugins/types'
+import { useEnabledFeatures } from '@/lib/features/client'
 
 type Tab = 'board' | 'list' | 'timeline' | 'sprints' | 'meetings'
-type Secondary = 'settings' | 'updates' | 'symbols' | 'projects' | 'archive'
+type Secondary =
+  | 'settings'
+  | 'updates'
+  | 'symbols'
+  | 'projects'
+  | 'archive'
+  | 'marketplace'
 
 type NavItem =
   | { kind: 'tab'; id: Tab; label: string; icon: React.ReactNode }
   | { kind: 'view'; id: Secondary; label: string; icon: React.ReactNode }
+  | { kind: 'plugin'; id: string; label: string; icon: React.ReactNode }
 
 interface Props {
   open: boolean
@@ -99,7 +111,8 @@ const NAV: NavItem[] = [
   { kind: 'tab', id: 'meetings', label: 'Calendar', icon: <CalendarDays className="size-3.5" /> },
   { kind: 'view', id: 'settings', label: 'Settings', icon: <SettingsIcon className="size-3.5" /> },
   { kind: 'view', id: 'updates', label: 'Updates', icon: <CheckSquare className="size-3.5" /> },
-  { kind: 'view', id: 'projects', label: 'Projects', icon: <Folder className="size-3.5" /> }
+  { kind: 'view', id: 'projects', label: 'Projects', icon: <Folder className="size-3.5" /> },
+  { kind: 'view', id: 'marketplace', label: 'Marketplace', icon: <Store className="size-3.5" /> }
 ]
 
 export default function CommandPalette({
@@ -120,6 +133,30 @@ export default function CommandPalette({
   onSelectMember,
   onSelectMeeting
 }: Props) {
+  const router = useRouter()
+  const enabledFeatureSet = useEnabledFeatures()
+  // Installed + enabled plugins join the Navigation group; each palette
+  // extra a manifest declares is one more entry pointing at the panel.
+  const navItems = useMemo<NavItem[]>(() => {
+    const pluginItems = PLUGINS.filter((p) =>
+      enabledFeatureSet.has(pluginFeatureKey(p.id))
+    ).flatMap((p) => [
+      {
+        kind: 'plugin' as const,
+        id: p.id,
+        label: p.nav.label,
+        icon: <p.icon className="size-3.5" />
+      },
+      ...(p.palette ?? []).map((entry) => ({
+        kind: 'plugin' as const,
+        id: p.id,
+        label: entry.label,
+        icon: <p.icon className="size-3.5" />
+      }))
+    ])
+    return [...NAV, ...pluginItems]
+  }, [enabledFeatureSet])
+
   const { t, mode } = useDashTheme()
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
@@ -249,7 +286,11 @@ export default function CommandPalette({
         icon: n.icon,
         group: 'Navigation',
         onSelect: () =>
-          n.kind === 'tab' ? onSelectTab(n.id) : onSelectView(n.id)
+          n.kind === 'tab'
+            ? onSelectTab(n.id)
+            : n.kind === 'plugin'
+              ? router.push(`/dashboard/p/${n.id}`)
+              : onSelectView(n.id)
       })
     }
     const pushMember = (m: BoardAssignee) => {
@@ -389,7 +430,7 @@ export default function CommandPalette({
     }
 
     if (scope === 'nav') {
-      for (const n of NAV) {
+      for (const n of navItems) {
         if (!q || n.label.toLowerCase().includes(q)) pushNav(n)
       }
       return out
@@ -418,7 +459,7 @@ export default function CommandPalette({
       if (hasChipFilter) {
         recentTasks.slice(0, 15).forEach(pushTask)
       } else {
-        for (const n of NAV) pushNav(n)
+        for (const n of navItems) pushNav(n)
       }
       return out
     }
@@ -430,7 +471,7 @@ export default function CommandPalette({
         pushProject(p.id, p.name, p.id === currentProjectId)
       }
     }
-    for (const n of NAV) {
+    for (const n of navItems) {
       if (n.label.toLowerCase().includes(q)) pushNav(n)
     }
     for (const m of orderedMembers) {
@@ -478,7 +519,9 @@ export default function CommandPalette({
     onSelectTab,
     onSelectView,
     onSelectMember,
-    onSelectMeeting
+    onSelectMeeting,
+    navItems,
+    router
   ])
 
   useEffect(() => {

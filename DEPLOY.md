@@ -38,6 +38,21 @@ Migrations re-run on every deploy but are recorded in
 CLI uses), so already-applied files are skipped and `supabase db push`
 stays interchangeable with the build-time runner.
 
+## Installing plugins
+
+Browse the in-app Marketplace (`/dashboard/marketplace`). Plugins that
+ship with the repo (like Team Polls) just need an admin to click
+Enable. Installing a third-party plugin means adding its code to your
+deployment:
+
+1. Copy its folder into `plugins/<id>/`.
+2. Add one import line each in `plugins.config.ts` and
+   `plugins.config.server.ts`.
+3. Push. The build applies the plugin's migrations automatically; then
+   enable it in the Marketplace.
+
+Authoring your own: see `PLUGINS.md`.
+
 ## Optional integrations
 
 - **Google Calendar / Meet**: set `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET`

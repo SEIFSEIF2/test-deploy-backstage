@@ -1,10 +1,10 @@
 'use client'
 
 import { createContext, useContext, type ReactNode } from 'react'
-import type { FeatureKey } from './keys'
+import type { AnyFeatureKey } from './keys'
 
 type BrandingValue = {
-  enabled: Set<FeatureKey>
+  enabled: Set<AnyFeatureKey>
   logoUrl: string | null
 }
 
@@ -18,7 +18,7 @@ export function FeaturesProvider({
   logoUrl,
   children
 }: {
-  enabled: readonly FeatureKey[]
+  enabled: readonly AnyFeatureKey[]
   logoUrl: string | null
   children: ReactNode
 }) {
@@ -29,11 +29,11 @@ export function FeaturesProvider({
   )
 }
 
-export function useFeature(key: FeatureKey): boolean {
+export function useFeature(key: AnyFeatureKey): boolean {
   return useContext(BrandingContext).enabled.has(key)
 }
 
-export function useEnabledFeatures(): Set<FeatureKey> {
+export function useEnabledFeatures(): Set<AnyFeatureKey> {
   return useContext(BrandingContext).enabled
 }
 

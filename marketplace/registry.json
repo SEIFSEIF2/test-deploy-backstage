@@ -1,0 +1,13 @@
+{
+  "plugins": [
+    {
+      "id": "polls",
+      "name": "Team Polls",
+      "description": "Quick team polls with live results.",
+      "version": "0.1.0",
+      "author": "Backstage",
+      "group": "Team",
+      "repoUrl": "https://github.com/SEIFSEIF4/backstage/tree/main/plugins/polls"
+    }
+  ]
+}

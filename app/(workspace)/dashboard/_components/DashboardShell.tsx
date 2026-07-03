@@ -103,6 +103,9 @@ import FilterPanel from './FilterPanel'
 import { ProjectsPanel, SettingsPanel, UpdatesPanel } from './Panels'
 import TrashPanel from './TrashPanel'
 import OnboardingPanel from './OnboardingPanel'
+import PluginHost from './PluginHost'
+import MarketplacePanel from './MarketplacePanel'
+import { pluginById } from '@/lib/plugins/registry'
 import { type TaskAttachmentView } from './TaskImageDropZone'
 import { MeetingsPanel } from './MeetingsPanel'
 import { TeamPanel } from './TeamPanel'
@@ -150,6 +153,10 @@ export type View =
   | 'archive'
   | 'trash'
   | 'onboarding'
+  | 'marketplace'
+  // Generic view for any installed plugin panel; the concrete plugin id
+  // is derived from the /dashboard/p/<id> pathname, not the union.
+  | 'plugin'
 
 export interface DashboardInitial {
   tasks: BoardTask[]
@@ -307,7 +314,8 @@ const PANEL_VIEWS = [
   'meetings',
   'archive',
   'trash',
-  'onboarding'
+  'onboarding',
+  'marketplace'
 ] as const
 type PanelView = (typeof PANEL_VIEWS)[number]
 
@@ -362,6 +370,8 @@ function viewTitle(
     if (view === 'archive') return 'Archive'
     if (view === 'trash') return 'Trash'
     if (view === 'onboarding') return 'Onboarding'
+    if (view === 'marketplace') return 'Marketplace'
+    if (view === 'plugin') return 'Plugin'
     return 'All tasks'
   })()
   return project ? `${project.name} — ${base}` : base
@@ -736,6 +746,8 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
   const pathname = usePathname()
   const tab = pathTabFor(pathname)
   const panel = pathPanelFor(pathname)
+  const activePluginId =
+    pathname?.match(/^\/dashboard\/p\/([a-z0-9-]+)$/)?.[1] ?? null
   const setTab = (
     next: 'board' | 'list' | 'timeline' | 'sprints' | 'meetings'
   ) => {
@@ -787,7 +799,7 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
   // Today those live in different URL surfaces: panel = route segment,
   // feed = search param. We rebuild the union here so the rest of the
   // shell can keep treating `view` as a single value.
-  const view: View = panel ?? feed
+  const view: View = activePluginId ? 'plugin' : (panel ?? feed)
   const setView = (next: View) => {
     if ((PANEL_VIEWS as readonly string[]).includes(next)) {
       // Panels live at their own routes. Search params for filter state
@@ -2949,6 +2961,10 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
         return 'Team'
       case 'archive':
         return 'Archive'
+      case 'marketplace':
+        return 'Marketplace'
+      case 'plugin':
+        return (activePluginId && pluginById(activePluginId)?.name) || 'Plugin'
       case 'all':
       default:
         return 'All tasks'
@@ -3096,7 +3112,9 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                 view === 'meetings' ||
                 view === 'archive' ||
                 view === 'trash' ||
-                view === 'onboarding'
+                view === 'onboarding' ||
+                view === 'marketplace' ||
+                view === 'plugin'
                   ? 'all'
                   : view
               }
@@ -3140,7 +3158,9 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                   view === 'meetings' ||
                   view === 'archive' ||
                   view === 'trash' ||
-                  view === 'onboarding'
+                  view === 'onboarding' ||
+                  view === 'marketplace' ||
+                  view === 'plugin'
                     ? 'all'
                     : view
                 }
@@ -3952,6 +3972,21 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                 <OnboardingPanel
                   currentMemberId={initial.currentMember.id}
                   currentAccessTier={initial.currentMember.accessTier}
+                />
+              )}
+              {view === 'marketplace' && (
+                <MarketplacePanel
+                  isAdmin={initial.currentMember.accessTier === 'admin'}
+                />
+              )}
+              {view === 'plugin' && activePluginId && (
+                <PluginHost
+                  pluginId={activePluginId}
+                  member={{
+                    id: initial.currentMember.id,
+                    accessTier: initial.currentMember.accessTier,
+                    isOwner: initial.currentMember.isOwner
+                  }}
                 />
               )}
             </main>

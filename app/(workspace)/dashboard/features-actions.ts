@@ -5,11 +5,17 @@ import { requireAccessTier } from '@/lib/dal'
 import { createAdminClient } from '@/supabase/admin'
 import {
   ALL_FEATURE_KEYS,
-  type FeatureKey
+  type AnyFeatureKey
 } from '@/lib/features/keys'
+import { PLUGIN_IDS } from '@/lib/plugins/registry'
+import { pluginFeatureKey } from '@/lib/plugins/types'
 
-function isValidKey(k: string): k is FeatureKey {
-  return (ALL_FEATURE_KEYS as string[]).includes(k)
+// Accepts core keys and `plugin:<id>` keys for INSTALLED plugins. This
+// filter runs on every full-array write, so it must know about plugin
+// keys or toggling any core feature would silently wipe plugin state.
+function isValidKey(k: string): k is AnyFeatureKey {
+  if ((ALL_FEATURE_KEYS as string[]).includes(k)) return true
+  return k.startsWith('plugin:') && PLUGIN_IDS.includes(k.slice(7))
 }
 
 export async function setEnabledFeatures(
@@ -21,6 +27,37 @@ export async function setEnabledFeatures(
   const { error } = await supabase
     .from('companies')
     .update({ enabled_features: clean })
+    .eq('id', actor.companyId)
+  if (error) return { error: error.message }
+  revalidatePath('/dashboard', 'layout')
+  return { ok: true }
+}
+
+// Targeted single-key toggle used by the Marketplace, so enabling one
+// plugin never read-modify-writes the whole array from a stale client
+// snapshot the way setEnabledFeatures(fullArray) would.
+export async function setPluginEnabled(
+  pluginId: string,
+  enabled: boolean
+): Promise<{ ok: true } | { error: string }> {
+  const actor = await requireAccessTier(['admin'])
+  if (!PLUGIN_IDS.includes(pluginId)) {
+    return { error: 'Unknown plugin.' }
+  }
+  const key = pluginFeatureKey(pluginId)
+  const supabase = createAdminClient()
+  const { data, error: readError } = await supabase
+    .from('companies')
+    .select('enabled_features')
+    .eq('id', actor.companyId)
+    .single()
+  if (readError) return { error: readError.message }
+  const current = new Set<string>(data.enabled_features ?? [])
+  if (enabled) current.add(key)
+  else current.delete(key)
+  const { error } = await supabase
+    .from('companies')
+    .update({ enabled_features: [...current] })
     .eq('id', actor.companyId)
   if (error) return { error: error.message }
   revalidatePath('/dashboard', 'layout')

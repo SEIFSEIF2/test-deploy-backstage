@@ -70,7 +70,7 @@ import {
 import type { ProjectExternalRef, TaskExternalRefKind } from './boardData'
 import { defaultExternalRefLabel, parseExternalRef } from '@/lib/externalRef'
 import { CopyButton, type CopyMenuItem } from '@/components/ui/copy-button'
-import { FEATURES, ALL_FEATURE_KEYS, type FeatureKey } from '@/lib/features/keys'
+import { FEATURES, ALL_FEATURE_KEYS, type FeatureKey, type AnyFeatureKey } from '@/lib/features/keys'
 import { useEnabledFeatures, useCompanyLogoUrl } from '@/lib/features/client'
 import {
   clearCompanyLogo,
@@ -78,6 +78,8 @@ import {
   uploadCompanyLogo
 } from '../features-actions'
 import { config } from '@/lib/config'
+import { PLUGINS } from '@/plugins.config'
+import { pluginFeatureKey } from '@/lib/plugins/types'
 import { updatesToJson, updatesToMarkdown } from '@/lib/export/updates'
 import { isInScope, type TimeScope } from '@/lib/export/timeRange'
 import StatusIcon from './StatusIcon'
@@ -2582,7 +2584,7 @@ function FeaturesSection() {
   const { t } = useDashTheme()
   const router = useRouter()
   const initial = useEnabledFeatures()
-  const [enabled, setEnabled] = useState<Set<FeatureKey>>(() => new Set(initial))
+  const [enabled, setEnabled] = useState<Set<AnyFeatureKey>>(() => new Set(initial))
   const [saving, setSaving] = useState<FeatureKey | null>(null)
 
   const groups = useMemo(() => {
@@ -2665,6 +2667,30 @@ function FeaturesSection() {
           })}
         </div>
       ))}
+      {PLUGINS.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <span
+            className={`text-[10px] font-medium tracking-wider uppercase ${t.textSubtle}`}
+          >
+            Plugins
+          </span>
+          <div
+            className={`flex items-center justify-between rounded-lg border px-3 py-2.5 ${t.border}`}
+          >
+            <span className={`text-[11px] ${t.textMuted}`}>
+              {PLUGINS.filter((p) => enabled.has(pluginFeatureKey(p.id))).length}{' '}
+              of {PLUGINS.length} installed plugin
+              {PLUGINS.length === 1 ? '' : 's'} enabled.
+            </span>
+            <button
+              onClick={() => router.push('/dashboard/marketplace')}
+              className={`text-xs font-medium text-teal-600 hover:underline dark:text-teal-400`}
+            >
+              Manage in Marketplace
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

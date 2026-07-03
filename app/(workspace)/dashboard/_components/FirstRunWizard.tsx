@@ -7,6 +7,8 @@ import { X } from 'lucide-react'
 import { useDashTheme } from './theme'
 import { setEnabledFeatures } from '../features-actions'
 import { PRESETS, FEATURES, type FeatureKey } from '@/lib/features/keys'
+import { PLUGINS } from '@/plugins.config'
+import { pluginFeatureKey } from '@/lib/plugins/types'
 
 type Preset = keyof typeof PRESETS
 
@@ -41,7 +43,11 @@ export function FirstRunWizard({ onDone }: { onDone: () => void }) {
 
   async function pick(preset: Preset) {
     setBusy(preset)
-    const res = await setEnabledFeatures(PRESETS[preset] as FeatureKey[])
+    // Installed plugins that opted into this preset ride along.
+    const pluginKeys = PLUGINS.filter((p) => p.presets?.includes(preset)).map(
+      (p) => pluginFeatureKey(p.id)
+    )
+    const res = await setEnabledFeatures([...PRESETS[preset], ...pluginKeys])
     if ('error' in res) {
       toast.error(res.error)
       setBusy(null)

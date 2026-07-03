@@ -1,9 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import {
   AtSign,
   Check,
@@ -19,6 +18,7 @@ import {
   Folder,
   Shapes,
   Compass,
+  Store,
   UserCog,
   UserPlus,
   Archive as ArchiveIcon,
@@ -48,7 +48,13 @@ import {
 import { useDashTheme } from './theme'
 import { useContextMenu } from './ContextMenu'
 import { config } from '@/lib/config'
-import { useFeature, useCompanyLogoUrl } from '@/lib/features/client'
+import {
+  useFeature,
+  useEnabledFeatures,
+  useCompanyLogoUrl
+} from '@/lib/features/client'
+import { PLUGINS } from '@/plugins.config'
+import { pluginFeatureKey } from '@/lib/plugins/types'
 import { useTaskActions } from './actions'
 import { Filter, X } from 'lucide-react'
 import {
@@ -74,6 +80,8 @@ const HINTS = {
     'Recent activity on your projects. Status changes, comments, mentions.',
   symbols: 'Reference for the status and priority icons used on cards.',
   settings: 'Card density, WIP limits, notifications, and help hints.',
+  marketplace:
+    'Browse plugins. Admins enable installed ones; anyone can request.',
   onboarding:
     'Per-member onboarding + offboarding checklist. Tracks who has access to which tool.'
 } as const
@@ -92,6 +100,18 @@ type View =
   | 'archive'
   | 'trash'
   | 'onboarding'
+  | 'marketplace'
+  | 'plugin'
+
+// Lowest tier that may see a plugin nav item. Undefined = everyone.
+const TIER_RANK = { member: 0, lead: 1, admin: 2 } as const
+function tierAllows(
+  minTier: keyof typeof TIER_RANK | undefined,
+  actual: keyof typeof TIER_RANK
+): boolean {
+  if (!minTier) return true
+  return TIER_RANK[actual] >= TIER_RANK[minTier]
+}
 
 interface SidebarProps {
   activeView: 'all' | 'mine' | 'inbox' | 'mentions'
@@ -155,6 +175,8 @@ export default function Sidebar({
   const { open } = useContextMenu()
   const a = useTaskActions()
   const router = useRouter()
+  const pathname = usePathname()
+  const enabledFeatureSet = useEnabledFeatures()
   const team = useTeam()
   const { open: openPortfolio } = usePortfolioSheet()
   const { open: openQuickNote } = useQuickNoteSheet()
@@ -607,6 +629,27 @@ export default function Sidebar({
             onClick={() => onSecondary('settings')}
             hint={showHints ? HINTS.settings : undefined}
           />
+          <SidebarItem
+            icon={<Store className="size-3.5" />}
+            label="Marketplace"
+            active={secondary === 'marketplace'}
+            onClick={() => onSecondary('marketplace')}
+            hint={showHints ? HINTS.marketplace : undefined}
+          />
+          {PLUGINS.filter(
+            (p) =>
+              enabledFeatureSet.has(pluginFeatureKey(p.id)) &&
+              tierAllows(p.nav.minTier, currentAccessTier)
+          ).map((p) => (
+            <SidebarItem
+              key={p.id}
+              icon={<p.icon className="size-3.5" />}
+              label={p.nav.label}
+              active={pathname === `/dashboard/p/${p.id}`}
+              onClick={() => router.push(`/dashboard/p/${p.id}`)}
+              hint={showHints ? p.nav.hint : undefined}
+            />
+          ))}
         </div>
 
         {!onboardingComplete && (
