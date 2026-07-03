@@ -181,7 +181,7 @@ CREATE TYPE "public"."task_status" AS ENUM (
 ALTER TYPE "public"."task_status" OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."claim_due_warning_run"("p_company_id" "uuid") RETURNS "date"
+CREATE OR REPLACE FUNCTION "public"."claim_due_warning_run"("p_company_id" "uuid", "p_timezone" "text" DEFAULT 'UTC') RETURNS "date"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
@@ -189,7 +189,7 @@ declare
   v_today date;
   v_claimed_id uuid;
 begin
-  v_today := (now() at time zone 'Europe/Malta')::date;
+  v_today := (now() at time zone p_timezone)::date;
 
   update public.companies
   set last_due_warning_date = v_today
@@ -206,7 +206,7 @@ end;
 $$;
 
 
-ALTER FUNCTION "public"."claim_due_warning_run"("p_company_id" "uuid") OWNER TO "postgres";
+ALTER FUNCTION "public"."claim_due_warning_run"("p_company_id" "uuid", "p_timezone" "text") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."create_email_prefs_for_new_member"() RETURNS "trigger"

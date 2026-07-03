@@ -1,7 +1,8 @@
 import { ImageResponse } from 'next/og'
 import { fetchMeetingForShare, type SharedMeeting } from '@/supabase/dashboard/meetings'
+import { config } from '@/lib/config'
 
-export const alt = 'Verbivore meeting share preview'
+export const alt = `${config.appName} meeting share preview`
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -153,7 +154,7 @@ export default async function OG({
                 background: ACCENT_TEAL
               }}
             />
-            VERBIVORE
+            {config.appName.toUpperCase()}
           </div>
           <div
             style={{
@@ -266,7 +267,7 @@ export default async function OG({
               background: ACCENT_TEAL
             }}
           />
-          MEETING ON BACKSTAGE
+          MEETING ON {config.appName.toUpperCase()}
         </div>
       </div>
     ),

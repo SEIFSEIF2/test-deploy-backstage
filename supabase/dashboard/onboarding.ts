@@ -444,29 +444,29 @@ const DESIGN_SKILLS = ['Figma', 'UI design', 'UX research']
 const DEFAULTS: DefaultTemplate[] = [
   {
     title: 'GitHub org invite',
-    description: 'Invite to the VerbMT GitHub org and the repos they will work in.',
+    description: 'Invite to the GitHub org and the repos they will work in.',
     category: 'access',
     target_tiers: ['admin', 'lead', 'member'],
     target_skills: DEV_SKILLS,
     tool_key: 'github',
-    admin_invite_url: 'https://github.com/orgs/VerbMT/people',
+    admin_invite_url: 'https://github.com/settings/organizations',
     member_help_url: null,
     sort_order: 10
   },
   {
     title: 'Vercel team invite',
-    description: 'Add to the Verbivore Vercel team so they can see deploys.',
+    description: 'Add to the Vercel team so they can see deploys.',
     category: 'access',
     target_tiers: ['admin', 'lead', 'member'],
     target_skills: DEV_SKILLS,
     tool_key: 'vercel',
-    admin_invite_url: 'https://vercel.com/teams/verbmts-projects/settings/members',
+    admin_invite_url: 'https://vercel.com/dashboard',
     member_help_url: null,
     sort_order: 20
   },
   {
     title: 'Supabase project access',
-    description: 'Invite to the Verbivore Supabase org so they can run queries.',
+    description: 'Invite to the Supabase org so they can run queries.',
     category: 'access',
     target_tiers: ['admin', 'lead', 'member'],
     target_skills: BACKEND_SKILLS,
@@ -476,14 +476,14 @@ const DEFAULTS: DefaultTemplate[] = [
     sort_order: 30
   },
   {
-    title: 'Google Cloud (verbivore project)',
-    description: 'Add IAM role on the verbivore GCP project (least-privilege).',
+    title: 'Google Cloud IAM',
+    description: 'Add IAM role on the GCP project (least-privilege).',
     category: 'access',
     target_tiers: ['admin', 'lead', 'member'],
     target_skills: BACKEND_SKILLS,
     tool_key: 'gcloud',
     admin_invite_url:
-      'https://console.cloud.google.com/iam-admin/iam?project=verbivore',
+      'https://console.cloud.google.com/iam-admin/iam',
     member_help_url: null,
     sort_order: 40
   },
@@ -511,12 +511,12 @@ const DEFAULTS: DefaultTemplate[] = [
   },
   {
     title: 'Sentry org member',
-    description: 'Add to the Verbivore Sentry org so they get error notifications.',
+    description: 'Add to the Sentry org so they get error notifications.',
     category: 'access',
     target_tiers: ['admin', 'lead', 'member'],
     target_skills: DEV_SKILLS,
     tool_key: 'sentry',
-    admin_invite_url: 'https://verbivore.sentry.io/settings/members/',
+    admin_invite_url: 'https://sentry.io/settings/',
     member_help_url: null,
     sort_order: 70
   },
@@ -544,20 +544,19 @@ const DEFAULTS: DefaultTemplate[] = [
   },
   {
     title: 'Figma file access',
-    description: 'Share the Verbivore Figma file (Editor or Viewer role).',
+    description: 'Share the team Figma file (Editor or Viewer role).',
     category: 'tooling',
     target_tiers: ['admin', 'lead', 'member'],
     target_skills: DESIGN_SKILLS,
     tool_key: 'figma',
-    admin_invite_url:
-      'https://www.figma.com/design/QASPOffi9HYEGwHuf6R8iV/Verbivore',
+    admin_invite_url: 'https://www.figma.com/files/',
     member_help_url: null,
     sort_order: 100
   },
   {
     title: 'Brand guidelines + accent palette',
     description:
-      'Read the brand page in Backstage settings before producing any visual asset.',
+      'Read the brand page in settings before producing any visual asset.',
     category: 'docs',
     target_tiers: ['admin', 'lead', 'member'],
     target_skills: null,
@@ -567,15 +566,14 @@ const DEFAULTS: DefaultTemplate[] = [
     sort_order: 110
   },
   {
-    title: 'Verbivore Google Doc + Drive',
-    description: 'Browse the shared Drive and the main Google Doc for context.',
+    title: 'Team Google Drive',
+    description: 'Browse the shared Drive and the main working doc for context.',
     category: 'docs',
     target_tiers: ['admin', 'lead', 'member'],
     target_skills: null,
     tool_key: 'gdrive',
     admin_invite_url: null,
-    member_help_url:
-      'https://drive.google.com/drive/folders/1SjF3VguQDfCU3u0WeIDcUHFa-WXFwav2',
+    member_help_url: 'https://drive.google.com/drive/',
     sort_order: 120
   },
   {

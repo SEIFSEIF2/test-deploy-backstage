@@ -2,6 +2,7 @@ import 'server-only'
 
 import webpush from 'web-push'
 import { createAdminClient } from '@/supabase/admin'
+import { config } from '@/lib/config'
 
 // Wraps web-push for the dashboard's notification feature.
 //
@@ -17,7 +18,7 @@ let cached: {
   subject: string
 } | null = null
 
-const SUBJECT_DEFAULT = 'mailto:notifications@verbivore.app'
+const SUBJECT_DEFAULT = `mailto:notifications@${config.emailDomain}`
 
 async function loadVapid(): Promise<typeof cached> {
   if (cached) return cached

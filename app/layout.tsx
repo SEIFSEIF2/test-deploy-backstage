@@ -3,6 +3,7 @@ import { DM_Sans, Fraunces, Geist_Mono } from 'next/font/google'
 import '@/styles/globals.css'
 import 'sonner/dist/styles.css'
 import { cn } from '@/lib/utils'
+import { config } from '@/lib/config'
 import { Providers } from './providers'
 import { ServiceWorkerRegistrar } from './_components/ServiceWorkerRegistrar'
 
@@ -34,13 +35,12 @@ const siteOrigin =
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteOrigin),
-  title: 'Verbivore',
-  description:
-    'Internal ops platform for Verbivore projects, tasks, and handoffs.',
-  applicationName: 'Verbivore',
+  title: config.appName,
+  description: config.appTagline,
+  applicationName: config.appName,
   appleWebApp: {
     capable: true,
-    title: 'Verbivore',
+    title: config.appName,
     statusBarStyle: 'black-translucent'
   },
   icons: {

@@ -1,6 +1,7 @@
 import 'server-only'
 import { createAdminClient } from '@/supabase/admin'
 import { getCurrentTeamMember } from '@/lib/dal'
+import { config } from '@/lib/config'
 import { fetchDashboardData } from '../actions'
 import { listTaskAttachmentsForTasks } from '@/supabase/dashboard/taskAttachments'
 import { runDueWarningsIfDue } from '@/supabase/dashboard/dueWarnings'
@@ -82,10 +83,7 @@ export async function fetchInitial(
     : activeProjects.length === 1
       ? activeProjects[0].id
       : null
-  const defaultProjectId =
-    activeProjects.find((p) => p.name === 'VerbivoreSeries')?.id ??
-    activeProjects[0]?.id ??
-    null
+  const defaultProjectId = activeProjects[0]?.id ?? null
 
   return {
     commentReactionsByComment: data.commentReactionsByComment,
@@ -145,20 +143,22 @@ export async function resolveProjectTitle(
 }
 
 const DASHBOARD_DESCRIPTION =
-  'Hand off, receive and track tasks across the Verbivore team.'
+  'Hand off, receive and track tasks across the team.'
 
 export async function dashboardMetadata(
   projectParam: string | undefined
 ): Promise<{ title: string; description: string }> {
   if (!projectParam) {
     return {
-      title: 'All Projects · Verbivore',
+      title: `All Projects · ${config.appName}`,
       description: DASHBOARD_DESCRIPTION
     }
   }
   const projectName = await resolveProjectTitle(projectParam)
   return {
-    title: projectName ? `${projectName} · Verbivore` : 'BackStage · Verbivore',
+    title: projectName
+      ? `${projectName} · ${config.appName}`
+      : `Dashboard · ${config.appName}`,
     description: DASHBOARD_DESCRIPTION
   }
 }

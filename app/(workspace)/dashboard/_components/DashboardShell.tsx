@@ -9,6 +9,7 @@ import {
   useTransition
 } from 'react'
 import { createClient as createBrowserSupabase } from '@/supabase/client'
+import { config } from '@/lib/config'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
@@ -2999,7 +3000,7 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                 </>
               ) : showWordmarkPhase ? (
                 <span className="tracking-[0.25em] uppercase">
-                  Verbivore · Task Handoff
+                  {config.appName} · Task Handoff
                 </span>
               ) : welcomeName ? (
                 <>

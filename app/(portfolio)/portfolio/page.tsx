@@ -2,10 +2,11 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, Sparkles } from 'lucide-react'
+import { config } from '@/lib/config'
 
 export const metadata: Metadata = {
-  title: 'Overview · Verbivore',
-  description: 'The Verbivore portfolio overview is coming soon.'
+  title: `Overview · ${config.appName}`,
+  description: `The ${config.appName} portfolio overview is coming soon.`
 }
 
 // Placeholder for the eventual portfolio overview (list of members,
@@ -30,23 +31,9 @@ export default function PortfolioComingSoonPage() {
           href="/"
           className="inline-flex items-center transition hover:opacity-80"
         >
-          <Image
-            src="/logos/verbivore-logo-horizontal.svg"
-            alt="Verbivore"
-            width={160}
-            height={42}
-            priority
-            className="block h-8 w-auto dark:hidden"
-          />
-          <Image
-            src="/logos/verbivore-logo-horizontal-white.svg"
-            alt=""
-            aria-hidden
-            width={160}
-            height={42}
-            priority
-            className="hidden h-8 w-auto dark:block"
-          />
+          <span className="text-xl font-display tracking-tight text-zinc-900 dark:text-zinc-50">
+            {config.appName}
+          </span>
         </Link>
 
         <article className="flex w-full flex-col items-center gap-5 rounded-3xl border border-zinc-200/70 bg-white p-9 text-center shadow-[0_1px_0_rgba(15,18,23,0.04),0_18px_50px_-24px_rgba(15,18,23,0.18)] sm:p-12 dark:border-white/10 dark:bg-[#161F1F] dark:shadow-[0_18px_50px_-24px_rgba(0,0,0,0.6)]">
@@ -61,8 +48,8 @@ export default function PortfolioComingSoonPage() {
 
           <p className="max-w-md text-[15px] leading-relaxed text-zinc-600 dark:text-zinc-300">
             We&apos;re still building this page. It&apos;ll surface the
-            Verbivore portfolio: members, projects, public stats, and the
-            stuff worth showing off. For now the dashboard is the source of
+            portfolio: members, projects, public stats, and the stuff
+            worth showing off. For now the dashboard is the source of
             truth.
           </p>
 

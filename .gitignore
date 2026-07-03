@@ -51,3 +51,7 @@ debug-storybook.log
 
 # Claude Code local session state
 .claude/
+
+# Local planning notes (not for the public repo)
+/plan/
+

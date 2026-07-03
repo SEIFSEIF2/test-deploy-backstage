@@ -48,6 +48,7 @@ import {
 } from 'lucide-react'
 import { useDashTheme } from './theme'
 import { useContextMenu } from './ContextMenu'
+import { config } from '@/lib/config'
 import { useTaskActions } from './actions'
 import { Filter, X } from 'lucide-react'
 import {
@@ -277,19 +278,17 @@ export default function Sidebar({
           className={`-mx-1 flex items-center gap-2 rounded-md px-2 py-1 transition ${t.rowHover}`}
           title="Back to all Tasks"
         >
-          <Image
-            src="/logos/verbivore-icon.svg"
-            alt="Verbivore"
-            width={24}
-            height={24}
-            className="size-6 rounded"
-            priority
-          />
+          <div
+            className={`flex size-6 items-center justify-center rounded bg-[#948CC0]/15 text-[10px] font-bold text-[#6E62B0] dark:bg-[#948CC0]/20 dark:text-[#BCB3DD]`}
+            aria-hidden
+          >
+            {config.appName.slice(0, 1).toUpperCase()}
+          </div>
           <div className="flex flex-col leading-none">
             <span
               className={`text-[11px] tracking-[0.25em] uppercase ${t.textMuted}`}
             >
-              Verbivore
+              {config.appName}
             </span>
             <span className={`text-xs ${t.text}`}>Workspace</span>
           </div>

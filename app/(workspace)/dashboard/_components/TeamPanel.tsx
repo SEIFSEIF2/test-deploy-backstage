@@ -38,6 +38,7 @@ import {
 } from '../actions'
 import Avatar from './Avatar'
 import { useDashTheme } from './theme'
+import { config } from '@/lib/config'
 import {
   canCancelInvite,
   canChangeTier,
@@ -101,7 +102,7 @@ const PRESENCE_LABELS: Record<PresenceValue, string> = {
 }
 
 // Mirrors slugifyForLogin in supabase/dashboard/team.ts so the invite
-// modal can preview the @verbivore.app login the recipient will get.
+// modal can preview the login the recipient will get.
 // Keep these two in sync if you change the slug rules.
 function previewLoginEmail(fullName: string): string {
   const cleaned = fullName
@@ -112,7 +113,7 @@ function previewLoginEmail(fullName: string): string {
     .trim()
   const parts = cleaned.split(/\s+/).filter(Boolean)
   const handle = parts.length === 0 ? 'member' : parts.join('.')
-  return `${handle}@verbivore.app`
+  return `${handle}@${config.emailDomain}`
 }
 
 const STATUS_FILTER_LABELS: Record<StatusFilter, string> = {
@@ -1195,9 +1196,10 @@ function InviteModal({
       >
         <h3 className={`text-base font-medium ${t.text}`}>Invite a teammate</h3>
         <p className={`mt-1 text-xs ${t.textSubtle}`}>
-          We will generate a <span className="font-mono">@verbivore.app</span>{' '}
-          login from their name and email the invite to the contact email you
-          enter below.
+          We will generate a{' '}
+          <span className="font-mono">@{config.emailDomain}</span> login from
+          their name and email the invite to the contact email you enter
+          below.
         </p>
         <form onSubmit={submit} className="mt-4 flex flex-col gap-3">
           <label className="flex flex-col gap-1">

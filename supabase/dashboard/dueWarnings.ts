@@ -4,6 +4,7 @@ import { createAdminClient } from '@/supabase/admin'
 import { absoluteUrl, resolveMemberEmail, sendEmail } from '@/lib/email/send'
 import { sendPushToMember } from '@/lib/push'
 import { taskDueSoonEmail } from '@/lib/email/templates'
+import { config } from '@/lib/config'
 
 interface RunResult {
   ran: boolean
@@ -24,11 +25,11 @@ function formatDuePretty(iso: string): string {
   })
 }
 
-function todayInMaltaIso(): string {
-  // en-CA emits YYYY-MM-DD; timezone-shift to Europe/Malta so we compare
-  // against the local calendar, not UTC.
+function todayInAppTzIso(): string {
+  // en-CA emits YYYY-MM-DD; shift to config.timezone so we compare against
+  // the operator's local calendar, not UTC.
   return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Malta',
+    timeZone: config.timezone,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit'
@@ -47,7 +48,10 @@ export async function runDueWarningsIfDue(
   // Atomic race winner. Postgres NOW() runs server-side; converting to
   // Europe/Malta gives "today" in the user's local calendar.
   const { data: claim, error: claimErr } = await supabase
-    .rpc('claim_due_warning_run', { p_company_id: companyId })
+    .rpc('claim_due_warning_run', {
+      p_company_id: companyId,
+      p_timezone: config.timezone
+    })
   if (claimErr) {
     return { ran: false, scanned: 0, warned: 0, skipped: 0, errors: 1 }
   }
@@ -176,7 +180,7 @@ export async function runDueWarningsIfDue(
   // once per company per day because we're behind the same claim gate
   // as due-warning fan-out.
   try {
-    const todayIso = todayInMaltaIso()
+    const todayIso = todayInAppTzIso()
     const { data: dueSprints } = await supabase
       .from('sprints')
       .select('id, project_id, number, name, goal, started_at')

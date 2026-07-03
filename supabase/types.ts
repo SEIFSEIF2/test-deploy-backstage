@@ -1626,7 +1626,7 @@ export type Database = {
     }
     Functions: {
       claim_due_warning_run: {
-        Args: { p_company_id: string }
+        Args: { p_company_id: string; p_timezone?: string }
         Returns: string | null
       }
     }

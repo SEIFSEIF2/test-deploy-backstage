@@ -1,11 +1,11 @@
 import type { MetadataRoute } from 'next'
+import { config } from '@/lib/config'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Verbivore Backstage',
-    short_name: 'Verbivore Backstage',
-    description:
-      'Internal ops platform for Verbivore projects, tasks, and handoffs.',
+    name: config.appName,
+    short_name: config.appName,
+    description: config.appTagline,
     start_url: '/dashboard',
     scope: '/',
     display: 'standalone',

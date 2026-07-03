@@ -1,11 +1,12 @@
 import { ImageResponse } from 'next/og'
 import { fetchTaskByRef } from '@/supabase/dashboard/fetchTaskByRef'
+import { config } from '@/lib/config'
 
-export const alt = 'Verbivore task share preview'
+export const alt = `${config.appName} task share preview`
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
-// Verbivore palette
+// Brand palette
 const BG_PAGE = '#FAFAF7'
 const BG_CARD = '#FFFFFF'
 const TEXT_PRIMARY = '#0E1414'
@@ -174,7 +175,7 @@ export default async function OG({
                 background: ACCENT_TEAL
               }}
             />
-            VERBIVORE
+            {config.appName.toUpperCase()}
           </div>
           <div
             style={{

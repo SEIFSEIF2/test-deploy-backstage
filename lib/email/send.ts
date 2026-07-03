@@ -2,6 +2,7 @@ import 'server-only'
 
 import { Resend } from 'resend'
 import { createAdminClient } from '@/supabase/admin'
+import { config } from '@/lib/config'
 
 // Transactional email pipe for the dashboard (mentions, assignments,
 // meeting lifecycle). Auth emails stay on Supabase. We send via Resend
@@ -11,8 +12,11 @@ import { createAdminClient } from '@/supabase/admin'
 // Dev safety: when RESEND_API_KEY is missing the wrapper logs and no-ops
 // instead of crashing, so contributors can run the app without a key.
 
-const FROM_DEFAULT = 'Backstage <noreply@verbivore.app>'
-const REPLY_TO_DEFAULT = 'noreply@verbivore.app'
+const FROM_DEFAULT =
+  process.env.EMAIL_FROM ??
+  `${config.appName} <noreply@${config.emailDomain}>`
+const REPLY_TO_DEFAULT =
+  process.env.EMAIL_REPLY_TO ?? `noreply@${config.emailDomain}`
 
 let cached: Resend | null = null
 

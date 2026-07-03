@@ -575,20 +575,6 @@ function ProjectCard({
           : ''
       } ${project.isArchived ? 'opacity-70' : ''}`}
     >
-      {/* Verbivore watermark. Sits behind everything via a clipped overflow
-          wrapper so the dropdown menu and rounded corners are unaffected.
-          Subtle by default, lifts on hover. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-2xl"
-      >
-        <img
-          src="/logos/verbivore-icon.svg"
-          alt=""
-          className="absolute -right-4 -bottom-6 size-32 opacity-[0.04] transition-opacity duration-200 group-hover:opacity-[0.1] dark:invert"
-        />
-      </div>
-
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1.5">
           {isEditing ? (
@@ -2573,7 +2559,7 @@ function QuickMeetUrlSetting({
       />
       <p className={`text-[10px] leading-relaxed ${t.textSubtle}`}>
         Always-on Google Meet room joinable from the topbar Mon-Fri,
-        7:00-18:00 Malta time. Paste a Meet link you keep open in the
+        7:00-18:00 workspace time. Paste a Meet link you keep open in the
         background or one that auto-admits members.
       </p>
     </div>

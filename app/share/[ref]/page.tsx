@@ -1,10 +1,10 @@
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { ArrowUpRight, CalendarDays, FolderKanban } from 'lucide-react'
 import { fetchTaskByRef } from '@/supabase/dashboard/fetchTaskByRef'
+import { config } from '@/lib/config'
 
 /* eslint-disable @next/next/no-img-element */
 
@@ -42,8 +42,8 @@ export async function generateMetadata({
   const task = await fetchTaskByRef(ref)
   if (!task) {
     return {
-      title: `${ref} · Verbivore`,
-      description: 'Task not found on Verbivore Backstage.'
+      title: `${ref} · ${config.appName}`,
+      description: `Task not found on ${config.appName}.`
     }
   }
   const desc = metaDescription(task)
@@ -53,7 +53,7 @@ export async function generateMetadata({
     openGraph: {
       title: `${task.ref} · ${task.title}`,
       description: desc,
-      siteName: 'Verbivore Backstage',
+      siteName: config.appName,
       type: 'article',
       url: `/share/${task.ref}`
     },
@@ -92,30 +92,16 @@ async function SharedTaskContent({ params }: { params: Params }) {
             href="/"
             className="inline-flex items-center transition hover:opacity-80"
           >
-            <Image
-              src="/logos/verbivore-logo-horizontal.svg"
-              alt="Verbivore"
-              width={140}
-              height={36}
-              priority
-              className="block h-7 w-auto dark:hidden"
-            />
-            <Image
-              src="/logos/verbivore-logo-horizontal-white.svg"
-              alt=""
-              aria-hidden
-              width={140}
-              height={36}
-              priority
-              className="hidden h-7 w-auto dark:block"
-            />
+            <span className="font-display text-lg tracking-tight text-zinc-900 dark:text-zinc-50">
+              {config.appName}
+            </span>
           </Link>
           <Link
             href={`/dashboard/board?project=${task.project.id}&task=${task.ref}`}
             prefetch={false}
             className="group inline-flex h-9 items-center gap-1.5 rounded-full bg-[#948CC0] px-4 text-xs font-medium text-white shadow-sm transition hover:bg-[#6E62B0]"
           >
-            Open in Backstage
+            Open in {config.appName}
             <ArrowUpRight className="size-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </Link>
         </header>
@@ -160,7 +146,7 @@ async function SharedTaskContent({ params }: { params: Params }) {
 
         <footer className="flex items-center justify-center gap-1.5 text-[11px] tracking-[0.18em] uppercase text-zinc-400 dark:text-zinc-600">
           <span className="size-1 rounded-full bg-[#948CC0]" />
-          Shared from Verbivore Backstage
+          Shared from {config.appName}
         </footer>
       </div>
     </main>

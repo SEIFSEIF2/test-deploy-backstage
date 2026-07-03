@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Eye, EyeOff, Upload, X } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
+import { config } from '@/lib/config'
 import { Button } from '@/components/ui/button'
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -25,7 +26,7 @@ type Skill = { label: string; level: number }
 
 export type OnboardingInitial = {
   userId: string
-  // Auth email (verbivore.app). Surfaced as a hidden `username` input on
+  // Auth email. Surfaced as a hidden `username` input on
   // the password step so Chrome / Google Password Manager pairs the new
   // password with this user instead of skipping the save prompt.
   email: string
@@ -453,7 +454,7 @@ export function OnboardingWizard({ initial }: { initial: OnboardingInitial }) {
                     />
                     <p className="text-muted-foreground text-[10px]">
                       Where you&apos;d like notifications. Different from your
-                      @verbivore.app sign-in.
+                      @{config.emailDomain} sign-in.
                     </p>
                   </Field>
                   <Field>

@@ -5,6 +5,7 @@ import { notFound, redirect } from 'next/navigation'
 import { ArrowRight } from 'lucide-react'
 import { createClient } from '@/supabase/server'
 import { DEFAULT_LOGIN_ROUTE } from '@/routes'
+import { config } from '@/lib/config'
 
 type RouteParams = { slug: string }
 type AccessTier = 'admin' | 'lead' | 'member'
@@ -62,11 +63,11 @@ export async function generateMetadata(props: {
     .select('full_name, headline, bio')
     .eq('slug', slug)
     .maybeSingle()
-  if (!data) return { title: 'Portfolio · Verbivore' }
+  if (!data) return { title: `Portfolio · ${config.appName}` }
   return {
-    title: `${data.full_name} · Verbivore`,
+    title: `${data.full_name} · ${config.appName}`,
     description:
-      data.headline ?? data.bio ?? `${data.full_name}'s portfolio on Verbivore.`
+      data.headline ?? data.bio ?? `${data.full_name}'s portfolio on ${config.appName}.`
   }
 }
 
@@ -77,7 +78,7 @@ export default function PortfolioSlugPage(props: {
     <main className="flex min-h-screen w-full flex-col bg-background text-foreground">
       <header className="flex h-12 shrink-0 items-center justify-between border-b border-border px-4 text-xs">
         <span className="text-[10px] tracking-[0.25em] text-muted-foreground uppercase">
-          Verbivore · Portfolio
+          {config.appName} · Portfolio
         </span>
         <Link
           href="/dashboard"

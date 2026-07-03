@@ -18,6 +18,7 @@ import {
 import type { LucideIcon } from 'lucide-react'
 import { AnimatedThemeToggler, useDashTheme } from './theme'
 import type { GroupBy } from './DashboardShell'
+import { config } from '@/lib/config'
 
 export type QuickFilter = 'open' | 'due' | 'review' | 'done'
 
@@ -176,7 +177,7 @@ export default function Topbar({
             href="/dashboard"
             className={`hidden sm:inline ${t.textSubtle} transition hover:opacity-80`}
           >
-            Verbivore
+            {config.appName}
           </Link>
           <span className={`hidden sm:inline ${t.textFaint}`}>/</span>
           <div className="relative min-w-0" ref={projectMenuRef}>
