@@ -8,7 +8,6 @@ import {
   type AnyFeatureKey
 } from '@/lib/features/keys'
 import { PLUGIN_IDS } from '@/lib/plugins/registry'
-import { pluginFeatureKey } from '@/lib/plugins/types'
 
 // Accepts core keys and `plugin:<id>` keys for INSTALLED plugins. This
 // filter runs on every full-array write, so it must know about plugin
@@ -33,18 +32,18 @@ export async function setEnabledFeatures(
   return { ok: true }
 }
 
-// Targeted single-key toggle used by the Marketplace, so enabling one
-// plugin never read-modify-writes the whole array from a stale client
-// snapshot the way setEnabledFeatures(fullArray) would.
-export async function setPluginEnabled(
-  pluginId: string,
+// Targeted single-key toggle used by the Marketplace (core modules and
+// plugins alike), so enabling one key never read-modify-writes the whole
+// array from a stale client snapshot the way setEnabledFeatures(fullArray)
+// would.
+export async function setFeatureEnabled(
+  key: string,
   enabled: boolean
 ): Promise<{ ok: true } | { error: string }> {
   const actor = await requireAccessTier(['admin'])
-  if (!PLUGIN_IDS.includes(pluginId)) {
-    return { error: 'Unknown plugin.' }
+  if (!isValidKey(key)) {
+    return { error: 'Unknown feature.' }
   }
-  const key = pluginFeatureKey(pluginId)
   const supabase = createAdminClient()
   const { data, error: readError } = await supabase
     .from('companies')

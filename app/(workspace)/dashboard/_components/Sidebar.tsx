@@ -81,7 +81,7 @@ const HINTS = {
   symbols: 'Reference for the status and priority icons used on cards.',
   settings: 'Card density, WIP limits, notifications, and help hints.',
   marketplace:
-    'Browse plugins. Admins enable installed ones; anyone can request.',
+    'All modules and plugins. Admins enable them; anyone can request.',
   onboarding:
     'Per-member onboarding + offboarding checklist. Tracks who has access to which tool.'
 } as const

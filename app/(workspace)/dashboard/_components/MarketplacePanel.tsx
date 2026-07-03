@@ -17,7 +17,8 @@ import {
 import { PLUGINS } from '@/plugins.config'
 import { pluginFeatureKey } from '@/lib/plugins/types'
 import { useEnabledFeatures } from '@/lib/features/client'
-import { setPluginEnabled } from '../features-actions'
+import { FEATURES, ALL_FEATURE_KEYS } from '@/lib/features/keys'
+import { setFeatureEnabled } from '../features-actions'
 import {
   getMarketplaceCatalog,
   requestPlugin,
@@ -28,11 +29,14 @@ type EntryState = 'enabled' | 'installed' | 'not-installed'
 
 type Entry = {
   id: string
+  kind: 'core' | 'plugin'
+  // The enabled_features key this entry toggles.
+  featureKey: string
   name: string
   description: string
   longDescription?: string
-  version: string
-  author: string
+  version?: string
+  author?: string
   group: string
   repoUrl?: string
   state: EntryState
@@ -62,11 +66,24 @@ export default function MarketplacePanel({
           ? 'installed'
           : 'not-installed'
 
+    // Built-in modules share the surface: same groups, same toggle.
+    const core: Entry[] = ALL_FEATURE_KEYS.map((key) => ({
+      id: key,
+      kind: 'core' as const,
+      featureKey: key,
+      name: FEATURES[key].label,
+      description: FEATURES[key].description,
+      group: FEATURES[key].group,
+      state: enabled.has(key) ? ('enabled' as const) : ('installed' as const)
+    }))
+
     const fromCatalog: Entry[] = (catalog ?? []).map(
       (c: MarketplaceCatalogEntry) => {
         const local = installedById.get(c.id)
         return {
           id: c.id,
+          kind: 'plugin' as const,
+          featureKey: pluginFeatureKey(c.id),
           name: local?.name ?? c.name,
           description: local?.description ?? c.description,
           longDescription: local?.longDescription,
@@ -83,6 +100,8 @@ export default function MarketplacePanel({
     const localOnly: Entry[] = PLUGINS.filter((p) => !catalogIds.has(p.id)).map(
       (p) => ({
         id: p.id,
+        kind: 'plugin' as const,
+        featureKey: pluginFeatureKey(p.id),
         name: p.name,
         description: p.description,
         longDescription: p.longDescription,
@@ -92,7 +111,7 @@ export default function MarketplacePanel({
         state: stateFor(p.id)
       })
     )
-    return [...fromCatalog, ...localOnly]
+    return [...core, ...fromCatalog, ...localOnly]
   }, [catalog, enabled])
 
   const groups = useMemo(() => {
@@ -110,7 +129,7 @@ export default function MarketplacePanel({
           <Store className="size-5" /> Marketplace
         </h2>
         <p className="text-muted-foreground text-sm">
-          Plugins extend the dashboard with their own panels and data.
+          Everything optional lives here: built-in modules and installed plugins.
           {isAdmin
             ? ' Enable installed plugins instantly; installing new ones takes a redeploy.'
             : ' Ask an admin to enable the ones you need.'}
@@ -154,7 +173,13 @@ export default function MarketplacePanel({
   )
 }
 
-function StateBadge({ state }: { state: EntryState }) {
+function StateBadge({
+  state,
+  kind
+}: {
+  state: EntryState
+  kind: Entry['kind']
+}) {
   if (state === 'enabled') {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-teal-500/10 px-2 py-0.5 text-[11px] font-medium text-teal-700 dark:text-teal-300">
@@ -165,7 +190,7 @@ function StateBadge({ state }: { state: EntryState }) {
   if (state === 'installed') {
     return (
       <span className="text-muted-foreground bg-muted inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium">
-        Installed
+        {kind === 'core' ? 'Off' : 'Installed'}
       </span>
     )
   }
@@ -195,11 +220,13 @@ function PluginCard({
     >
       <div className="flex items-start justify-between gap-2">
         <p className="font-medium">{entry.name}</p>
-        <StateBadge state={entry.state} />
+        <StateBadge state={entry.state} kind={entry.kind} />
       </div>
       <p className="text-muted-foreground text-sm">{entry.description}</p>
       <p className="text-muted-foreground text-xs">
-        v{entry.version} · {entry.author}
+        {entry.kind === 'core'
+          ? 'Built-in module'
+          : `v${entry.version} · ${entry.author}`}
       </p>
       <div onClick={(e) => e.stopPropagation()}>
         <ActionButton entry={entry} isAdmin={isAdmin} onChanged={onChanged} />
@@ -221,7 +248,7 @@ function ActionButton({
 
   function toggle(enabled: boolean) {
     startTransition(async () => {
-      const res = await setPluginEnabled(entry.id, enabled)
+      const res = await setFeatureEnabled(entry.featureKey, enabled)
       if ('error' in res) {
         toast.error(res.error)
         return
@@ -287,7 +314,7 @@ function DetailSheet({
     <>
       <SheetHeader>
         <SheetTitle className="flex items-center gap-2">
-          {entry.name} <StateBadge state={entry.state} />
+          {entry.name} <StateBadge state={entry.state} kind={entry.kind} />
         </SheetTitle>
         <SheetDescription>{entry.description}</SheetDescription>
       </SheetHeader>
@@ -298,7 +325,9 @@ function DetailSheet({
           </p>
         )}
         <p className="text-muted-foreground text-xs">
-          Version {entry.version} · by {entry.author}
+          {entry.kind === 'core'
+            ? 'Built-in module'
+            : `Version ${entry.version} · by ${entry.author}`}
         </p>
         {entry.repoUrl && (
           <a
@@ -311,7 +340,7 @@ function DetailSheet({
           </a>
         )}
 
-        {entry.state === 'not-installed' && isAdmin && (
+        {entry.kind === 'plugin' && entry.state === 'not-installed' && isAdmin && (
           <div className="bg-muted/50 flex flex-col gap-2 rounded-md border p-3">
             <p className="font-medium">Install (one redeploy)</p>
             <ol className="text-muted-foreground list-decimal space-y-1 pl-4 text-xs">

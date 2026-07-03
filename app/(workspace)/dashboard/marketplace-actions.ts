@@ -46,7 +46,7 @@ export async function getMarketplaceCatalog(): Promise<
   }
 }
 
-// Member "request this plugin" — notifies every admin in the workspace.
+// Member "request this module/plugin" — notifies every admin in the workspace.
 // Deliberately no tracking table: a push + email is the whole feature.
 export async function requestPlugin(
   pluginId: string,
@@ -71,8 +71,8 @@ export async function requestPlugin(
     .eq('access_tier', 'admin')
     .eq('activity_status', 'active')
 
-  const title = `${member.fullName} requested a plugin`
-  const body = `${parsed.data.name} — open the Marketplace to install or enable it.`
+  const title = `${member.fullName} requested a Marketplace module`
+  const body = `${parsed.data.name} — open the Marketplace to enable it.`
   await Promise.allSettled(
     (admins ?? []).flatMap((admin) => [
       sendPushToMember(admin.id, {
