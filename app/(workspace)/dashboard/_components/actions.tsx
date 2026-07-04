@@ -32,9 +32,7 @@ export interface TaskActions {
   canDeleteTasks: boolean
   // Right-click "Add to sprint": all sprints in the task's project,
   // returned by projectId. Empty array = no sprints planned there.
-  sprintsForProject: (
-    projectId: string
-  ) => {
+  sprintsForProject: (projectId: string) => {
     id: string
     name: string
     status: 'upcoming' | 'current' | 'completed'

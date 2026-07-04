@@ -328,14 +328,12 @@ export async function createDashboardTask(
   if (taskErr || !task) return { error: taskErr?.message ?? 'Create failed.' }
 
   if (data.labelIds?.length) {
-    await supabase
-      .from('task_labels')
-      .insert(
-        data.labelIds.map((labelId) => ({
-          task_id: task.id,
-          label_id: labelId
-        }))
-      )
+    await supabase.from('task_labels').insert(
+      data.labelIds.map((labelId) => ({
+        task_id: task.id,
+        label_id: labelId
+      }))
+    )
   }
 
   if (data.relations && data.relations.length > 0) {
@@ -591,14 +589,12 @@ export async function createBulkDashboardTasks(
       .single()
     if (!task) continue
     if (labelIds.size > 0) {
-      await supabase
-        .from('task_labels')
-        .insert(
-          [...labelIds].map((labelId) => ({
-            task_id: task.id,
-            label_id: labelId
-          }))
-        )
+      await supabase.from('task_labels').insert(
+        [...labelIds].map((labelId) => ({
+          task_id: task.id,
+          label_id: labelId
+        }))
+      )
     }
     await logActivity(
       supabase,
@@ -1669,14 +1665,12 @@ export async function duplicateDashboardTask(taskId: string) {
   if (error || !clone) return { error: error?.message ?? 'Duplicate failed.' }
 
   if ((srcLabels ?? []).length > 0) {
-    await supabase
-      .from('task_labels')
-      .insert(
-        (srcLabels ?? []).map((l) => ({
-          task_id: clone.id,
-          label_id: l.label_id
-        }))
-      )
+    await supabase.from('task_labels').insert(
+      (srcLabels ?? []).map((l) => ({
+        task_id: clone.id,
+        label_id: l.label_id
+      }))
+    )
   }
   if ((srcChecklist ?? []).length > 0) {
     await supabase.from('task_checklist_items').insert(
@@ -2946,13 +2940,11 @@ export async function createProjectInPlace(
     return { error: 'Please enter a valid name (2 to 80 chars).' }
   const supabase = createAdminClient()
 
-  const { error } = await supabase
-    .from('projects')
-    .insert({
-      company_id: member.companyId,
-      name: parsed.data.name,
-      kind: parsed.data.kind
-    })
+  const { error } = await supabase.from('projects').insert({
+    company_id: member.companyId,
+    name: parsed.data.name,
+    kind: parsed.data.kind
+  })
   if (error) {
     const message =
       error.code === '23505'
