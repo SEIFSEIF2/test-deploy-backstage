@@ -755,8 +755,8 @@ export function TeamPanel({ actor }: { actor: Actor }) {
         </div>
       )}
 
-      <div className={`rounded-lg border ${t.border}`}>
-        <table className="w-full">
+      <div className={`overflow-x-auto rounded-lg border ${t.border}`}>
+        <table className="w-full min-w-[520px]">
           <thead>
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id} className={`border-b ${t.border}`}>

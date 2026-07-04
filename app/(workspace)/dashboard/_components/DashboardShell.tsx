@@ -104,6 +104,7 @@ import { ProjectsPanel, SettingsPanel, UpdatesPanel } from './Panels'
 import TrashPanel from './TrashPanel'
 import OnboardingPanel from './OnboardingPanel'
 import PluginHost from './PluginHost'
+import WheelScrollX from './WheelScrollX'
 import MarketplacePanel from './MarketplacePanel'
 import { pluginById } from '@/lib/plugins/registry'
 import { type TaskAttachmentView } from './TaskImageDropZone'
@@ -3004,7 +3005,7 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
           {welcomeBarEnabled && (
             <span
               aria-live="polite"
-              className={`pointer-events-none absolute left-1/2 hidden -translate-x-1/2 truncate text-[11px] tracking-wider sm:inline ${t.textMuted}`}
+              className={`pointer-events-none absolute left-1/2 hidden -translate-x-1/2 truncate text-[11px] tracking-wider lg:inline ${t.textMuted}`}
             >
               <span
                 key={wordmarkPhase}
@@ -3704,9 +3705,9 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                         onDragEnd={onDragEnd}
                         onDragCancel={onDragCancel}
                       >
-                        {/* Scrollbars hidden (chrome + firefox + ie) but scroll
-                            still works via wheel/trackpad. No gradient hint. */}
-                        <div className="flex min-h-0 flex-1 scrollbar-none gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                        {/* Scrollbars hidden (chrome + firefox + ie); WheelScrollX
+                            lets plain mouse wheels pan horizontally too. */}
+                        <WheelScrollX className="flex min-h-0 flex-1 scrollbar-none gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                           {groups.map((g) => {
                             const status =
                               groupBy === 'status'
@@ -3748,7 +3749,7 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                               />
                             )
                           })}
-                        </div>
+                        </WheelScrollX>
                         <DragOverlay dropAnimation={null}>
                           {activeDragId
                             ? (() => {

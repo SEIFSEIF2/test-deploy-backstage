@@ -171,15 +171,15 @@ export default function Topbar({
           </button>
         )}
         <div
-          className={`flex min-w-0 items-center gap-1.5 text-xs ${t.textMuted}`}
+          className={`flex min-w-0 items-center gap-1.5 overflow-hidden text-xs ${t.textMuted}`}
         >
           <Link
             href="/dashboard"
-            className={`hidden sm:inline ${t.textSubtle} transition hover:opacity-80`}
+            className={`hidden lg:inline ${t.textSubtle} transition hover:opacity-80`}
           >
             {config.appName}
           </Link>
-          <span className={`hidden sm:inline ${t.textFaint}`}>/</span>
+          <span className={`hidden lg:inline ${t.textFaint}`}>/</span>
           <div className="relative min-w-0" ref={projectMenuRef}>
             <button
               data-tour="project-switcher"
@@ -273,7 +273,7 @@ export default function Topbar({
         </div>
 
         <div
-          className={`hidden items-center gap-1 rounded-md border p-0.5 md:flex ${t.border}`}
+          className={`hidden shrink-0 items-center gap-1 rounded-md border p-0.5 md:flex ${t.border}`}
         >
           {TABS.map((opt) => {
             const disabled = opt.requiresProject && currentProjectId === null
