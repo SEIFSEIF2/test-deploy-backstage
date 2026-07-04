@@ -11,7 +11,6 @@ import {
 import { createClient as createBrowserSupabase } from '@/supabase/client'
 import { config } from '@/lib/config'
 import { useFeature, useEnabledFeatures } from '@/lib/features/client'
-import { FirstRunWizard } from './FirstRunWizard'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
@@ -83,7 +82,6 @@ import TaskCard from './TaskCard'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { VisuallyHidden } from 'radix-ui'
 import Sidebar from './Sidebar'
-import CommandPalette from './CommandPalette'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -95,24 +93,14 @@ import {
   AlertDialogTitle
 } from '@/components/ui/alert-dialog'
 import Topbar from './Topbar'
-import TaskDetail, { TaskActivity, TaskComment } from './TaskDetail'
+import type { TaskActivity, TaskComment } from './TaskDetail'
 import type { ProjectExternalRef, TaskExternalRef } from './boardData'
-import NewTaskModal from './NewTaskModal'
-import Timeline from './Timeline'
 import FilterPanel from './FilterPanel'
-import { ProjectsPanel, SettingsPanel, UpdatesPanel } from './Panels'
-import TrashPanel from './TrashPanel'
-import OnboardingPanel from './OnboardingPanel'
 import PluginHost from './PluginHost'
 import WheelScrollX from './WheelScrollX'
-import MarketplacePanel from './MarketplacePanel'
 import { pluginById } from '@/lib/plugins/registry'
 import { type TaskAttachmentView } from './TaskImageDropZone'
-import { MeetingsPanel } from './MeetingsPanel'
-import { TeamPanel } from './TeamPanel'
-import SprintsPanel from './SprintsPanel'
 import SprintHero from './SprintHero'
-import HandoffSheet from './HandoffSheet'
 import { CopyButton, type CopyMenuItem } from '@/components/ui/copy-button'
 import { viewToJson, viewToMarkdown } from '@/lib/export/view'
 import { sprintToJson, sprintToMarkdown } from '@/lib/export/sprint'
@@ -120,8 +108,6 @@ import { taskToJson, taskToMarkdown } from '@/lib/export/task'
 import { projectToJson, projectToMarkdown } from '@/lib/export/project'
 import { isInScope, type TimeScope } from '@/lib/export/timeRange'
 import type { ExportContext } from '@/lib/export/types'
-import SymbolsPanel from './SymbolsPanel'
-import ArchivePanel from './ArchivePanel'
 import Avatar from './Avatar'
 import QuickRoomButton from './QuickRoomButton'
 import TimezoneGate from './TimezoneGate'
@@ -138,6 +124,69 @@ import {
   useMeetingCreateWizard
 } from './MeetingCreateWizard'
 import { useDashboardSearchParams } from './useDashboardSearchParams'
+import nextDynamic from 'next/dynamic'
+
+// ── Lazy surfaces ──────────────────────────────────────────────────────
+// Everything here renders conditionally (a panel view, a sheet, a modal),
+// so each becomes its own chunk instead of joining the board's initial
+// bundle (next experimental-analyze: the static version was an 885 KB
+// first-load chunk). Overlay components get no loading fallback; full
+// panels get a quiet placeholder.
+function PanelLoading() {
+  return (
+    <div className="text-muted-foreground flex h-40 items-center justify-center text-sm">
+      Loading…
+    </div>
+  )
+}
+const TaskDetail = nextDynamic(() => import('./TaskDetail'))
+const NewTaskModal = nextDynamic(() => import('./NewTaskModal'))
+const CommandPalette = nextDynamic(() => import('./CommandPalette'))
+const HandoffSheet = nextDynamic(() => import('./HandoffSheet'))
+const FirstRunWizard = nextDynamic(() =>
+  import('./FirstRunWizard').then((m) => m.FirstRunWizard)
+)
+const Timeline = nextDynamic(() => import('./Timeline'), {
+  loading: PanelLoading
+})
+const MeetingsPanel = nextDynamic(
+  () => import('./MeetingsPanel').then((m) => m.MeetingsPanel),
+  { loading: PanelLoading }
+)
+const TeamPanel = nextDynamic(
+  () => import('./TeamPanel').then((m) => m.TeamPanel),
+  { loading: PanelLoading }
+)
+const SprintsPanel = nextDynamic(() => import('./SprintsPanel'), {
+  loading: PanelLoading
+})
+const SymbolsPanel = nextDynamic(() => import('./SymbolsPanel'), {
+  loading: PanelLoading
+})
+const ArchivePanel = nextDynamic(() => import('./ArchivePanel'), {
+  loading: PanelLoading
+})
+const TrashPanel = nextDynamic(() => import('./TrashPanel'), {
+  loading: PanelLoading
+})
+const OnboardingPanel = nextDynamic(() => import('./OnboardingPanel'), {
+  loading: PanelLoading
+})
+const MarketplacePanel = nextDynamic(() => import('./MarketplacePanel'), {
+  loading: PanelLoading
+})
+const ProjectsPanel = nextDynamic(
+  () => import('./Panels').then((m) => m.ProjectsPanel),
+  { loading: PanelLoading }
+)
+const SettingsPanel = nextDynamic(
+  () => import('./Panels').then((m) => m.SettingsPanel),
+  { loading: PanelLoading }
+)
+const UpdatesPanel = nextDynamic(
+  () => import('./Panels').then((m) => m.UpdatesPanel),
+  { loading: PanelLoading }
+)
 
 export type GroupBy = 'status' | 'assignee' | 'priority' | 'lead'
 export type View =
