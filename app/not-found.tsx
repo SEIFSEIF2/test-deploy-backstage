@@ -1,58 +1,33 @@
-'use client'
-
 import Link from 'next/link'
-import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 
+// Server component on purpose: the root not-found boundary is bundled
+// into every route's baseline, so an animation library here would ship
+// on every page of the app. CSS animations (tw-animate-css) are free.
 export default function NotFound() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center">
-      <motion.div
-        className="relative select-none"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ type: 'spring', stiffness: 120, damping: 14 }}
-      >
+      <div className="animate-in fade-in slide-in-from-top-4 relative select-none duration-500">
         <span className="text-muted-foreground/10 text-[12rem] leading-none font-black tracking-tighter">
           404
         </span>
-        <motion.div
-          className="absolute inset-0 flex items-center justify-center"
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{
-            delay: 0.2,
-            type: 'spring',
-            stiffness: 200,
-            damping: 15
-          }}
-        >
+        <div className="animate-in fade-in zoom-in-90 fill-mode-backwards absolute inset-0 flex items-center justify-center delay-200 duration-500">
           <span className="text-foreground text-5xl font-bold">404</span>
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
 
-      <motion.div
-        className="mt-2 space-y-3 text-center"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.35, duration: 0.5 }}
-      >
+      <div className="animate-in fade-in slide-in-from-bottom-2 fill-mode-backwards mt-2 space-y-3 text-center delay-300 duration-500">
         <h1 className="text-2xl font-bold">Page not found</h1>
         <p className="text-muted-foreground text-sm">
           The page you are looking for does not exist or has been moved
         </p>
-      </motion.div>
+      </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.55, duration: 0.4 }}
-        className="mt-8"
-      >
+      <div className="animate-in fade-in slide-in-from-bottom-2 fill-mode-backwards mt-8 delay-500 duration-500">
         <Button asChild>
           <Link href="/dashboard">Back to Dashboard</Link>
         </Button>
-      </motion.div>
+      </div>
     </div>
   )
 }

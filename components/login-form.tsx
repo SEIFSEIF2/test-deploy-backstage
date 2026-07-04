@@ -3,7 +3,6 @@
 import { startTransition, useActionState, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Eye, EyeOff } from 'lucide-react'
-import { z } from 'zod'
 
 import { cn } from '@/lib/utils'
 import { config } from '@/lib/config'
@@ -12,10 +11,19 @@ import { Button } from '@/components/ui/button'
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 
-const loginSchema = z.object({
-  email: z.string().min(1, 'Email is required').email('Enter a valid email'),
-  password: z.string().min(1, 'Password is required')
-})
+// Hand-rolled two-field check: importing zod here shipped its entire
+// ~260 KB client bundle to /login for exactly these two rules. The
+// server action re-validates for real either way.
+const validators = {
+  email: (v: string) =>
+    v.trim().length === 0
+      ? 'Email is required'
+      : /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)
+        ? undefined
+        : 'Enter a valid email',
+  password: (v: string) =>
+    v.length === 0 ? 'Password is required' : undefined
+}
 
 type FieldErrors = Partial<Record<'email' | 'password', string>>
 
@@ -33,27 +41,17 @@ export function LoginForm({
   const [errors, setErrors] = useState<FieldErrors>({})
 
   function validateField(name: 'email' | 'password', value: string) {
-    const result = loginSchema.shape[name].safeParse(value)
-    setErrors((prev) => ({
-      ...prev,
-      [name]: result.success ? undefined : result.error.issues[0]?.message
-    }))
+    setErrors((prev) => ({ ...prev, [name]: validators[name](value) }))
   }
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
-    const parsed = loginSchema.safeParse({
-      email: fd.get('email'),
-      password: fd.get('password')
-    })
-
-    if (!parsed.success) {
-      const next: FieldErrors = {}
-      for (const issue of parsed.error.issues) {
-        const key = issue.path[0] as 'email' | 'password' | undefined
-        if (key && !next[key]) next[key] = issue.message
-      }
+    const next: FieldErrors = {
+      email: validators.email(String(fd.get('email') ?? '')),
+      password: validators.password(String(fd.get('password') ?? ''))
+    }
+    if (next.email || next.password) {
       setErrors(next)
       return
     }
