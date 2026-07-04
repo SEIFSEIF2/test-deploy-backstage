@@ -1,0 +1,1589 @@
+'use client'
+
+import { useMemo, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import {
+  Archive as ArchiveIcon,
+  ArchiveRestore,
+  Check,
+  ExternalLink,
+  FileText,
+  GitCommit,
+  GitPullRequest,
+  Globe,
+  LayoutGrid,
+  Link as LinkIcon,
+  List as ListIcon,
+  MessageCircleQuestion,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Rabbit,
+  Table as TableIcon,
+  X
+} from 'lucide-react'
+import { BoardTask, BoardAssignee } from './boardData'
+import Avatar from './Avatar'
+import {
+  GithubIcon,
+  FigmaIcon,
+  SupabaseIcon,
+  VercelIcon,
+  SentryIcon,
+  GoDaddyIcon,
+  GoogleCloudIcon,
+  GoogleDocsIcon,
+  ResendIcon,
+  StripeIcon,
+  WordPressIcon
+} from './BrandIcons'
+import type { ProjectExternalRef, TaskExternalRefKind } from './boardData'
+import { defaultExternalRefLabel, parseExternalRef } from '@/lib/externalRef'
+import StatusIcon from './StatusIcon'
+import { useDashTheme } from './theme'
+import {
+  archiveProjectInPlace,
+  createProjectInPlace,
+  renameProject,
+  unarchiveProject
+} from '../actions'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog'
+
+type ProjectKind = 'standard' | 'operations'
+
+interface ProjectRow {
+  id: string
+  name: string
+  kind: ProjectKind
+  isArchived: boolean
+  githubRepo: string | null
+}
+
+export function ProjectsPanel({
+  tasks,
+  projects,
+  currentUserId,
+  accessTier,
+  allMembers,
+  projectAssigneeIds,
+  onOpenProject,
+  refsByProject,
+  onAddProjectRef,
+  onRemoveProjectRef,
+  onRenameProjectRef,
+  renderCopySlot
+}: {
+  tasks: BoardTask[]
+  projects: ProjectRow[]
+  currentUserId: string
+  accessTier: 'admin' | 'lead' | 'member'
+  // Full company team. Looked up by id to resolve project rosters into
+  // BoardAssignee objects.
+  allMembers: BoardAssignee[]
+  // Distinct assignee ids per project, computed server-side across all
+  // tasks (not the viewer's visible slice). Drives the avatar stack on
+  // each project card.
+  projectAssigneeIds: Record<string, string[]>
+  onOpenProject: (id: string) => void
+  refsByProject: Record<string, ProjectExternalRef[]>
+  onAddProjectRef: (projectId: string, url: string) => void
+  onRemoveProjectRef: (projectId: string, refId: string) => void
+  onRenameProjectRef: (
+    projectId: string,
+    refId: string,
+    label: string | null
+  ) => void
+  // Optional per-project copy-button factory. DashboardShell owns the
+  // export context so it injects a CopyButton per project here.
+  renderCopySlot?: (projectId: string) => React.ReactNode
+}) {
+  const { t } = useDashTheme()
+  const router = useRouter()
+  const queryClient = useQueryClient()
+  const canEdit = accessTier === 'admin' || accessTier === 'lead'
+  const [pending, startTransition] = useTransition()
+  // After every project mutation: invalidate the React Query cache so
+  // DashboardChrome refetches and the new initial flows down. router.refresh
+  // alone doesn't help because data now lives in the client-side cache.
+  const refreshDashboard = () => {
+    queryClient.invalidateQueries({ queryKey: ['dashboardInitial'] })
+    router.refresh()
+  }
+  const [showNew, setShowNew] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [pendingArchive, setPendingArchive] = useState<ProjectRow | null>(null)
+  const [view, setView] = useState<'grid' | 'table' | 'list'>('grid')
+
+  // Group tasks by projectId so each card can show real progress for the
+  // current member's visible task set. `tasks` is already filtered to
+  // visibleTasks in DashboardShell, so members see only their own counts.
+  const byProject = useMemo(() => {
+    const map = new Map<string, BoardTask[]>()
+    for (const task of tasks) {
+      const pid = task.projectId
+      if (!pid) continue
+      const list = map.get(pid) ?? []
+      list.push(task)
+      map.set(pid, list)
+    }
+    return map
+  }, [tasks])
+
+  // Distinct assignees per project. Resolved from the server-provided
+  // `projectAssigneeIds` map so every role (including members, whose
+  // visible-task slice would otherwise show "just me") sees the real
+  // team on each card. Sorted by name so avatar order is stable.
+  const membersByProject = useMemo(() => {
+    const byId = new Map(allMembers.map((m) => [m.id, m]))
+    const map = new Map<string, BoardAssignee[]>()
+    for (const project of projects) {
+      const ids = projectAssigneeIds[project.id] ?? []
+      const roster: BoardAssignee[] = []
+      for (const id of ids) {
+        const m = byId.get(id)
+        if (m) roster.push(m)
+      }
+      roster.sort((a, b) => a.name.localeCompare(b.name))
+      map.set(project.id, roster)
+    }
+    return map
+  }, [projects, projectAssigneeIds, allMembers])
+
+  // Members only see projects where they have at least one assigned task.
+  const visibleProjects = canEdit
+    ? projects
+    : projects.filter((p) => {
+        const list = byProject.get(p.id) ?? []
+        return list.some((task) => task.assignee?.id === currentUserId)
+      })
+  const activeProjects = visibleProjects.filter((p) => !p.isArchived)
+  const archivedProjects = canEdit
+    ? visibleProjects.filter((p) => p.isArchived)
+    : []
+
+  const handleCreate = (formData: FormData) => {
+    startTransition(async () => {
+      const result = await createProjectInPlace(formData)
+      if (result?.error) {
+        toast.error(result.error)
+        return
+      }
+      toast.success('Project created.')
+      setShowNew(false)
+      refreshDashboard()
+    })
+  }
+
+  const handleRename = (projectId: string, name: string) => {
+    const fd = new FormData()
+    fd.set('projectId', projectId)
+    fd.set('name', name)
+    startTransition(async () => {
+      const result = await renameProject(fd)
+      if (result?.error) {
+        toast.error(result.error)
+        return
+      }
+      toast.success('Project renamed.')
+      setEditingId(null)
+      refreshDashboard()
+    })
+  }
+
+  const confirmArchive = () => {
+    if (!pendingArchive) return
+    const fd = new FormData()
+    fd.set('projectId', pendingArchive.id)
+    startTransition(async () => {
+      const result = await archiveProjectInPlace(fd)
+      if (result?.error) {
+        toast.error(result.error)
+        return
+      }
+      toast.success('Project archived.')
+      setPendingArchive(null)
+      refreshDashboard()
+    })
+  }
+
+  const handleRestore = (projectId: string) => {
+    const fd = new FormData()
+    fd.set('projectId', projectId)
+    startTransition(async () => {
+      const result = await unarchiveProject(fd)
+      if (result?.error) {
+        toast.error(result.error)
+        return
+      }
+      toast.success('Project restored.')
+      refreshDashboard()
+    })
+  }
+
+  const renderCard = (project: ProjectRow) => {
+    const list = byProject.get(project.id) ?? []
+    const done = list.filter((x) => x.status === 'done').length
+    const pct = list.length === 0 ? 0 : Math.round((done / list.length) * 100)
+    const members = membersByProject.get(project.id) ?? []
+    return (
+      <ProjectCard
+        key={project.id}
+        project={project}
+        tasks={list}
+        refs={sortRefsByImportance(refsByProject[project.id] ?? [])}
+        members={members}
+        done={done}
+        pct={pct}
+        canEdit={canEdit}
+        isEditing={editingId === project.id}
+        onStartEdit={() => setEditingId(project.id)}
+        onCancelEdit={() => setEditingId(null)}
+        onRename={(name) => handleRename(project.id, name)}
+        onArchive={() => setPendingArchive(project)}
+        onRestore={() => handleRestore(project.id)}
+        onOpen={() => onOpenProject(project.id)}
+        onAddRef={(url) => onAddProjectRef(project.id, url)}
+        onRemoveRef={(refId) => onRemoveProjectRef(project.id, refId)}
+        onRenameRef={(refId, label) =>
+          onRenameProjectRef(project.id, refId, label)
+        }
+        copySlot={renderCopySlot?.(project.id)}
+        disabled={pending}
+      />
+    )
+  }
+
+  const renderProjects = (list: ProjectRow[]) => {
+    if (view === 'table') {
+      return (
+        <ProjectTable
+          projects={list}
+          byProject={byProject}
+          membersByProject={membersByProject}
+          refsByProject={refsByProject}
+          canEdit={canEdit}
+          onOpen={onOpenProject}
+          onArchiveTrigger={setPendingArchive}
+          onRestore={handleRestore}
+        />
+      )
+    }
+    if (view === 'list') {
+      return (
+        <ProjectList
+          projects={list}
+          byProject={byProject}
+          membersByProject={membersByProject}
+          refsByProject={refsByProject}
+          onOpen={onOpenProject}
+        />
+      )
+    }
+    return (
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+        {list.map(renderCard)}
+      </div>
+    )
+  }
+
+  return (
+    <div className="h-full overflow-y-auto">
+      <div className="flex flex-col gap-6">
+        <header className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className={`text-lg font-medium ${t.text}`}>Projects</h2>
+            <p className={`text-xs ${t.textMuted}`}>
+              {canEdit
+                ? `${activeProjects.length} active${
+                    archivedProjects.length > 0
+                      ? ` · ${archivedProjects.length} archived`
+                      : ''
+                  }`
+                : `${activeProjects.length} you're working on`}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <ViewSwitcher value={view} onChange={setView} />
+            {canEdit && !showNew && (
+              <button
+                onClick={() => setShowNew(true)}
+                className={`flex h-8 items-center gap-1.5 rounded-md px-3 text-xs transition ${t.accent}`}
+              >
+                <Plus className="size-3.5" /> New project
+              </button>
+            )}
+          </div>
+        </header>
+
+        {canEdit && showNew && (
+          <NewProjectForm
+            onSubmit={handleCreate}
+            onCancel={() => setShowNew(false)}
+            disabled={pending}
+          />
+        )}
+
+        <AlertDialog
+          open={pendingArchive !== null}
+          onOpenChange={(open) => {
+            if (!open && !pending) setPendingArchive(null)
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Archive this project?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {pendingArchive
+                  ? `"${pendingArchive.name}" will move to the Archived section below. Its tasks and history stay intact and you can restore it from there.`
+                  : ''}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                variant="destructive"
+                disabled={pending}
+                onClick={(e) => {
+                  e.preventDefault()
+                  confirmArchive()
+                }}
+              >
+                {pending ? 'Archiving…' : 'Archive'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {activeProjects.length === 0 ? (
+          <EmptyState canEdit={canEdit} />
+        ) : (
+          renderProjects(activeProjects)
+        )}
+
+        {archivedProjects.length > 0 && (
+          <section className="flex flex-col gap-3">
+            <div className="flex items-baseline justify-between">
+              <h3
+                className={`text-[10px] tracking-[0.25em] uppercase ${t.textMuted}`}
+              >
+                Archived
+              </h3>
+              <span className={`text-[10px] ${t.textSubtle}`}>
+                Hidden from pickers · restore to use again
+              </span>
+            </div>
+            {renderProjects(archivedProjects)}
+          </section>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function NewProjectForm({
+  onSubmit,
+  onCancel,
+  disabled
+}: {
+  onSubmit: (fd: FormData) => void
+  onCancel: () => void
+  disabled: boolean
+}) {
+  const { t } = useDashTheme()
+  return (
+    <form
+      action={onSubmit}
+      className={`flex flex-col gap-3 rounded-xl border p-4 ${t.column}`}
+    >
+      <div className="flex items-center justify-between">
+        <span
+          className={`text-xs font-medium tracking-wider uppercase ${t.textMuted}`}
+        >
+          New project
+        </span>
+        <button
+          type="button"
+          onClick={onCancel}
+          className={`size-6 rounded ${t.btn} flex items-center justify-center`}
+          aria-label="Cancel"
+        >
+          <X className="size-3.5" />
+        </button>
+      </div>
+      <div className="grid gap-3 md:grid-cols-[1fr_auto]">
+        <input
+          name="name"
+          required
+          minLength={2}
+          maxLength={80}
+          autoFocus
+          placeholder="Project name"
+          className={`h-9 rounded-md border px-3 text-sm ${t.input}`}
+        />
+        <select
+          name="kind"
+          defaultValue="standard"
+          className={`h-9 rounded-md border px-2 text-xs ${t.input}`}
+        >
+          <option value="standard">Standard</option>
+          <option value="operations">Operations</option>
+        </select>
+      </div>
+      <div className="flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className={`h-8 rounded-md border px-3 text-xs ${t.btn}`}
+          disabled={disabled}
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className={`h-8 rounded-md px-3 text-xs ${t.accent}`}
+          disabled={disabled}
+        >
+          {disabled ? 'Creating…' : 'Create'}
+        </button>
+      </div>
+    </form>
+  )
+}
+
+function ProjectCard({
+  project,
+  tasks,
+  refs,
+  members,
+  done,
+  pct,
+  canEdit,
+  isEditing,
+  onStartEdit,
+  onCancelEdit,
+  onRename,
+  onArchive,
+  onRestore,
+  onOpen,
+  onAddRef,
+  onRemoveRef,
+  onRenameRef,
+  copySlot,
+  disabled
+}: {
+  project: ProjectRow
+  tasks: BoardTask[]
+  refs: ProjectExternalRef[]
+  members: BoardAssignee[]
+  done: number
+  pct: number
+  canEdit: boolean
+  isEditing: boolean
+  onStartEdit: () => void
+  onCancelEdit: () => void
+  onRename: (name: string) => void
+  onArchive: () => void
+  onRestore: () => void
+  onOpen: () => void
+  onAddRef: (url: string) => void
+  onRemoveRef: (refId: string) => void
+  onRenameRef: (refId: string, label: string | null) => void
+  copySlot?: React.ReactNode
+  disabled: boolean
+}) {
+  const { t } = useDashTheme()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [renameValue, setRenameValue] = useState(project.name)
+
+  // Archived projects can be opened (we still want their boards reachable)
+  // but render dimmed so the active set reads as the primary surface.
+  const cardClickable = !isEditing
+  const handleCardClick = () => {
+    if (cardClickable) onOpen()
+  }
+  const handleCardKey = (e: React.KeyboardEvent) => {
+    if (!cardClickable) return
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      onOpen()
+    }
+  }
+  const stop = (e: React.MouseEvent | React.KeyboardEvent) =>
+    e.stopPropagation()
+
+  // Visual tier for the kind chip. Operations is the standing lane (per
+  // lib/business-logic.ts) so it gets an amber tint to match the lead
+  // role badge; standard projects stay neutral.
+  const kindClasses =
+    project.kind === 'operations'
+      ? 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+      : t.metaTag
+  const hasFooter = canEdit || refs.length > 0
+
+  return (
+    <div
+      role={cardClickable ? 'button' : undefined}
+      tabIndex={cardClickable ? 0 : -1}
+      onClick={handleCardClick}
+      onKeyDown={handleCardKey}
+      aria-label={cardClickable ? `Open ${project.name}` : undefined}
+      className={`group relative flex flex-col gap-4 rounded-2xl border p-5 transition-all duration-150 ${t.column} ${
+        cardClickable
+          ? 'cursor-pointer hover:-translate-y-px hover:border-zinc-300 hover:shadow-sm dark:hover:border-white/20'
+          : ''
+      } ${project.isArchived ? 'opacity-70' : ''}`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-col gap-1.5">
+          {isEditing ? (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                if (renameValue.trim().length >= 2) onRename(renameValue.trim())
+              }}
+              onClick={stop}
+              className="flex items-center gap-1"
+            >
+              <input
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                autoFocus
+                onClick={stop}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    setRenameValue(project.name)
+                    onCancelEdit()
+                  }
+                }}
+                className={`h-8 w-full rounded-md border px-2 text-sm ${t.input}`}
+              />
+              <button
+                type="submit"
+                disabled={disabled}
+                onClick={stop}
+                className={`h-8 rounded-md px-2.5 text-[11px] ${t.accent}`}
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  stop(e)
+                  setRenameValue(project.name)
+                  onCancelEdit()
+                }}
+                className={`h-8 rounded-md border px-2.5 text-[11px] ${t.btn}`}
+              >
+                Cancel
+              </button>
+            </form>
+          ) : (
+            <h3
+              className={`truncate text-[15px] leading-tight font-semibold tracking-tight ${t.text}`}
+            >
+              {project.name}
+            </h3>
+          )}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span
+              className={`inline-flex w-fit items-center rounded border px-1.5 py-0.5 text-[9px] font-medium tracking-wider uppercase ${kindClasses}`}
+            >
+              {project.kind}
+            </span>
+            {project.isArchived && (
+              <span
+                className={`inline-flex w-fit items-center gap-1 rounded border px-1.5 py-0.5 text-[9px] tracking-wider uppercase ${t.metaTag}`}
+              >
+                <ArchiveIcon className="size-2.5" /> Archived
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-1.5" onClick={stop}>
+          {copySlot}
+          {canEdit && !isEditing && (
+            <div className="relative">
+              <button
+                onClick={(e) => {
+                  stop(e)
+                  setMenuOpen((o) => !o)
+                }}
+                className={`flex size-7 items-center justify-center rounded-md border transition ${t.btn}`}
+                aria-label="Project actions"
+              >
+                <MoreHorizontal className="size-3.5" />
+              </button>
+              {menuOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-30"
+                    onClick={(e) => {
+                      stop(e)
+                      setMenuOpen(false)
+                    }}
+                  />
+                  <div
+                    className={`absolute top-8 right-0 z-40 w-40 rounded-md border py-1 shadow-xl ${t.detail}`}
+                    onClick={stop}
+                  >
+                    <button
+                      onClick={(e) => {
+                        stop(e)
+                        setMenuOpen(false)
+                        onStartEdit()
+                      }}
+                      className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs ${t.tab}`}
+                    >
+                      <Pencil className="size-3.5" /> Rename
+                    </button>
+                    {project.isArchived ? (
+                      <button
+                        onClick={(e) => {
+                          stop(e)
+                          setMenuOpen(false)
+                          onRestore()
+                        }}
+                        disabled={disabled}
+                        className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs disabled:opacity-50 ${t.tab}`}
+                      >
+                        <ArchiveRestore className="size-3.5" /> Restore
+                      </button>
+                    ) : (
+                      <button
+                        onClick={(e) => {
+                          stop(e)
+                          setMenuOpen(false)
+                          onArchive()
+                        }}
+                        className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs ${t.tab} ${t.accentText}`}
+                      >
+                        <ArchiveIcon className="size-3.5" /> Archive
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {tasks.length === 0 ? (
+        <div
+          className={`rounded-lg border border-dashed px-3 py-2.5 text-center text-[11px] ${t.border} ${t.textMuted}`}
+        >
+          No tasks yet
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className={`text-2xl font-semibold tabular-nums ${t.text}`}>
+              {pct}%
+            </span>
+            <span className={`text-[11px] tabular-nums ${t.textMuted}`}>
+              {done} of {tasks.length} done
+            </span>
+          </div>
+          <div className={`h-2 overflow-hidden rounded-full ${t.surfaceMuted}`}>
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-teal-500 to-emerald-500 transition-all"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {members.length > 0 && (
+        <div className="flex items-center gap-2.5">
+          <MemberStack members={members} max={5} size={22} />
+          <span
+            className={`text-[10px] tracking-wider uppercase ${t.textSubtle}`}
+          >
+            {members.length} {members.length === 1 ? 'member' : 'members'}
+          </span>
+        </div>
+      )}
+
+      {tasks.length > 0 && (
+        <ul className="flex flex-col gap-1.5">
+          {tasks.slice(0, 3).map((task) => (
+            <li
+              key={task.id}
+              className={`flex items-center gap-2 text-xs ${t.textMuted}`}
+            >
+              <StatusIcon status={task.status} className="size-3 shrink-0" />
+              <span className="truncate">{task.title}</span>
+            </li>
+          ))}
+          {tasks.length > 3 && (
+            <li className={`text-[10px] ${t.textSubtle}`}>
+              +{tasks.length - 3} more task{tasks.length - 3 === 1 ? '' : 's'}
+            </li>
+          )}
+        </ul>
+      )}
+
+      {hasFooter && (
+        <div
+          className={`-mx-5 mt-auto flex flex-col gap-2 border-t px-5 pt-3 ${t.border}`}
+        >
+          <ProjectLinksField
+            refs={refs}
+            onAdd={onAddRef}
+            onRemove={onRemoveRef}
+            onRename={onRenameRef}
+            stop={stop}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ViewSwitcher({
+  value,
+  onChange
+}: {
+  value: 'grid' | 'table' | 'list'
+  onChange: (v: 'grid' | 'table' | 'list') => void
+}) {
+  const { t } = useDashTheme()
+  const options: {
+    id: 'grid' | 'table' | 'list'
+    Icon: typeof LayoutGrid
+    label: string
+  }[] = [
+    { id: 'grid', Icon: LayoutGrid, label: 'Grid' },
+    { id: 'table', Icon: TableIcon, label: 'Table' },
+    { id: 'list', Icon: ListIcon, label: 'List' }
+  ]
+  return (
+    <div
+      className={`flex items-center gap-0.5 rounded-md border p-0.5 ${t.border}`}
+    >
+      {options.map((opt) => {
+        const active = value === opt.id
+        return (
+          <button
+            key={opt.id}
+            type="button"
+            onClick={() => onChange(opt.id)}
+            title={`${opt.label} view`}
+            className={`flex size-7 items-center justify-center rounded transition ${
+              active ? t.tabActive : t.tab
+            }`}
+          >
+            <opt.Icon className="size-3.5" />
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function MemberStack({
+  members,
+  max = 4,
+  size = 20
+}: {
+  members: BoardAssignee[]
+  max?: number
+  size?: number
+}) {
+  const { t } = useDashTheme()
+  const shown = members.slice(0, max)
+  const extra = Math.max(0, members.length - shown.length)
+  const overlap = Math.round(size / 2.8)
+  // Ring needs the wrapper to be a block-level element so the box-shadow
+  // renders as a clean halo (rings on inline spans clip or vanish in some
+  // browsers). Hence inline-flex on each chip below.
+  return (
+    <div
+      className="flex items-center"
+      title={members.map((m) => m.name).join(', ')}
+    >
+      {shown.map((m, i) => (
+        <div
+          key={m.id}
+          className="inline-flex rounded-full ring-2 ring-white dark:ring-zinc-900"
+          style={{
+            width: size,
+            height: size,
+            marginLeft: i === 0 ? 0 : -overlap
+          }}
+        >
+          <Avatar user={m} size={size} />
+        </div>
+      ))}
+      {extra > 0 && (
+        <div
+          className={`inline-flex items-center justify-center rounded-full text-[10px] font-medium ring-2 ring-white dark:ring-zinc-900 ${t.surfaceMuted} ${t.textMuted}`}
+          style={{
+            width: size,
+            height: size,
+            marginLeft: -overlap
+          }}
+        >
+          +{extra}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ProjectTable({
+  projects,
+  byProject,
+  membersByProject,
+  refsByProject,
+  canEdit,
+  onOpen,
+  onArchiveTrigger,
+  onRestore
+}: {
+  projects: ProjectRow[]
+  byProject: Map<string, BoardTask[]>
+  membersByProject: Map<string, BoardAssignee[]>
+  refsByProject: Record<string, ProjectExternalRef[]>
+  canEdit: boolean
+  onOpen: (id: string) => void
+  onArchiveTrigger: (project: ProjectRow) => void
+  onRestore: (id: string) => void
+}) {
+  const { t } = useDashTheme()
+  return (
+    <div className={`overflow-hidden rounded-xl border ${t.border}`}>
+      <table className="w-full border-collapse text-xs">
+        <thead>
+          <tr
+            className={`${t.surfaceMuted} ${t.textMuted} text-[10px] tracking-wider uppercase`}
+          >
+            <th className="px-3 py-2 text-left font-medium">Project</th>
+            <th className="hidden px-3 py-2 text-left font-medium md:table-cell">
+              Kind
+            </th>
+            <th className="px-3 py-2 text-right font-medium">Tasks</th>
+            <th className="hidden px-3 py-2 text-right font-medium sm:table-cell">
+              Done
+            </th>
+            <th className="px-3 py-2 text-left font-medium">Progress</th>
+            <th className="hidden px-3 py-2 text-left font-medium md:table-cell">
+              Members
+            </th>
+            <th className="hidden px-3 py-2 text-left font-medium lg:table-cell">
+              Links
+            </th>
+            {canEdit && (
+              <th className="px-3 py-2 text-right font-medium">
+                <span className="sr-only">Actions</span>
+              </th>
+            )}
+          </tr>
+        </thead>
+        <tbody>
+          {projects.map((project) => {
+            const tasks = byProject.get(project.id) ?? []
+            const done = tasks.filter((x) => x.status === 'done').length
+            const pct =
+              tasks.length === 0 ? 0 : Math.round((done / tasks.length) * 100)
+            const members = membersByProject.get(project.id) ?? []
+            const refs = sortRefsByImportance(refsByProject[project.id] ?? [])
+            return (
+              <tr
+                key={project.id}
+                onClick={() => onOpen(project.id)}
+                className={`cursor-pointer border-t transition ${t.border} hover:bg-zinc-50 dark:hover:bg-white/[0.03] ${
+                  project.isArchived ? 'opacity-60' : ''
+                }`}
+              >
+                <td className="px-3 py-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className={`truncate font-medium ${t.text}`}>
+                      {project.name}
+                    </span>
+                    {project.isArchived && (
+                      <ArchiveIcon
+                        className={`size-3 shrink-0 ${t.textSubtle}`}
+                      />
+                    )}
+                  </div>
+                </td>
+                <td className="hidden px-3 py-2.5 md:table-cell">
+                  <span
+                    className={`inline-flex items-center rounded border px-1.5 py-0.5 text-[9px] tracking-wider uppercase ${t.metaTag}`}
+                  >
+                    {project.kind}
+                  </span>
+                </td>
+                <td
+                  className={`px-3 py-2.5 text-right tabular-nums ${t.textMuted}`}
+                >
+                  {tasks.length}
+                </td>
+                <td
+                  className={`hidden px-3 py-2.5 text-right tabular-nums sm:table-cell ${t.textMuted}`}
+                >
+                  {done}
+                </td>
+                <td className="px-3 py-2.5">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`h-1.5 w-20 overflow-hidden rounded-full ${t.surfaceMuted}`}
+                    >
+                      <div
+                        className="h-full bg-teal-500 transition-all"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <span
+                      className={`text-[10px] tabular-nums ${t.textSubtle}`}
+                    >
+                      {pct}%
+                    </span>
+                  </div>
+                </td>
+                <td className="hidden px-3 py-2.5 md:table-cell">
+                  {members.length > 0 ? (
+                    <MemberStack members={members} max={4} size={20} />
+                  ) : (
+                    <span className={`text-[10px] ${t.textSubtle}`}>None</span>
+                  )}
+                </td>
+                <td className="hidden px-3 py-2.5 lg:table-cell">
+                  {refs.length > 0 ? (
+                    <div className="flex items-center gap-1">
+                      {refs.slice(0, 4).map((r) => {
+                        const brand = displayBrand(r)
+                        const Icon = refIconForKind(brand)
+                        const palette = refChipPalette(brand, t.surfaceMuted)
+                        const parsed = parseExternalRef(r.url)
+                        const tipLabel =
+                          r.label ??
+                          (parsed ? defaultExternalRefLabel(parsed) : r.url)
+                        return (
+                          <a
+                            key={r.id}
+                            href={r.url}
+                            target="_blank"
+                            rel="noreferrer noopener"
+                            onClick={(e) => e.stopPropagation()}
+                            title={tipLabel}
+                            className={`flex size-5 items-center justify-center rounded border ${palette.wrapper}`}
+                          >
+                            <Icon className={`size-2.5 ${palette.icon}`} />
+                          </a>
+                        )
+                      })}
+                      {refs.length > 4 && (
+                        <span className={`text-[10px] ${t.textSubtle}`}>
+                          +{refs.length - 4}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <span className={`text-[10px] ${t.textSubtle}`}>—</span>
+                  )}
+                </td>
+                {canEdit && (
+                  <td
+                    className="px-3 py-2.5 text-right"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {project.isArchived ? (
+                      <button
+                        onClick={() => onRestore(project.id)}
+                        className={`inline-flex h-6 items-center gap-1 rounded px-2 text-[10px] ${t.btn}`}
+                      >
+                        <ArchiveRestore className="size-3" /> Restore
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => onArchiveTrigger(project)}
+                        className={`inline-flex h-6 items-center gap-1 rounded px-2 text-[10px] ${t.btn}`}
+                      >
+                        <ArchiveIcon className="size-3" /> Archive
+                      </button>
+                    )}
+                  </td>
+                )}
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function ProjectList({
+  projects,
+  byProject,
+  membersByProject,
+  refsByProject,
+  onOpen
+}: {
+  projects: ProjectRow[]
+  byProject: Map<string, BoardTask[]>
+  membersByProject: Map<string, BoardAssignee[]>
+  refsByProject: Record<string, ProjectExternalRef[]>
+  onOpen: (id: string) => void
+}) {
+  const { t } = useDashTheme()
+  return (
+    <ul className={`flex flex-col rounded-xl border ${t.border}`}>
+      {projects.map((project, idx) => {
+        const tasks = byProject.get(project.id) ?? []
+        const done = tasks.filter((x) => x.status === 'done').length
+        const pct =
+          tasks.length === 0 ? 0 : Math.round((done / tasks.length) * 100)
+        const members = membersByProject.get(project.id) ?? []
+        const refs = sortRefsByImportance(refsByProject[project.id] ?? [])
+        // Brand badges in the compact list. Keep only the linkable-brand
+        // surfaces so a project doc / plain link doesn't add visual noise.
+        // Detection uses displayBrand so URL-derived brands (Resend,
+        // GoDaddy) show up even though they're stored as kind='link'.
+        const brandRefs = refs.filter((r) =>
+          [
+            'github',
+            'supabase',
+            'vercel',
+            'gcloud',
+            'stripe',
+            'bunny',
+            'sentry',
+            'figma',
+            'verbivore',
+            'resend',
+            'godaddy',
+            'wordpress'
+          ].includes(displayBrand(r))
+        )
+        return (
+          <li
+            key={project.id}
+            onClick={() => onOpen(project.id)}
+            className={`flex cursor-pointer items-center gap-4 px-4 py-3 transition hover:bg-zinc-50 dark:hover:bg-white/[0.03] ${
+              idx > 0 ? `border-t ${t.border}` : ''
+            } ${project.isArchived ? 'opacity-60' : ''}`}
+          >
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              <span className={`truncate text-sm font-medium ${t.text}`}>
+                {project.name}
+              </span>
+              <span
+                className={`inline-flex shrink-0 items-center rounded border px-1.5 py-0.5 text-[9px] tracking-wider uppercase ${t.metaTag}`}
+              >
+                {project.kind}
+              </span>
+              {brandRefs.slice(0, 4).map((r) => {
+                const brand = displayBrand(r)
+                const Icon = refIconForKind(brand)
+                const palette = refChipPalette(brand, t.surfaceMuted)
+                const parsed = parseExternalRef(r.url)
+                const tipLabel =
+                  r.label ?? (parsed ? defaultExternalRefLabel(parsed) : r.url)
+                return (
+                  <a
+                    key={r.id}
+                    href={r.url}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    onClick={(e) => e.stopPropagation()}
+                    title={tipLabel}
+                    className={`inline-flex size-5 shrink-0 items-center justify-center rounded border ${palette.wrapper}`}
+                  >
+                    <Icon className={`size-2.5 ${palette.icon}`} />
+                  </a>
+                )
+              })}
+              {project.isArchived && (
+                <ArchiveIcon className={`size-3 shrink-0 ${t.textSubtle}`} />
+              )}
+            </div>
+            <span
+              className={`hidden text-xs tabular-nums sm:inline ${t.textMuted}`}
+            >
+              {tasks.length === 0 ? 'No tasks' : `${done}/${tasks.length}`}
+            </span>
+            <div className="hidden w-32 items-center gap-2 md:flex">
+              <div
+                className={`h-1.5 flex-1 overflow-hidden rounded-full ${t.surfaceMuted}`}
+              >
+                <div
+                  className="h-full bg-teal-500 transition-all"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <span
+                className={`w-8 text-right text-[10px] tabular-nums ${t.textSubtle}`}
+              >
+                {pct}%
+              </span>
+            </div>
+            {members.length > 0 && (
+              <MemberStack members={members} max={4} size={20} />
+            )}
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+// Virtual display brand: DB-stored kinds plus URL-derived sub-brands
+// (Google Docs, Resend, GoDaddy, WordPress). The DB column stays
+// `external_ref_kind`; this is render-time only so no migration is needed.
+type DisplayBrand =
+  | TaskExternalRefKind
+  | 'gdocs'
+  | 'resend'
+  | 'godaddy'
+  | 'wordpress'
+
+function displayBrand(ref: {
+  kind: TaskExternalRefKind
+  url: string
+}): DisplayBrand {
+  let host = ''
+  let pathname = ''
+  try {
+    const u = new URL(ref.url)
+    host = u.hostname.toLowerCase().replace(/^www\./, '')
+    pathname = u.pathname.toLowerCase()
+  } catch {
+    return ref.kind
+  }
+  if (ref.kind === 'doc' && host === 'docs.google.com') return 'gdocs'
+  if (ref.kind === 'link') {
+    if (host === 'resend.com' || host.endsWith('.resend.com')) return 'resend'
+    if (host === 'godaddy.com' || host.endsWith('.godaddy.com'))
+      return 'godaddy'
+    // WordPress: hosted variants AND custom-domain self-hosts (detected
+    // via the canonical /wp-admin or /wp-content/ paths).
+    if (
+      host === 'wordpress.com' ||
+      host.endsWith('.wordpress.com') ||
+      host.endsWith('.wp.com') ||
+      pathname.startsWith('/wp-admin') ||
+      pathname.includes('/wp-content/') ||
+      pathname === '/wp-login.php'
+    ) {
+      return 'wordpress'
+    }
+  }
+  return ref.kind
+}
+
+function refIconForKind(kind: DisplayBrand) {
+  switch (kind) {
+    case 'pr':
+      return GitPullRequest
+    case 'issue':
+      return MessageCircleQuestion
+    case 'commit':
+      return GitCommit
+    case 'doc':
+      return FileText
+    case 'gdocs':
+      return GoogleDocsIcon
+    case 'resend':
+      return ResendIcon
+    case 'godaddy':
+      return GoDaddyIcon
+    case 'wordpress':
+      return WordPressIcon
+    case 'supabase':
+      return SupabaseIcon
+    case 'github':
+      return GithubIcon
+    case 'figma':
+      return FigmaIcon
+    case 'verbivore':
+      return Globe
+    case 'vercel':
+      return VercelIcon
+    case 'bunny':
+      return Rabbit
+    case 'sentry':
+      return SentryIcon
+    case 'gcloud':
+      return GoogleCloudIcon
+    case 'stripe':
+      return StripeIcon
+    case 'link':
+    default:
+      return LinkIcon
+  }
+}
+
+// Brand-aware chip color. Used by the Links list on the project card so
+// each external ref reads like the service it points at (Supabase green,
+// Figma red-ish gradient, GitHub neutral but darker than a plain link).
+function refChipPalette(
+  kind: DisplayBrand,
+  fallback: string
+): { wrapper: string; icon: string } {
+  switch (kind) {
+    case 'gdocs':
+      return {
+        wrapper: 'border-blue-500/40 bg-blue-500/5',
+        icon: ''
+      }
+    case 'resend':
+      return {
+        // Resend's brand is near-black, high-contrast tile.
+        wrapper: 'border-zinc-400/40 bg-zinc-500/5',
+        icon: 'text-zinc-900 dark:text-zinc-100'
+      }
+    case 'godaddy':
+      return {
+        // GoDaddy heart paints in their signature teal.
+        wrapper: 'border-teal-500/40 bg-teal-500/5',
+        icon: 'text-teal-500'
+      }
+    case 'wordpress':
+      return {
+        // WordPress brand blue (#21759B). Closest Tailwind hue is sky.
+        wrapper: 'border-sky-500/40 bg-sky-500/5',
+        icon: 'text-sky-600 dark:text-sky-400'
+      }
+    case 'supabase':
+      return {
+        wrapper: 'border-emerald-500/40 bg-emerald-500/5',
+        icon: 'text-emerald-500'
+      }
+    case 'github':
+      return {
+        wrapper: 'border-zinc-400/40 bg-zinc-500/5',
+        icon: 'text-zinc-900 dark:text-zinc-100'
+      }
+    case 'figma':
+      return {
+        // Figma icon is multi-color in the SVG itself - the wrapper just
+        // gives it a pink/violet tint so the row reads as branded.
+        wrapper: 'border-pink-500/40 bg-pink-500/5',
+        icon: ''
+      }
+    case 'verbivore':
+      return {
+        // The workspace's own brand - light gold tint so it reads as
+        // "ours" against the third-party rows.
+        wrapper: 'border-amber-400/40 bg-amber-400/5',
+        icon: ''
+      }
+    case 'vercel':
+      return {
+        // Vercel's mark is the classic black triangle; high-contrast tile.
+        wrapper: 'border-zinc-400/40 bg-zinc-500/5',
+        icon: 'text-zinc-900 dark:text-zinc-100'
+      }
+    case 'bunny':
+      return {
+        // Bunny's brand is orange. Rabbit icon is line-art so it tints
+        // cleanly via currentColor.
+        wrapper: 'border-orange-500/40 bg-orange-500/5',
+        icon: 'text-orange-500'
+      }
+    case 'sentry':
+      return {
+        // Sentry's brand purple.
+        wrapper: 'border-purple-500/40 bg-purple-500/5',
+        icon: 'text-purple-600 dark:text-purple-400'
+      }
+    case 'gcloud':
+      return {
+        // Google Cloud icon is multi-colour in the SVG itself; wrapper is
+        // a neutral Google-blue-ish tint.
+        wrapper: 'border-blue-500/30 bg-blue-500/5',
+        icon: ''
+      }
+    case 'stripe':
+      return {
+        // Stripe's "blurple" - indigo/violet sits closest in Tailwind.
+        wrapper: 'border-indigo-500/40 bg-indigo-500/5',
+        icon: 'text-indigo-500'
+      }
+    default:
+      return { wrapper: fallback, icon: 'text-zinc-500' }
+  }
+}
+
+// Display ordering for ref chips. GitHub goes first since members hit it
+// most often (code / PRs / issues), then the data + infra surfaces, then
+// design, then the brand's own properties, then generic sub-kinds. Any
+// kind not listed falls to the end.
+const REF_KIND_ORDER: TaskExternalRefKind[] = [
+  'github',
+  'pr',
+  'issue',
+  'commit',
+  'supabase',
+  'vercel',
+  'gcloud',
+  'stripe',
+  'bunny',
+  'sentry',
+  'figma',
+  'verbivore',
+  'doc',
+  'link'
+]
+
+function refRank(kind: TaskExternalRefKind): number {
+  const i = REF_KIND_ORDER.indexOf(kind)
+  return i === -1 ? REF_KIND_ORDER.length : i
+}
+
+function sortRefsByImportance<T extends { kind: TaskExternalRefKind }>(
+  refs: T[]
+): T[] {
+  return [...refs].sort((a, b) => refRank(a.kind) - refRank(b.kind))
+}
+
+function LinkRow({
+  refData,
+  onRemove,
+  onRename,
+  stop
+}: {
+  refData: ProjectExternalRef
+  onRemove: (refId: string) => void
+  onRename: (refId: string, label: string | null) => void
+  stop: (e: React.MouseEvent | React.KeyboardEvent) => void
+}) {
+  const { t } = useDashTheme()
+  const parsed = parseExternalRef(refData.url)
+  const fallbackLabel = parsed ? defaultExternalRefLabel(parsed) : refData.url
+  const displayLabel = refData.label ?? fallbackLabel
+  const brand = displayBrand(refData)
+  const Icon = refIconForKind(brand)
+  const palette = refChipPalette(brand, t.surfaceMuted)
+
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(refData.label ?? '')
+
+  const startEdit = (e: React.MouseEvent | React.KeyboardEvent) => {
+    stop(e)
+    setDraft(refData.label ?? '')
+    setEditing(true)
+  }
+
+  const commit = () => {
+    const next = draft.trim()
+    const normalized = next.length === 0 ? null : next
+    if (normalized !== refData.label) onRename(refData.id, normalized)
+    setEditing(false)
+  }
+
+  return (
+    <li
+      className={`group flex items-center gap-2 rounded-md border px-2 py-1 ${palette.wrapper}`}
+    >
+      <Icon className={`size-3 shrink-0 ${palette.icon}`} />
+      {editing ? (
+        <input
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              commit()
+            } else if (e.key === 'Escape') {
+              e.preventDefault()
+              setEditing(false)
+            }
+          }}
+          onClick={stop}
+          placeholder={fallbackLabel}
+          className={`h-5 min-w-0 flex-1 rounded border-0 bg-transparent text-[11px] outline-none ${t.text}`}
+        />
+      ) : (
+        <a
+          href={refData.url}
+          target="_blank"
+          rel="noreferrer noopener"
+          onClick={stop}
+          className={`flex min-w-0 flex-1 items-center gap-1 text-[11px] ${t.text}`}
+          title={refData.url}
+        >
+          <span className="truncate">{displayLabel}</span>
+          <ExternalLink className={`size-2.5 shrink-0 ${t.textSubtle}`} />
+        </a>
+      )}
+      {!editing && (
+        <button
+          onClick={startEdit}
+          className={`flex size-4 items-center justify-center rounded opacity-0 transition group-hover:opacity-100 ${t.tab}`}
+          aria-label="Rename link"
+        >
+          <Pencil className="size-2.5" />
+        </button>
+      )}
+      <button
+        onClick={() => onRemove(refData.id)}
+        className={`flex size-4 items-center justify-center rounded opacity-0 transition group-hover:opacity-100 ${t.tab}`}
+        aria-label="Remove link"
+      >
+        <X className="size-2.5" />
+      </button>
+    </li>
+  )
+}
+
+function ProjectLinksField({
+  refs,
+  onAdd,
+  onRemove,
+  onRename,
+  stop
+}: {
+  refs: ProjectExternalRef[]
+  onAdd: (url: string) => void
+  onRemove: (refId: string) => void
+  onRename: (refId: string, label: string | null) => void
+  stop: (e: React.MouseEvent | React.KeyboardEvent) => void
+}) {
+  const { t } = useDashTheme()
+  const [adding, setAdding] = useState(false)
+  const [url, setUrl] = useState('')
+  const [err, setErr] = useState<string | null>(null)
+
+  const submit = () => {
+    const trimmed = url.trim()
+    if (!trimmed) return
+    const parsed = parseExternalRef(trimmed)
+    if (!parsed) {
+      setErr('Not a valid URL.')
+      return
+    }
+    onAdd(parsed.url)
+    setUrl('')
+    setErr(null)
+    setAdding(false)
+  }
+
+  if (refs.length === 0 && !adding) {
+    return (
+      <button
+        onClick={(e) => {
+          stop(e)
+          setAdding(true)
+        }}
+        className={`flex items-center gap-1.5 self-start text-[11px] ${t.textSubtle} hover:${t.text}`}
+      >
+        <LinkIcon className="size-3" /> Add doc or link
+      </button>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5" onClick={stop}>
+      <div className="flex items-center justify-between">
+        <span
+          className={`text-[10px] tracking-[0.22em] uppercase ${t.textMuted}`}
+        >
+          Links
+        </span>
+        {!adding && (
+          <button
+            onClick={() => setAdding(true)}
+            className={`flex h-5 items-center gap-1 rounded-md border px-1.5 text-[10px] transition ${t.btn}`}
+          >
+            <Plus className="size-2.5" /> Add
+          </button>
+        )}
+      </div>
+      <ul className="flex flex-col gap-1">
+        {refs.map((ref) => (
+          <LinkRow
+            key={ref.id}
+            refData={ref}
+            onRemove={onRemove}
+            onRename={onRename}
+            stop={stop}
+          />
+        ))}
+      </ul>
+
+      {adding && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            submit()
+          }}
+          className="flex items-center gap-1"
+        >
+          <input
+            autoFocus
+            type="url"
+            value={url}
+            onChange={(e) => {
+              setUrl(e.target.value)
+              if (err) setErr(null)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setUrl('')
+                setErr(null)
+                setAdding(false)
+              }
+            }}
+            placeholder="Paste a Google Doc, Notion, PR, or any URL…"
+            className={`h-7 flex-1 rounded-md border px-2 text-[11px] ${t.input}`}
+          />
+          <button
+            type="submit"
+            disabled={!url.trim()}
+            className={`flex h-7 items-center justify-center rounded-md px-2 disabled:opacity-50 ${t.accent}`}
+          >
+            <Check className="size-3" />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setUrl('')
+              setErr(null)
+              setAdding(false)
+            }}
+            className={`flex size-7 items-center justify-center rounded-md border ${t.btn}`}
+          >
+            <X className="size-3" />
+          </button>
+        </form>
+      )}
+      {err && <p className="text-[10px] text-red-500">{err}</p>}
+    </div>
+  )
+}
+
+function EmptyState({ canEdit }: { canEdit: boolean }) {
+  const { t } = useDashTheme()
+  return (
+    <div
+      className={`flex flex-col items-center gap-2 rounded-xl border border-dashed py-12 text-center ${t.border}`}
+    >
+      <p className={`text-sm ${t.text}`}>
+        {canEdit ? 'No projects yet' : 'No projects assigned to you yet'}
+      </p>
+      <p className={`max-w-sm text-xs ${t.textMuted}`}>
+        {canEdit
+          ? 'Click "New project" above to create the first one.'
+          : 'When a task is assigned to you, the project it belongs to will show up here.'}
+      </p>
+    </div>
+  )
+}

@@ -176,15 +176,15 @@ const MarketplacePanel = nextDynamic(() => import('./MarketplacePanel'), {
   loading: PanelLoading
 })
 const ProjectsPanel = nextDynamic(
-  () => import('./Panels').then((m) => m.ProjectsPanel),
+  () => import('./ProjectsPanel').then((m) => m.ProjectsPanel),
   { loading: PanelLoading }
 )
 const SettingsPanel = nextDynamic(
-  () => import('./Panels').then((m) => m.SettingsPanel),
+  () => import('./SettingsPanel').then((m) => m.SettingsPanel),
   { loading: PanelLoading }
 )
 const UpdatesPanel = nextDynamic(
-  () => import('./Panels').then((m) => m.UpdatesPanel),
+  () => import('./UpdatesPanel').then((m) => m.UpdatesPanel),
   { loading: PanelLoading }
 )
 
