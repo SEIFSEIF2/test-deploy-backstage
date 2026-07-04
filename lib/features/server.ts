@@ -35,10 +35,16 @@ export const getWorkspaceBranding = cache(
     const member = await getCurrentTeamMember()
     if (!member) return EMPTY_BRANDING
     const supabase = createAdminClient()
-    const { data } = await supabase
+    // The FK hint is required: companies.owner_id also points at
+    // team_members, so a bare companies(...) embed is ambiguous and
+    // PostgREST rejects it.
+    const { data, error } = await supabase
       .from('team_members')
-      .select('company_id, companies(id, name, logo_url, enabled_features)')
+      .select(
+        'company_id, companies!crew_member_company_id_fkey(id, name, logo_url, enabled_features)'
+      )
       .eq('user_id', member.userId)
+    if (error) console.error('[branding] membership query failed', error)
     const rows = data ?? []
     const workspaces: WorkspaceSummary[] = rows.flatMap((r) =>
       r.companies
