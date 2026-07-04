@@ -18,7 +18,7 @@ underlying database. The boundary lived in decision
 For the Verbivore rebrand a brand-new Supabase project was created:
 
 - name: `Backstage`
-- ref: `nkvgvfdmtvdabtpppanj`
+- ref: redacted for the public repo
 - region: eu-central-1
 - Postgres 17
 
@@ -80,7 +80,7 @@ file by file, with RLS policies written alongside. Until that pass:
 The existing TS seed `prisma/seed.ts` already creates the six auth
 users with the service-role admin client and inserts the rest through
 Prisma. With the new `.env.local` pointing at project
-`nkvgvfdmtvdabtpppanj`, `pnpm db:seed` works against it as-is. Port to
+the new project, `pnpm db:seed` works against it as-is. Port to
 a pure-SQL seed lands later, alongside the dal.ts migration.
 
 ### RLS policy plan (deferred)
