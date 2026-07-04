@@ -99,17 +99,15 @@ export async function joinQuickRoom(): Promise<
   const now = new Date().toISOString()
   // Preserve joined_at if a row already exists by only updating the
   // heartbeat on conflict (insert-or-bump pattern).
-  const { error } = await supabase
-    .from('quick_room_presence')
-    .upsert(
-      {
-        company_id: member.companyId,
-        member_id: member.id,
-        joined_at: now,
-        last_heartbeat: now
-      },
-      { onConflict: 'company_id,member_id', ignoreDuplicates: false }
-    )
+  const { error } = await supabase.from('quick_room_presence').upsert(
+    {
+      company_id: member.companyId,
+      member_id: member.id,
+      joined_at: now,
+      last_heartbeat: now
+    },
+    { onConflict: 'company_id,member_id', ignoreDuplicates: false }
+  )
   if (error) return { error: error.message }
   // Opportunistic cleanup so other clients' postgres_changes feed picks
   // up the DELETE events for stale presences without a separate cron.

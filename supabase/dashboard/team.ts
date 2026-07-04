@@ -184,11 +184,7 @@ const LOGIN_EMAIL_DOMAIN = config.emailDomain
 const InviteInput = z.object({
   // The contact email the admin types - where the invite mail is sent
   // and what becomes the recipient's contact_email on team_members.
-  contactEmail: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .email('Enter a valid email.'),
+  contactEmail: z.string().trim().toLowerCase().email('Enter a valid email.'),
   fullName: z.string().trim().min(1, 'Name is required.').max(120),
   accessTier: z.enum(['admin', 'lead', 'member'])
 })
@@ -242,9 +238,7 @@ async function pickLoginEmail(
   return `${handle}.${Date.now()}@${LOGIN_EMAIL_DOMAIN}`
 }
 
-export async function inviteMember(
-  input: z.input<typeof InviteInput>
-): Promise<
+export async function inviteMember(input: z.input<typeof InviteInput>): Promise<
   | {
       ok: true
       loginEmail: string
@@ -260,7 +254,9 @@ export async function inviteMember(
     return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
   }
   if (!canInvite(actor, parsed.data.accessTier)) {
-    return { error: 'You can only invite at that tier if you are an admin or owner.' }
+    return {
+      error: 'You can only invite at that tier if you are an admin or owner.'
+    }
   }
 
   const me = await getCurrentTeamMember()
@@ -397,9 +393,7 @@ async function sendInviteEmailSafely(input: {
     })
     if (!res.ok) {
       const reason = res.reason ?? 'unknown'
-      console.error(
-        `[team-invite] send failed to=${input.to} reason=${reason}`
-      )
+      console.error(`[team-invite] send failed to=${input.to} reason=${reason}`)
       return { ok: false, reason }
     }
     return { ok: true }
@@ -508,9 +502,7 @@ export async function resendWelcomeToMember(
 
   const { data: member } = await supabase
     .from('team_members')
-    .select(
-      'id, email, contact_email, full_name, access_tier, company_id'
-    )
+    .select('id, email, contact_email, full_name, access_tier, company_id')
     .eq('id', memberId)
     .maybeSingle()
   if (!member || member.company_id !== me.companyId) {
@@ -910,9 +902,11 @@ export async function updateMyTimezone(
   // Reject anything that isn't a real IANA zone the runtime knows.
   let supported: string[]
   try {
-    supported = (Intl as unknown as {
-      supportedValuesOf: (k: string) => string[]
-    }).supportedValuesOf('timeZone')
+    supported = (
+      Intl as unknown as {
+        supportedValuesOf: (k: string) => string[]
+      }
+    ).supportedValuesOf('timeZone')
   } catch {
     supported = []
   }
@@ -934,8 +928,7 @@ export async function updateMyTimezone(
 export async function acceptInvite(input: {
   token: string
 }): Promise<
-  | { ok: true; loginEmail: string; attached?: boolean }
-  | { error: string }
+  { ok: true; loginEmail: string; attached?: boolean } | { error: string }
 > {
   if (!input.token) return { error: 'Invite not found.' }
   const supabase = createAdminClient()
@@ -1009,12 +1002,13 @@ export async function acceptInvite(input: {
   // point at its id. The fixed default password is INVITE_DEFAULT_PASSWORD
   // (also surfaced in the invite email); the recipient is forced to
   // change it via the onboarding-step-1 gate on first sign-in.
-  const { data: created, error: authErr } = await supabase.auth.admin.createUser({
-    email: invite.email,
-    password: INVITE_DEFAULT_PASSWORD,
-    email_confirm: true,
-    user_metadata: { full_name: invite.full_name }
-  })
+  const { data: created, error: authErr } =
+    await supabase.auth.admin.createUser({
+      email: invite.email,
+      password: INVITE_DEFAULT_PASSWORD,
+      email_confirm: true,
+      user_metadata: { full_name: invite.full_name }
+    })
   if (authErr || !created?.user) {
     return { error: authErr?.message ?? 'Could not create account.' }
   }
@@ -1053,9 +1047,7 @@ export async function acceptInvite(input: {
 // Light read for the /invite/[token] page so it can show the company
 // name, role, and the login credentials to expect before the recipient
 // clicks Accept.
-export async function fetchInviteByToken(
-  token: string
-): Promise<
+export async function fetchInviteByToken(token: string): Promise<
   | {
       invite: {
         loginEmail: string

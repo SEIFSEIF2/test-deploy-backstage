@@ -53,7 +53,9 @@ export function FirstRunWizard({ onDone }: { onDone: () => void }) {
       setBusy(null)
       return
     }
-    toast.success(`${OPTIONS.find((o) => o.id === preset)?.label} preset enabled.`)
+    toast.success(
+      `${OPTIONS.find((o) => o.id === preset)?.label} preset enabled.`
+    )
     startTransition(() => {
       router.refresh()
       onDone()

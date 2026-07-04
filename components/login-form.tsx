@@ -21,8 +21,7 @@ const validators = {
       : /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)
         ? undefined
         : 'Enter a valid email',
-  password: (v: string) =>
-    v.length === 0 ? 'Password is required' : undefined
+  password: (v: string) => (v.length === 0 ? 'Password is required' : undefined)
 }
 
 type FieldErrors = Partial<Record<'email' | 'password', string>>
@@ -32,7 +31,10 @@ export function LoginForm({
   redirectTo,
   logoUrl,
   ...props
-}: React.ComponentProps<'div'> & { redirectTo: string; logoUrl?: string | null }) {
+}: React.ComponentProps<'div'> & {
+  redirectTo: string
+  logoUrl?: string | null
+}) {
   const [state, formAction, pending] = useActionState<LoginState, FormData>(
     signIn,
     undefined

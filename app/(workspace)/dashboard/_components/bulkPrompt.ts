@@ -66,9 +66,7 @@ export function buildBulkTaskPrompt(ctx: {
     ctx.labels.length > 0
       ? ctx.labels.map((l) => `  - ${l.name}`).join('\n')
       : '  (none — leave labels as [])'
-  const projectLine = ctx.projectName
-    ? `\nProject: ${ctx.projectName}\n`
-    : ''
+  const projectLine = ctx.projectName ? `\nProject: ${ctx.projectName}\n` : ''
   const existingTasks = ctx.existingTasks ?? []
   const taskLines =
     existingTasks.length > 0
@@ -176,8 +174,7 @@ export function parseBulkTaskJson(
     // The single most common cause is unescaped double-quotes inside a
     // string value (e.g. HTML like <a href="/"> pasted into a title),
     // so we lead with that hint when the message points at a string.
-    const detail =
-      e instanceof Error ? e.message : 'unknown parse error'
+    const detail = e instanceof Error ? e.message : 'unknown parse error'
     const hint = /Expected ['",}] /.test(detail)
       ? ' Often this means a string contains an unescaped " quote. Escape it as \\" or wrap the value in single quotes.'
       : ''
@@ -278,7 +275,10 @@ export function parseBulkTaskJson(
     const unknownRelations: { kind: string; ref: string }[] = []
     if (Array.isArray(r.relations)) {
       for (const raw of r.relations) {
-        const kindRaw = (raw?.kind ?? '').trim().toLowerCase().replace(/-/g, '_')
+        const kindRaw = (raw?.kind ?? '')
+          .trim()
+          .toLowerCase()
+          .replace(/-/g, '_')
         const refRaw = (raw?.ref ?? '').trim()
         if (!kindRaw && !refRaw) continue
         if (!validRelationKinds.has(kindRaw as RelationKindLite) || !refRaw) {
@@ -288,10 +288,7 @@ export function parseBulkTaskJson(
           )
           continue
         }
-        if (
-          validRefs.size > 0 &&
-          !validRefs.has(refRaw.toLowerCase())
-        ) {
+        if (validRefs.size > 0 && !validRefs.has(refRaw.toLowerCase())) {
           unknownRelations.push({ kind: kindRaw, ref: refRaw })
           warnings.push(
             `Skipped relation to "${refRaw}" — that ref doesn't exist.`

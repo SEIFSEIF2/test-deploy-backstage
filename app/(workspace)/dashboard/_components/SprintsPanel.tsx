@@ -344,9 +344,7 @@ export default function SprintsPanel({
             `Moved ${res.moved} task${res.moved === 1 ? '' : 's'}, ${errorCount} failed.`
           )
         } else {
-          toast.success(
-            `Moved ${res.moved} task${res.moved === 1 ? '' : 's'}.`
-          )
+          toast.success(`Moved ${res.moved} task${res.moved === 1 ? '' : 's'}.`)
         }
         refreshDashboard()
         resolve({ ok: true, moved: res.moved, errors: errorCount })
@@ -553,13 +551,16 @@ export default function SprintsPanel({
                       <>
                         <div>
                           <span className="font-medium">{pendingEnd.name}</span>{' '}
-                          will be marked completed. Unfinished tasks roll into the
-                          next sprint with a <em>Carried</em> badge.
+                          will be marked completed. Unfinished tasks roll into
+                          the next sprint with a <em>Carried</em> badge.
                         </div>
                         <div className="rounded-md border border-zinc-200 bg-zinc-50 p-2 text-xs dark:border-white/10 dark:bg-white/5">
                           <div className="flex items-center gap-2">
                             <CheckCircle2 className="size-3.5 text-emerald-500" />
-                            <span>{pendingEnd.completedCount} done · will be archived to this sprint card</span>
+                            <span>
+                              {pendingEnd.completedCount} done · will be
+                              archived to this sprint card
+                            </span>
                           </div>
                           <div className="mt-1 flex items-center gap-2">
                             <RefreshCw className="size-3.5 text-rose-500" />
@@ -852,7 +853,8 @@ function SprintCard({
               <summary
                 className={`cursor-pointer list-none text-[10px] tracking-wider uppercase ${t.textSubtle} hover:opacity-80 [&::-webkit-details-marker]:hidden`}
               >
-                Definition of Done <span className="opacity-60">(click to expand)</span>
+                Definition of Done{' '}
+                <span className="opacity-60">(click to expand)</span>
               </summary>
               <p
                 className={`mt-1.5 leading-snug whitespace-pre-line ${t.textMuted}`}
@@ -862,11 +864,13 @@ function SprintCard({
             </details>
           )}
           {sprint.status === 'completed' && (
-            <div className={`mt-1 flex items-center gap-2 text-[11px] ${t.textMuted}`}>
+            <div
+              className={`mt-1 flex items-center gap-2 text-[11px] ${t.textMuted}`}
+            >
               <CheckCircle2 className="size-3 text-emerald-500" />
               <span>
-                Shipped: {sprint.shippedCount ?? sprint.completedCount} · Carried:{' '}
-                {sprint.carriedCount ?? 0}
+                Shipped: {sprint.shippedCount ?? sprint.completedCount} ·
+                Carried: {sprint.carriedCount ?? 0}
               </span>
             </div>
           )}
@@ -995,9 +999,7 @@ function SprintCard({
               <li
                 key={task.id}
                 className={`group flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs ${t.column} ${
-                  selectMode && checked
-                    ? 'ring-2 ring-teal-500/40'
-                    : ''
+                  selectMode && checked ? 'ring-2 ring-teal-500/40' : ''
                 }`}
               >
                 {selectMode && (
@@ -1011,7 +1013,9 @@ function SprintCard({
                 )}
                 <button
                   onClick={() =>
-                    selectMode ? toggleTaskSelected(task.id) : onOpenTask(task.id)
+                    selectMode
+                      ? toggleTaskSelected(task.id)
+                      : onOpenTask(task.id)
                   }
                   className="flex min-w-0 flex-1 items-center gap-2 text-left"
                 >
@@ -1111,11 +1115,7 @@ function SprintCard({
               <select
                 value={moveTargetSprintId}
                 onChange={(e) => setMoveTargetSprintId(e.target.value)}
-                disabled={
-                  movePending ||
-                  !moveTargetProjectId ||
-                  sprintsLoading
-                }
+                disabled={movePending || !moveTargetProjectId || sprintsLoading}
                 className={`h-9 rounded-md border px-2 text-xs ${t.input}`}
               >
                 <option value="">
@@ -1145,9 +1145,7 @@ function SprintCard({
             <button
               onClick={handleMove}
               disabled={
-                movePending ||
-                selectedIds.size === 0 ||
-                !moveTargetProjectId
+                movePending || selectedIds.size === 0 || !moveTargetProjectId
               }
               className={`h-8 rounded-md px-3 text-xs disabled:opacity-50 ${t.accent}`}
             >

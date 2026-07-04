@@ -8,7 +8,7 @@ import type { Database } from './types'
 // Node 20 has no native WebSocket; @supabase/realtime-js throws without one.
 // See docs/decisions/0010-auth-architecture.md.
 if (typeof globalThis.WebSocket === 'undefined') {
-  (globalThis as unknown as { WebSocket: unknown }).WebSocket = WebSocket
+  ;(globalThis as unknown as { WebSocket: unknown }).WebSocket = WebSocket
 }
 
 // Supabase client used inside the Next.js 16 proxy.ts file at the repo root.

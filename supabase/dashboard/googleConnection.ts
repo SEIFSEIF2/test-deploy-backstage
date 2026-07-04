@@ -46,9 +46,8 @@ export async function getGoogleConnectionStatus(): Promise<
       connectedByName: null
     }
   }
-  const connectedByName = (
-    data.member as { full_name: string } | null
-  )?.full_name ?? null
+  const connectedByName =
+    (data.member as { full_name: string } | null)?.full_name ?? null
   return {
     configured,
     connected: true,
@@ -60,7 +59,9 @@ export async function getGoogleConnectionStatus(): Promise<
   }
 }
 
-export async function disconnectGoogle(): Promise<{ ok: true } | { error: string }> {
+export async function disconnectGoogle(): Promise<
+  { ok: true } | { error: string }
+> {
   const member = await getCurrentTeamMember()
   if (!member) return { error: 'Not signed in.' }
   if (member.accessTier !== 'admin') {

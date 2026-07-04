@@ -79,12 +79,11 @@ export default function TrashPanel({ accessTier }: TrashPanelProps) {
         task back in its project with its history intact.
       </p>
 
-      {isLoading && (
-        <div className="text-sm text-zinc-500">Loading trash…</div>
-      )}
+      {isLoading && <div className="text-sm text-zinc-500">Loading trash…</div>}
       {isError && (
         <div className="text-sm text-rose-600">
-          Could not load trash: {error instanceof Error ? error.message : 'unknown error'}
+          Could not load trash:{' '}
+          {error instanceof Error ? error.message : 'unknown error'}
         </div>
       )}
 
@@ -97,14 +96,16 @@ export default function TrashPanel({ accessTier }: TrashPanelProps) {
       {data && data.length > 0 && (
         <div className="overflow-x-auto rounded-lg border border-zinc-200">
           <table className="w-full border-collapse text-sm">
-            <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-500">
+            <thead className="bg-zinc-50 text-left text-xs tracking-wide text-zinc-500 uppercase">
               <tr>
                 <th className="w-28 px-3 py-2 font-medium">Ref</th>
                 <th className="px-3 py-2 font-medium">Title</th>
                 <th className="w-40 px-3 py-2 font-medium">Project</th>
                 <th className="w-44 px-3 py-2 font-medium">Deleted by</th>
                 <th className="w-44 px-3 py-2 font-medium">Deleted at</th>
-                <th className="w-32 px-3 py-2 text-right font-medium">Action</th>
+                <th className="w-32 px-3 py-2 text-right font-medium">
+                  Action
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-200">

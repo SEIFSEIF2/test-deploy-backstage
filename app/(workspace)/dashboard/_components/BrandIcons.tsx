@@ -3,7 +3,6 @@
 // Each component accepts `className` so the parent can size + color them
 // the same way it sizes lucide icons.
 
-
 interface BrandProps {
   className?: string
 }

@@ -48,10 +48,7 @@ const PRIORITIES: TaskPriority[] = ['urgent', 'high', 'medium', 'low', 'none']
 
 type DueState = 'overdue' | 'due-soon' | 'normal' | 'none'
 
-function dueState(
-  dueAt: string | undefined,
-  status: TaskStatus
-): DueState {
+function dueState(dueAt: string | undefined, status: TaskStatus): DueState {
   if (!dueAt) return 'none'
   if (status === 'done' || status === 'canceled' || status === 'duplicate') {
     return 'normal'
@@ -104,7 +101,7 @@ export default function TaskCard({
         ref={sortable.setNodeRef}
         style={dndStyle}
         {...sortable.attributes}
-        className="rounded-lg border-2 border-dashed border-teal-400/60 bg-teal-500/5 px-3 py-2.5 min-h-[78px]"
+        className="min-h-[78px] rounded-lg border-2 border-dashed border-teal-400/60 bg-teal-500/5 px-3 py-2.5"
         aria-hidden
       />
     )
@@ -243,22 +240,22 @@ export default function TaskCard({
       data-card
       data-tour="task-card"
       data-selected={selected ? 'true' : undefined}
-      className={`group w-full text-left rounded-lg border transition flex flex-col ${
-        compact ? 'px-2 py-1.5 gap-1' : 'px-3 py-2.5 gap-2'
+      className={`group flex w-full flex-col rounded-lg border text-left transition ${
+        compact ? 'gap-1 px-2 py-1.5' : 'gap-2 px-3 py-2.5'
       } ${t.card} ${
         selected
-          ? 'ring-2 ring-teal-500/40 border-teal-400 dark:border-teal-400/60 shadow-sm'
+          ? 'border-teal-400 shadow-sm ring-2 ring-teal-500/40 dark:border-teal-400/60'
           : ''
       } ${draggable ? 'touch-none' : ''}`}
     >
       <div className="flex items-center justify-between gap-2">
         <span
-          className={`text-[10px] uppercase tracking-[0.18em] ${t.textSubtle}`}
+          className={`text-[10px] tracking-[0.18em] uppercase ${t.textSubtle}`}
         >
           {task.ref}
         </span>
         <span
-          className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${pill}`}
+          className={`rounded border px-1.5 py-0.5 text-[10px] tracking-wider uppercase ${pill}`}
         >
           {status.label}
         </span>
@@ -276,7 +273,7 @@ export default function TaskCard({
             <span
               key={`${r.kind}-${r.ref}-${i}`}
               title={`${RELATION_LABEL[r.kind]} ${r.ref}`}
-              className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] uppercase tracking-wider ${t.metaTag}`}
+              className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] tracking-wider uppercase ${t.metaTag}`}
             >
               <RelationIcon kind={r.kind} className="size-3" />
               {r.ref}
@@ -285,7 +282,9 @@ export default function TaskCard({
         </div>
       )}
 
-      <div className={`flex items-center justify-between gap-2 ${compact ? '' : 'mt-1'}`}>
+      <div
+        className={`flex items-center justify-between gap-2 ${compact ? '' : 'mt-1'}`}
+      >
         <div className="flex items-center gap-2">
           <span
             title={PRIORITY_LABEL[task.priority]}
@@ -296,7 +295,7 @@ export default function TaskCard({
           {task.tags?.slice(0, 1).map((tag) => (
             <span
               key={tag}
-              className={`text-[10px] uppercase tracking-wider rounded px-1.5 py-0.5 border ${t.metaTag}`}
+              className={`rounded border px-1.5 py-0.5 text-[10px] tracking-wider uppercase ${t.metaTag}`}
             >
               {tag}
             </span>
@@ -312,7 +311,7 @@ export default function TaskCard({
                     ? 'Due within 48h'
                     : undefined
               }
-              className={`text-[10px] uppercase tracking-wider ${
+              className={`text-[10px] tracking-wider uppercase ${
                 DUE_TEXT_CLASS[due] || t.textMuted
               }`}
             >
@@ -338,9 +337,7 @@ export default function TaskCard({
                   className={`inline-flex h-5 items-center gap-0.5 rounded-full border px-1.5 text-[10px] ${t.btn}`}
                 >
                   <span className="text-[11px] leading-none">{emoji}</span>
-                  {count > 1 && (
-                    <span className="tabular-nums">{count}</span>
-                  )}
+                  {count > 1 && <span className="tabular-nums">{count}</span>}
                 </span>
               ))
           })()}

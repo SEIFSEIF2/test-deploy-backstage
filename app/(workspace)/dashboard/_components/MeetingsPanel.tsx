@@ -53,12 +53,7 @@ type MeetingItem = {
   meetLink: string | null
   // Populated on completed meetings so the History view can render
   // the recap inline without re-fetching.
-  outcome:
-    | 'resolved'
-    | 'partial'
-    | 'needs_followup'
-    | 'failed'
-    | null
+  outcome: 'resolved' | 'partial' | 'needs_followup' | 'failed' | null
   reviewNotes: string | null
   reviewedAt: string | null
 }
@@ -90,8 +85,7 @@ export function MeetingsPanel({
   const { open: openPortfolio } = usePortfolioSheet()
   const team = useTeam()
   const isPlanner = accessTier === 'admin' || accessTier === 'lead'
-  const viewerTz =
-    team.find((m) => m.id === currentUserId)?.timezone ?? null
+  const viewerTz = team.find((m) => m.id === currentUserId)?.timezone ?? null
 
   const [view, setView] = useState<ViewMode>('month')
   const [anchor, setAnchor] = useState<Date>(() => startOfDay(new Date()))
@@ -134,9 +128,7 @@ export function MeetingsPanel({
       const endsAt = startsAt
         ? new Date(startsAt.getTime() + r.durationMin * 60_000)
         : null
-      const bucketDay = startsAt
-        ? isoDateKey(startsAt)
-        : r.proposedDate ?? ''
+      const bucketDay = startsAt ? isoDateKey(startsAt) : (r.proposedDate ?? '')
       if (!bucketDay) continue
       byId.set(r.id, {
         kind: 'meeting',
@@ -173,9 +165,7 @@ export function MeetingsPanel({
       // bucketDay falls back to created_at-ish for history rows that
       // have neither selectedStartsAt nor proposed_date - we never
       // sort by it here, but keep the field type-consistent.
-      const bucketDay = startsAt
-        ? isoDateKey(startsAt)
-        : r.proposedDate ?? ''
+      const bucketDay = startsAt ? isoDateKey(startsAt) : (r.proposedDate ?? '')
       byId.set(r.id, {
         kind: 'meeting',
         id: r.id,
@@ -256,7 +246,12 @@ export function MeetingsPanel({
   // but those still need to count towards "Pending approval" etc.
   const statRows = useMemo(() => {
     const seen = new Set<string>()
-    const out: { id: string; status: string; requesterId: string; attendees: { id: string }[] }[] = []
+    const out: {
+      id: string
+      status: string
+      requesterId: string
+      attendees: { id: string }[]
+    }[] = []
     for (const r of [...(pendingQuery.data ?? []), ...(mineQuery.data ?? [])]) {
       if (seen.has(r.id)) continue
       seen.add(r.id)
@@ -472,15 +467,13 @@ function Stats({
     title: 'Past meetings that need a quick outcome note'
   })
   return (
-    <div
-      className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5"
-    >
+    <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
       {cards.map((c) => (
         <button
           key={c.label}
           onClick={c.onClick}
           title={c.title}
-          className={`rounded-lg border p-2.5 text-left transition hover:bg-teal-500/5 hover:border-teal-500/40 ${t.border}`}
+          className={`rounded-lg border p-2.5 text-left transition hover:border-teal-500/40 hover:bg-teal-500/5 ${t.border}`}
         >
           <div
             className={`truncate text-[10px] tracking-wider uppercase ${t.textMuted}`}
@@ -488,13 +481,10 @@ function Stats({
           >
             {c.label}
           </div>
-          <div className={`mt-0.5 text-xl font-semibold tabular-nums ${c.tone}`}>
-            <CountUp
-              end={c.value}
-              duration={0.6}
-              preserveValue
-              useEasing
-            />
+          <div
+            className={`mt-0.5 text-xl font-semibold tabular-nums ${c.tone}`}
+          >
+            <CountUp end={c.value} duration={0.6} preserveValue useEasing />
           </div>
         </button>
       ))}
@@ -646,17 +636,15 @@ function MonthView({
       map.set(m.bucketDay, list)
     }
     for (const list of map.values()) {
-      list.sort((a, b) =>
-        (a.startsAt?.getTime() ?? 0) - (b.startsAt?.getTime() ?? 0)
+      list.sort(
+        (a, b) => (a.startsAt?.getTime() ?? 0) - (b.startsAt?.getTime() ?? 0)
       )
     }
     return map
   }, [meetings])
 
   return (
-    <div
-      className={`overflow-hidden rounded-lg border ${t.border}`}
-    >
+    <div className={`overflow-hidden rounded-lg border ${t.border}`}>
       <div className="grid grid-cols-7">
         {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => (
           <div
@@ -711,9 +699,7 @@ function MonthView({
                 </button>
               ))}
               {dayMeetings.length > 3 && (
-                <span
-                  className={`text-[9px] tabular-nums ${t.textSubtle}`}
-                >
+                <span className={`text-[9px] tabular-nums ${t.textSubtle}`}>
                   +{dayMeetings.length - 3} more
                 </span>
               )}
@@ -767,8 +753,7 @@ function WeekView({
     }
     for (const list of map.values()) {
       list.sort(
-        (a, b) =>
-          (a.startsAt?.getTime() ?? 0) - (b.startsAt?.getTime() ?? 0)
+        (a, b) => (a.startsAt?.getTime() ?? 0) - (b.startsAt?.getTime() ?? 0)
       )
     }
     return map
@@ -922,9 +907,7 @@ function WeekView({
                     style={pos}
                     title={m.title}
                   >
-                    <span
-                      className={`text-[10px] tabular-nums ${t.textMuted}`}
-                    >
+                    <span className={`text-[10px] tabular-nums ${t.textMuted}`}>
                       {m.startsAt && formatTimeIn(m.startsAt, viewerTz)}
                       {m.meetLink && m.status === 'scheduled' && (
                         <Video className="ml-1 inline-block size-2.5 text-teal-600" />
@@ -954,7 +937,10 @@ function positionEvent(m: MeetingItem): React.CSSProperties | null {
   const sh = start.getHours() + start.getMinutes() / 60
   const eh = end.getHours() + end.getMinutes() / 60
   const clampedStart = Math.max(sh, GRID_START_HOUR)
-  const clampedEnd = Math.min(Math.max(eh, clampedStart + 0.25), GRID_END_HOUR + 1)
+  const clampedEnd = Math.min(
+    Math.max(eh, clampedStart + 0.25),
+    GRID_END_HOUR + 1
+  )
   const top = (clampedStart - GRID_START_HOUR) * GRID_ROW_PX
   const height = (clampedEnd - clampedStart) * GRID_ROW_PX
   return { top: `${top}px`, height: `${height}px` }
@@ -1051,7 +1037,9 @@ function ListView({
               >
                 {m.title}
               </button>
-              <div className={`mt-0.5 flex flex-wrap gap-x-2 text-[10px] ${t.textMuted}`}>
+              <div
+                className={`mt-0.5 flex flex-wrap gap-x-2 text-[10px] ${t.textMuted}`}
+              >
                 <MemberLink
                   id={m.requesterId}
                   name={m.requesterName}
@@ -1071,7 +1059,7 @@ function ListView({
                     · {formatFullDateTime(m.startsAt, viewerTz)}
                   </span>
                 )}
-                <span className={`uppercase tracking-wider ${t.textSubtle}`}>
+                <span className={`tracking-wider uppercase ${t.textSubtle}`}>
                   · {m.status}
                 </span>
               </div>
@@ -1108,7 +1096,11 @@ const HISTORY_FILTERS: {
   { id: 'all', label: 'All', match: [] },
   { id: 'scheduled', label: 'Scheduled', match: ['scheduled', 'approved'] },
   { id: 'completed', label: 'Completed', match: ['completed'] },
-  { id: 'canceled', label: 'Canceled', match: ['canceled', 'rejected', 'declined'] },
+  {
+    id: 'canceled',
+    label: 'Canceled',
+    match: ['canceled', 'rejected', 'declined']
+  },
   { id: 'pending', label: 'Pending', match: ['pending'] }
 ]
 
@@ -1126,7 +1118,8 @@ function HistoryList({
   onSelectMember: (id: string) => void
 }) {
   const { t } = useDashTheme()
-  const [filter, setFilter] = useState<(typeof HISTORY_FILTERS)[number]['id']>('all')
+  const [filter, setFilter] =
+    useState<(typeof HISTORY_FILTERS)[number]['id']>('all')
   const [query, setQuery] = useState('')
   // Track which rows have the recap panel expanded. Multiple at a time
   // is fine - the panels are small and self-contained.
@@ -1162,8 +1155,7 @@ function HistoryList({
   }, [allMeetings])
 
   const filtered = useMemo(() => {
-    const match =
-      HISTORY_FILTERS.find((f) => f.id === filter)?.match ?? []
+    const match = HISTORY_FILTERS.find((f) => f.id === filter)?.match ?? []
     const q = query.trim().toLowerCase()
     const list = allMeetings.filter((m) => {
       if (match.length > 0 && !match.includes(m.status)) return false
@@ -1281,9 +1273,7 @@ function HistoryList({
                       </span>
                     </div>
                   </div>
-                  {isExpanded && hasRecap && (
-                    <HistoryRecap meeting={m} />
-                  )}
+                  {isExpanded && hasRecap && <HistoryRecap meeting={m} />}
                 </li>
               )
             })}
@@ -1398,10 +1388,7 @@ function HistoryRecap({ meeting }: { meeting: MeetingItem }) {
   )
 }
 
-const OUTCOME_LABEL: Record<
-  NonNullable<MeetingItem['outcome']>,
-  string
-> = {
+const OUTCOME_LABEL: Record<NonNullable<MeetingItem['outcome']>, string> = {
   resolved: 'Resolved',
   partial: 'Partial',
   needs_followup: 'Needs follow-up',
@@ -1518,7 +1505,9 @@ function LegendChip({
   const { t } = useDashTheme()
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span className={`flex size-3 items-center justify-center rounded-sm ${swatch}`}>
+      <span
+        className={`flex size-3 items-center justify-center rounded-sm ${swatch}`}
+      >
         {icon}
       </span>
       <span className={t.textMuted}>{label}</span>

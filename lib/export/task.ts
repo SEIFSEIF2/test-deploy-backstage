@@ -2,15 +2,12 @@
 // button on the task detail panel and also reused by the view + project
 // + sprint exporters when they include nested tasks.
 
+import { defaultExternalRefLabel, parseExternalRef } from '@/lib/externalRef'
 import {
-  defaultExternalRefLabel,
-  parseExternalRef,
-} from '@/lib/externalRef'
-import { PRIORITY_LABEL, STATUS_BY_ID } from '@/app/(workspace)/dashboard/_components/status'
-import type {
-  ExportContext,
-  ExportOptions,
-} from './types'
+  PRIORITY_LABEL,
+  STATUS_BY_ID
+} from '@/app/(workspace)/dashboard/_components/status'
+import type { ExportContext, ExportOptions } from './types'
 import { EXPORT_VERSION } from './types'
 import type { BoardTask } from '@/app/(workspace)/dashboard/_components/boardData'
 
@@ -76,7 +73,8 @@ export function taskToMarkdown(
     lines.push('## Links')
     for (const ref of refs) {
       const parsed = parseExternalRef(ref.url)
-      const label = ref.label ?? (parsed ? defaultExternalRefLabel(parsed) : ref.url)
+      const label =
+        ref.label ?? (parsed ? defaultExternalRefLabel(parsed) : ref.url)
       lines.push(`- ${ref.kind}: [${label}](${ref.url})`)
     }
   }
@@ -145,8 +143,8 @@ export function taskToJsonObject(
       id: r.id,
       kind: r.kind,
       url: r.url,
-      label: r.label,
-    })),
+      label: r.label
+    }))
   }
 
   if (!options.withoutCommentsAndActivity) {
@@ -155,14 +153,14 @@ export function taskToJsonObject(
       author: c.author,
       body: c.body,
       at: c.at,
-      editedAt: c.editedAt ?? null,
+      editedAt: c.editedAt ?? null
     }))
     obj.activity = activity.map((a) => ({
       id: a.id,
       kind: a.kind,
       text: a.text,
       at: a.at,
-      atRaw: a.atRaw,
+      atRaw: a.atRaw
     }))
   }
 
@@ -179,7 +177,7 @@ export function taskToJson(
       version: EXPORT_VERSION,
       kind: 'task',
       exportedAt: new Date().toISOString(),
-      task: taskToJsonObject(task, ctx, options),
+      task: taskToJsonObject(task, ctx, options)
     },
     null,
     2

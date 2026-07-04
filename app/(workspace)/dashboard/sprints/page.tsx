@@ -4,9 +4,7 @@ import { redirect } from 'next/navigation'
 import { dashboardMetadata, fetchInitial } from '../_components/fetchInitial'
 import { requireFeature } from '@/lib/features/server'
 
-type RawSearchParams = Promise<
-  Record<string, string | string[] | undefined>
->
+type RawSearchParams = Promise<Record<string, string | string[] | undefined>>
 
 export async function generateMetadata({
   searchParams

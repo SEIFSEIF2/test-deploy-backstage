@@ -47,11 +47,13 @@ export async function runDueWarningsIfDue(
 
   // Atomic race winner. Postgres NOW() runs server-side; converting to
   // config.timezone gives "today" in the workspace's local calendar.
-  const { data: claim, error: claimErr } = await supabase
-    .rpc('claim_due_warning_run', {
+  const { data: claim, error: claimErr } = await supabase.rpc(
+    'claim_due_warning_run',
+    {
       p_company_id: companyId,
       p_timezone: config.timezone
-    })
+    }
+  )
   if (claimErr) {
     return { ran: false, scanned: 0, warned: 0, skipped: 0, errors: 1 }
   }

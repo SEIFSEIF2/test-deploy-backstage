@@ -10,7 +10,11 @@ import { buildUnsubscribeUrl } from '@/lib/email/unsubscribe'
 import { assignmentEmail, mentionEmail } from '@/lib/email/templates'
 import { parseExternalRef } from '@/lib/externalRef'
 import { scrapeDocTitle } from '@/lib/scrapeDocTitle'
-import { countMissingFields, isHandoffComplete, HANDOFF_FIELDS } from '@/lib/handoff'
+import {
+  countMissingFields,
+  isHandoffComplete,
+  HANDOFF_FIELDS
+} from '@/lib/handoff'
 import type { Database, Json } from '@/supabase/types'
 
 type TaskStatus = Database['public']['Enums']['task_status']
@@ -38,8 +42,10 @@ export type RenameProjectState =
 // the rows shipped back to clients - internal queries can keep snake_case.
 
 type TaskRow = Database['public']['Tables']['tasks']['Row']
-type TaskExternalRefRow = Database['public']['Tables']['task_external_refs']['Row']
-type ProjectExternalRefRow = Database['public']['Tables']['project_external_refs']['Row']
+type TaskExternalRefRow =
+  Database['public']['Tables']['task_external_refs']['Row']
+type ProjectExternalRefRow =
+  Database['public']['Tables']['project_external_refs']['Row']
 
 function toCamelTask(t: TaskRow) {
   return {
@@ -107,10 +113,12 @@ async function autoAddToCurrentSprint(
     .limit(1)
     .maybeSingle()
   if (!sprint) return
-  await supabase.from('sprint_tasks').upsert(
-    { sprint_id: sprint.id, task_id: taskId, carry_count: 0 },
-    { onConflict: 'sprint_id,task_id', ignoreDuplicates: true }
-  )
+  await supabase
+    .from('sprint_tasks')
+    .upsert(
+      { sprint_id: sprint.id, task_id: taskId, carry_count: 0 },
+      { onConflict: 'sprint_id,task_id', ignoreDuplicates: true }
+    )
 }
 
 // ─── Activity log helper ─────────────────────────────────────────────────
@@ -184,11 +192,24 @@ async function ensureTaskAccess(
 
 // ─── Bulk-add validation (decision 0025) ──────────────────────────────────
 const TaskStatusEnum = z.enum([
-  'backlog', 'unscoped', 'todo', 'in_progress', 'in_review', 'done', 'canceled', 'duplicate'
+  'backlog',
+  'unscoped',
+  'todo',
+  'in_progress',
+  'in_review',
+  'done',
+  'canceled',
+  'duplicate'
 ])
 const TaskPriorityEnum = z.enum(['urgent', 'high', 'medium', 'low', 'none'])
 const IsoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'expected YYYY-MM-DD')
-const RelationKindEnum = z.enum(['blocked_by', 'blocks', 'parent', 'sub_issue', 'triage'])
+const RelationKindEnum = z.enum([
+  'blocked_by',
+  'blocks',
+  'parent',
+  'sub_issue',
+  'triage'
+])
 
 const BulkDraftSchema = z.object({
   title: z.string().trim().min(1, 'title is required').max(500),
@@ -199,12 +220,17 @@ const BulkDraftSchema = z.object({
   dueDate: IsoDate.nullish(),
   labelIds: z.array(z.string().uuid()).optional(),
   newLabelNames: z.array(z.string().trim().min(1).max(64)).optional(),
-  relations: z.array(z.object({ kind: RelationKindEnum, ref: z.string().trim().min(1) })).optional()
+  relations: z
+    .array(z.object({ kind: RelationKindEnum, ref: z.string().trim().min(1) }))
+    .optional()
 })
 
 const CreateBulkInputSchema = z.object({
   projectId: z.string().uuid('projectId must be a valid UUID'),
-  drafts: z.array(BulkDraftSchema).min(1, 'at least one task is required').max(50, 'too many tasks in one batch')
+  drafts: z
+    .array(BulkDraftSchema)
+    .min(1, 'at least one task is required')
+    .max(50, 'too many tasks in one batch')
 })
 
 // ─── Task mutations ───────────────────────────────────────────────────────
@@ -214,9 +240,7 @@ const CreateTaskInputSchema = z.object({
   description: z.string().nullable().optional(),
   status: TaskStatusEnum.optional(),
   priority: TaskPriorityEnum.optional(),
-  projectId: z
-    .string({ error: 'Pick a project.' })
-    .uuid('Pick a project.'),
+  projectId: z.string({ error: 'Pick a project.' }).uuid('Pick a project.'),
   assigneeId: z.string().uuid().nullable().optional(),
   leadId: z.string().uuid().nullable().optional(),
   dueDate: z
@@ -304,9 +328,14 @@ export async function createDashboardTask(
   if (taskErr || !task) return { error: taskErr?.message ?? 'Create failed.' }
 
   if (data.labelIds?.length) {
-    await supabase.from('task_labels').insert(
-      data.labelIds.map((labelId) => ({ task_id: task.id, label_id: labelId }))
-    )
+    await supabase
+      .from('task_labels')
+      .insert(
+        data.labelIds.map((labelId) => ({
+          task_id: task.id,
+          label_id: labelId
+        }))
+      )
   }
 
   if (data.relations && data.relations.length > 0) {
@@ -335,8 +364,21 @@ export async function createDashboardTask(
     }
   }
 
-  await logActivity(supabase, member.companyId, member.id, 'task.created', 'task', task.id)
-  await autoAddToCurrentSprint(supabase, task.id, task.project_id, member.companyId, task.status)
+  await logActivity(
+    supabase,
+    member.companyId,
+    member.id,
+    'task.created',
+    'task',
+    task.id
+  )
+  await autoAddToCurrentSprint(
+    supabase,
+    task.id,
+    task.project_id,
+    member.companyId,
+    task.status
+  )
   revalidatePath('/dashboard')
   return { task: toCamelTask(task) }
 }
@@ -354,7 +396,8 @@ export async function addTaskDependency(
   | { ok: true; dep: { id: string; kind: RelationKind; dependsOnRef: string } }
 > {
   const parsed = AddDepInput.safeParse(input)
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
+  if (!parsed.success)
+    return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
   const gate = await ensureTaskAccess(parsed.data.taskId, 'planner')
   if ('error' in gate) return { error: gate.error }
   const { member } = gate
@@ -362,31 +405,42 @@ export async function addTaskDependency(
 
   const [sourceRes, targetRes] = await Promise.all([
     supabase
-      .from('tasks').select('id')
-      .eq('id', parsed.data.taskId).eq('company_id', member.companyId)
-      .is('deleted_at', null).maybeSingle(),
+      .from('tasks')
+      .select('id')
+      .eq('id', parsed.data.taskId)
+      .eq('company_id', member.companyId)
+      .is('deleted_at', null)
+      .maybeSingle(),
     supabase
-      .from('tasks').select('id, ref')
-      .eq('ref', parsed.data.dependsOnRef).eq('company_id', member.companyId)
-      .is('deleted_at', null).maybeSingle()
+      .from('tasks')
+      .select('id, ref')
+      .eq('ref', parsed.data.dependsOnRef)
+      .eq('company_id', member.companyId)
+      .is('deleted_at', null)
+      .maybeSingle()
   ])
   const source = sourceRes.data
   const target = targetRes.data
   if (!source) return { error: 'Task not found.' }
   if (!target) return { error: `No task with ref ${parsed.data.dependsOnRef}.` }
-  if (target.id === source.id) return { error: "Can't relate a task to itself." }
+  if (target.id === source.id)
+    return { error: "Can't relate a task to itself." }
 
   const { data: dep, error } = await supabase
     .from('task_dependencies')
-    .upsert({
-      company_id: member.companyId,
-      task_id: source.id,
-      depends_on_task_id: target.id,
-      kind: parsed.data.kind
-    }, { onConflict: 'task_id,depends_on_task_id' })
+    .upsert(
+      {
+        company_id: member.companyId,
+        task_id: source.id,
+        depends_on_task_id: target.id,
+        kind: parsed.data.kind
+      },
+      { onConflict: 'task_id,depends_on_task_id' }
+    )
     .select('id, kind')
     .single()
-  if (error || !dep) return { error: error?.message ?? 'Could not create relation.' }
+  if (error || !dep)
+    return { error: error?.message ?? 'Could not create relation.' }
 
   revalidatePath('/dashboard')
   return {
@@ -405,7 +459,9 @@ const RemoveDepInput = z.object({
   kind: z.enum(['blocked_by', 'blocks', 'parent', 'sub_issue', 'triage'])
 })
 
-export async function removeTaskDependency(input: z.input<typeof RemoveDepInput>) {
+export async function removeTaskDependency(
+  input: z.input<typeof RemoveDepInput>
+) {
   const parsed = RemoveDepInput.safeParse(input)
   if (!parsed.success) return { error: 'Invalid input.' }
   const gate = await ensureTaskAccess(parsed.data.taskId, 'planner')
@@ -414,13 +470,17 @@ export async function removeTaskDependency(input: z.input<typeof RemoveDepInput>
   const supabase = createAdminClient()
 
   const { data: target } = await supabase
-    .from('tasks').select('id')
-    .eq('ref', parsed.data.dependsOnRef).eq('company_id', member.companyId)
-    .is('deleted_at', null).maybeSingle()
+    .from('tasks')
+    .select('id')
+    .eq('ref', parsed.data.dependsOnRef)
+    .eq('company_id', member.companyId)
+    .is('deleted_at', null)
+    .maybeSingle()
   if (!target) return { error: 'Ref not found.' }
 
   await supabase
-    .from('task_dependencies').delete()
+    .from('task_dependencies')
+    .delete()
     .eq('company_id', member.companyId)
     .eq('task_id', parsed.data.taskId)
     .eq('depends_on_task_id', target.id)
@@ -439,7 +499,8 @@ export async function createBulkDashboardTasks(
     const first = validated.error.issues[0]
     const path = first.path
       .map((seg) => (typeof seg === 'number' ? `[${seg}]` : `.${String(seg)}`))
-      .join('').replace(/^\./, '')
+      .join('')
+      .replace(/^\./, '')
     return { error: path ? `${path}: ${first.message}` : first.message }
   }
   const { drafts: validDrafts } = validated.data
@@ -448,16 +509,21 @@ export async function createBulkDashboardTasks(
   const supabase = createAdminClient()
 
   const { data: project } = await supabase
-    .from('projects').select('name')
-    .eq('id', projectId).eq('company_id', member.companyId).maybeSingle()
+    .from('projects')
+    .select('name')
+    .eq('id', projectId)
+    .eq('company_id', member.companyId)
+    .maybeSingle()
   if (!project) return { error: 'Project not found.' }
 
   const prefix = project.name.split(/\s+/)[0].toUpperCase().slice(0, 4)
   const { data: lastTask } = await supabase
-    .from('tasks').select('seq_number')
+    .from('tasks')
+    .select('seq_number')
     .eq('project_id', projectId)
     .order('seq_number', { ascending: false, nullsFirst: false })
-    .limit(1).maybeSingle()
+    .limit(1)
+    .maybeSingle()
   let nextSeq = (lastTask?.seq_number ?? 0) + 1
 
   // Collect distinct new label names across drafts, preserve first-seen casing.
@@ -467,7 +533,8 @@ export async function createBulkDashboardTasks(
       const trimmed = raw.trim()
       if (!trimmed) continue
       const key = trimmed.toLowerCase()
-      if (!newLabelDisplayByLower.has(key)) newLabelDisplayByLower.set(key, trimmed)
+      if (!newLabelDisplayByLower.has(key))
+        newLabelDisplayByLower.set(key, trimmed)
     }
   }
 
@@ -475,22 +542,27 @@ export async function createBulkDashboardTasks(
   const newLabelIdByLower = new Map<string, string>()
   for (const [key, display] of newLabelDisplayByLower) {
     const { data: existing } = await supabase
-      .from('labels').select('id')
-      .eq('company_id', member.companyId).ilike('name', display).maybeSingle()
+      .from('labels')
+      .select('id')
+      .eq('company_id', member.companyId)
+      .ilike('name', display)
+      .maybeSingle()
     if (existing) {
       newLabelIdByLower.set(key, existing.id)
     } else {
       const { data: fresh } = await supabase
         .from('labels')
         .insert({ company_id: member.companyId, name: display })
-        .select('id').single()
+        .select('id')
+        .single()
       if (fresh) newLabelIdByLower.set(key, fresh.id)
     }
   }
 
   // Create tasks sequentially so ref numbers stay strict.
   const out: { id: string; ref: string }[] = []
-  const pendingDeps: { sourceId: string; ref: string; kind: RelationKind }[] = []
+  const pendingDeps: { sourceId: string; ref: string; kind: RelationKind }[] =
+    []
 
   for (const d of validDrafts) {
     const seq = nextSeq++
@@ -515,14 +587,27 @@ export async function createBulkDashboardTasks(
         due_date: d.dueDate ?? null,
         created_by: member.id
       })
-      .select('id, ref').single()
+      .select('id, ref')
+      .single()
     if (!task) continue
     if (labelIds.size > 0) {
-      await supabase.from('task_labels').insert(
-        [...labelIds].map((labelId) => ({ task_id: task.id, label_id: labelId }))
-      )
+      await supabase
+        .from('task_labels')
+        .insert(
+          [...labelIds].map((labelId) => ({
+            task_id: task.id,
+            label_id: labelId
+          }))
+        )
     }
-    await logActivity(supabase, member.companyId, member.id, 'task.created', 'task', task.id)
+    await logActivity(
+      supabase,
+      member.companyId,
+      member.id,
+      'task.created',
+      'task',
+      task.id
+    )
     out.push({ id: task.id, ref: task.ref ?? ref })
     for (const rel of d.relations ?? []) {
       pendingDeps.push({ sourceId: task.id, ref: rel.ref, kind: rel.kind })
@@ -532,8 +617,10 @@ export async function createBulkDashboardTasks(
   if (pendingDeps.length > 0) {
     const refs = [...new Set(pendingDeps.map((p) => p.ref))]
     const { data: targets } = await supabase
-      .from('tasks').select('id, ref')
-      .eq('company_id', member.companyId).in('ref', refs)
+      .from('tasks')
+      .select('id, ref')
+      .eq('company_id', member.companyId)
+      .in('ref', refs)
       .is('deleted_at', null)
     const idByRef = new Map((targets ?? []).map((t) => [t.ref ?? '', t.id]))
     const depRows = pendingDeps
@@ -550,7 +637,8 @@ export async function createBulkDashboardTasks(
       .filter((row): row is NonNullable<typeof row> => row !== null)
     if (depRows.length > 0) {
       await supabase.from('task_dependencies').upsert(depRows, {
-        onConflict: 'task_id,depends_on_task_id', ignoreDuplicates: true
+        onConflict: 'task_id,depends_on_task_id',
+        ignoreDuplicates: true
       })
     }
   }
@@ -560,7 +648,8 @@ export async function createBulkDashboardTasks(
 }
 
 export async function updateDashboardTaskStatus(
-  taskId: string, status: TaskStatus
+  taskId: string,
+  status: TaskStatus
 ): Promise<StatusChangeResult> {
   const gate = await ensureTaskAccess(taskId, 'owner')
   if ('error' in gate) {
@@ -571,22 +660,29 @@ export async function updateDashboardTaskStatus(
 
   const { data: task } = await supabase
     .from('tasks')
-    .select('id, project_id, status, handoffs!handoff_task_id_fkey(what_it_is, current_status, done_so_far, still_left, file_links, gotchas, who_to_ask)')
-    .eq('id', taskId).eq('company_id', member.companyId)
-    .is('deleted_at', null).maybeSingle()
+    .select(
+      'id, project_id, status, handoffs!handoff_task_id_fkey(what_it_is, current_status, done_so_far, still_left, file_links, gotchas, who_to_ask)'
+    )
+    .eq('id', taskId)
+    .eq('company_id', member.companyId)
+    .is('deleted_at', null)
+    .maybeSingle()
   if (!task) return { ok: false, reason: 'generic', message: 'Task not found.' }
 
   // handoffs is fetched as an array (1:1 by uniq constraint but the type comes back as array)
-  const handoffRow = (Array.isArray(task.handoffs) ? task.handoffs[0] : task.handoffs) ?? null
-  const handoff = handoffRow ? {
-    whatItIs: handoffRow.what_it_is,
-    currentStatus: handoffRow.current_status,
-    doneSoFar: handoffRow.done_so_far,
-    stillLeft: handoffRow.still_left,
-    fileLinks: handoffRow.file_links,
-    gotchas: handoffRow.gotchas,
-    whoToAsk: handoffRow.who_to_ask
-  } : null
+  const handoffRow =
+    (Array.isArray(task.handoffs) ? task.handoffs[0] : task.handoffs) ?? null
+  const handoff = handoffRow
+    ? {
+        whatItIs: handoffRow.what_it_is,
+        currentStatus: handoffRow.current_status,
+        doneSoFar: handoffRow.done_so_far,
+        stillLeft: handoffRow.still_left,
+        fileLinks: handoffRow.file_links,
+        gotchas: handoffRow.gotchas,
+        whoToAsk: handoffRow.who_to_ask
+      }
+    : null
 
   // Sending to review: handoff must be complete. The work is being
   // packaged for the next person, so the seven prompts have to be
@@ -621,38 +717,35 @@ export async function updateDashboardTaskStatus(
   await supabase.from('tasks').update({ status }).eq('id', task.id)
 
   if (prevStatus !== status) {
-    await logActivity(supabase, member.companyId, member.id, 'task.status_changed', 'task', task.id, {
-      from: prevStatus, to: status
-    })
-    await autoAddToCurrentSprint(supabase, task.id, task.project_id, member.companyId, status)
+    await logActivity(
+      supabase,
+      member.companyId,
+      member.id,
+      'task.status_changed',
+      'task',
+      task.id,
+      {
+        from: prevStatus,
+        to: status
+      }
+    )
+    await autoAddToCurrentSprint(
+      supabase,
+      task.id,
+      task.project_id,
+      member.companyId,
+      status
+    )
   }
   revalidatePath('/dashboard')
   revalidatePath(`/projects/${task.project_id}`)
   return { ok: true }
 }
 
-export async function updateDashboardTaskPriority(taskId: string, priority: TaskPriority) {
-  const gate = await ensureTaskAccess(taskId, 'planner')
-  if ('error' in gate) return { error: gate.error }
-  const { member } = gate
-  const supabase = createAdminClient()
-
-  const { data: prev } = await supabase
-    .from('tasks').select('priority').eq('id', taskId).eq('company_id', member.companyId)
-    .is('deleted_at', null).maybeSingle()
-  if (!prev) return { error: 'Task not found.' }
-
-  await supabase.from('tasks').update({ priority }).eq('id', taskId)
-  if (prev.priority !== priority) {
-    await logActivity(supabase, member.companyId, member.id, 'task.priority_changed', 'task', taskId, {
-      from: prev.priority, to: priority
-    })
-  }
-  revalidatePath('/dashboard')
-  return { ok: true }
-}
-
-export async function updateDashboardTaskAssignee(taskId: string, assigneeId: string | null) {
+export async function updateDashboardTaskPriority(
+  taskId: string,
+  priority: TaskPriority
+) {
   const gate = await ensureTaskAccess(taskId, 'planner')
   if ('error' in gate) return { error: gate.error }
   const { member } = gate
@@ -660,32 +753,90 @@ export async function updateDashboardTaskAssignee(taskId: string, assigneeId: st
 
   const { data: prev } = await supabase
     .from('tasks')
-    .select('assignee_id, assignee:team_members!task_assignee_id_fkey(full_name)')
-    .eq('id', taskId).eq('company_id', member.companyId)
-    .is('deleted_at', null).maybeSingle()
+    .select('priority')
+    .eq('id', taskId)
+    .eq('company_id', member.companyId)
+    .is('deleted_at', null)
+    .maybeSingle()
   if (!prev) return { error: 'Task not found.' }
 
-  await supabase.from('tasks').update({ assignee_id: assigneeId }).eq('id', taskId)
+  await supabase.from('tasks').update({ priority }).eq('id', taskId)
+  if (prev.priority !== priority) {
+    await logActivity(
+      supabase,
+      member.companyId,
+      member.id,
+      'task.priority_changed',
+      'task',
+      taskId,
+      {
+        from: prev.priority,
+        to: priority
+      }
+    )
+  }
+  revalidatePath('/dashboard')
+  return { ok: true }
+}
+
+export async function updateDashboardTaskAssignee(
+  taskId: string,
+  assigneeId: string | null
+) {
+  const gate = await ensureTaskAccess(taskId, 'planner')
+  if ('error' in gate) return { error: gate.error }
+  const { member } = gate
+  const supabase = createAdminClient()
+
+  const { data: prev } = await supabase
+    .from('tasks')
+    .select(
+      'assignee_id, assignee:team_members!task_assignee_id_fkey(full_name)'
+    )
+    .eq('id', taskId)
+    .eq('company_id', member.companyId)
+    .is('deleted_at', null)
+    .maybeSingle()
+  if (!prev) return { error: 'Task not found.' }
+
+  await supabase
+    .from('tasks')
+    .update({ assignee_id: assigneeId })
+    .eq('id', taskId)
 
   if (prev.assignee_id !== assigneeId) {
     let toName: string | null = null
     if (assigneeId) {
       const { data: nameRow } = await supabase
-        .from('team_members').select('full_name').eq('id', assigneeId).maybeSingle()
+        .from('team_members')
+        .select('full_name')
+        .eq('id', assigneeId)
+        .maybeSingle()
       toName = nameRow?.full_name ?? null
     }
     const prevAssignee = prev.assignee as { full_name: string } | null
-    await logActivity(supabase, member.companyId, member.id, 'task.assignee_changed', 'task', taskId, {
-      from: prev.assignee_id,
-      fromName: prevAssignee?.full_name ?? null,
-      to: assigneeId,
-      toName
-    })
+    await logActivity(
+      supabase,
+      member.companyId,
+      member.id,
+      'task.assignee_changed',
+      'task',
+      taskId,
+      {
+        from: prev.assignee_id,
+        fromName: prevAssignee?.full_name ?? null,
+        to: assigneeId,
+        toName
+      }
+    )
     // Ping the new assignee (never yourself) via web-push + email.
     if (assigneeId && assigneeId !== member.id) {
       const { data: t } = await supabase
-        .from('tasks').select('ref, title').eq('id', taskId)
-        .is('deleted_at', null).maybeSingle()
+        .from('tasks')
+        .select('ref, title')
+        .eq('id', taskId)
+        .is('deleted_at', null)
+        .maybeSingle()
       if (t?.ref) {
         await sendPushToMember(assigneeId, {
           title: `Assigned to you: ${t.ref}`,
@@ -738,7 +889,10 @@ export async function updateDashboardTaskAssignee(taskId: string, assigneeId: st
   return { ok: true }
 }
 
-export async function updateDashboardTaskLead(taskId: string, leadId: string | null) {
+export async function updateDashboardTaskLead(
+  taskId: string,
+  leadId: string | null
+) {
   const gate = await ensureTaskAccess(taskId, 'planner')
   if ('error' in gate) return { error: gate.error }
   const { member } = gate
@@ -763,8 +917,10 @@ export async function updateDashboardTaskLead(taskId: string, leadId: string | n
   const { data: prev } = await supabase
     .from('tasks')
     .select('lead_id, lead:team_members!task_lead_id_fkey(full_name)')
-    .eq('id', taskId).eq('company_id', member.companyId)
-    .is('deleted_at', null).maybeSingle()
+    .eq('id', taskId)
+    .eq('company_id', member.companyId)
+    .is('deleted_at', null)
+    .maybeSingle()
   if (!prev) return { error: 'Task not found.' }
 
   await supabase.from('tasks').update({ lead_id: leadId }).eq('id', taskId)
@@ -773,21 +929,35 @@ export async function updateDashboardTaskLead(taskId: string, leadId: string | n
     let toName: string | null = null
     if (leadId) {
       const { data: nameRow } = await supabase
-        .from('team_members').select('full_name').eq('id', leadId).maybeSingle()
+        .from('team_members')
+        .select('full_name')
+        .eq('id', leadId)
+        .maybeSingle()
       toName = nameRow?.full_name ?? null
     }
     const prevLead = prev.lead as { full_name: string } | null
-    await logActivity(supabase, member.companyId, member.id, 'task.lead_changed', 'task', taskId, {
-      from: prev.lead_id,
-      fromName: prevLead?.full_name ?? null,
-      to: leadId,
-      toName
-    })
+    await logActivity(
+      supabase,
+      member.companyId,
+      member.id,
+      'task.lead_changed',
+      'task',
+      taskId,
+      {
+        from: prev.lead_id,
+        fromName: prevLead?.full_name ?? null,
+        to: leadId,
+        toName
+      }
+    )
     // Ping the new lead (never yourself).
     if (leadId && leadId !== member.id) {
       const { data: t } = await supabase
-        .from('tasks').select('ref, title').eq('id', taskId)
-        .is('deleted_at', null).maybeSingle()
+        .from('tasks')
+        .select('ref, title')
+        .eq('id', taskId)
+        .is('deleted_at', null)
+        .maybeSingle()
       if (t?.ref) {
         await sendPushToMember(leadId, {
           title: `You're now lead on ${t.ref}`,
@@ -818,10 +988,9 @@ const UpdateTaskDetailsInput = z
     title: z.string().trim().min(1).max(500).optional(),
     description: z.string().trim().max(5000).nullable().optional()
   })
-  .refine(
-    (v) => v.title !== undefined || v.description !== undefined,
-    { message: 'Nothing to update.' }
-  )
+  .refine((v) => v.title !== undefined || v.description !== undefined, {
+    message: 'Nothing to update.'
+  })
 
 export async function updateDashboardTaskDetails(
   input: z.input<typeof UpdateTaskDetailsInput>
@@ -951,9 +1120,7 @@ export async function updateDashboardTaskProject(
 
   const { data: oldSprintMemberships } = await supabase
     .from('sprint_tasks')
-    .select(
-      'sprint_id, sprints!cycle_task_cycle_id_fkey!inner(project_id)'
-    )
+    .select('sprint_id, sprints!cycle_task_cycle_id_fkey!inner(project_id)')
     .eq('task_id', task.id)
   const staleSprintIds = (oldSprintMemberships ?? [])
     .filter((row) => row.sprints?.project_id === oldProjectId)
@@ -1005,10 +1172,7 @@ export async function updateDashboardTaskDueDate(
     .maybeSingle()
   if (!prev) return { error: 'Task not found.' }
 
-  await supabase
-    .from('tasks')
-    .update({ due_date: dueDate })
-    .eq('id', taskId)
+  await supabase.from('tasks').update({ due_date: dueDate }).eq('id', taskId)
 
   const prevDate = prev.due_date
   if (prevDate && dueDate && prevDate !== dueDate) {
@@ -1041,10 +1205,12 @@ export async function updateDashboardTaskDueDate(
     const removeId = idByName.get(opposite)
 
     if (addId) {
-      await supabase.from('task_labels').upsert(
-        { task_id: taskId, label_id: addId },
-        { onConflict: 'task_id,label_id', ignoreDuplicates: true }
-      )
+      await supabase
+        .from('task_labels')
+        .upsert(
+          { task_id: taskId, label_id: addId },
+          { onConflict: 'task_id,label_id', ignoreDuplicates: true }
+        )
     }
     if (removeId) {
       await supabase
@@ -1167,12 +1333,10 @@ export async function updateTaskTags(
       .in('label_id', toRemove)
   }
   if (toAdd.length > 0) {
-    await supabase
-      .from('task_labels')
-      .upsert(
-        toAdd.map((label_id) => ({ task_id: taskId, label_id })),
-        { onConflict: 'task_id,label_id', ignoreDuplicates: true }
-      )
+    await supabase.from('task_labels').upsert(
+      toAdd.map((label_id) => ({ task_id: taskId, label_id })),
+      { onConflict: 'task_id,label_id', ignoreDuplicates: true }
+    )
   }
 
   await logActivity(
@@ -1191,29 +1355,39 @@ export async function updateTaskTags(
 const SORT_STEP = 1024
 
 export async function moveDashboardTask(
-  taskId: string, toStatus: TaskStatus, toIndex: number
+  taskId: string,
+  toStatus: TaskStatus,
+  toIndex: number
 ): Promise<StatusChangeResult> {
   const member = await getCurrentTeamMember()
-  if (!member) return { ok: false, reason: 'generic', message: 'Not signed in.' }
+  if (!member)
+    return { ok: false, reason: 'generic', message: 'Not signed in.' }
   const supabase = createAdminClient()
 
   const { data: task } = await supabase
     .from('tasks')
-    .select('id, project_id, status, handoffs!handoff_task_id_fkey(what_it_is, current_status, done_so_far, still_left, file_links, gotchas, who_to_ask)')
-    .eq('id', taskId).eq('company_id', member.companyId)
-    .is('deleted_at', null).maybeSingle()
+    .select(
+      'id, project_id, status, handoffs!handoff_task_id_fkey(what_it_is, current_status, done_so_far, still_left, file_links, gotchas, who_to_ask)'
+    )
+    .eq('id', taskId)
+    .eq('company_id', member.companyId)
+    .is('deleted_at', null)
+    .maybeSingle()
   if (!task) return { ok: false, reason: 'generic', message: 'Task not found.' }
 
-  const handoffRow = (Array.isArray(task.handoffs) ? task.handoffs[0] : task.handoffs) ?? null
-  const handoff = handoffRow ? {
-    whatItIs: handoffRow.what_it_is,
-    currentStatus: handoffRow.current_status,
-    doneSoFar: handoffRow.done_so_far,
-    stillLeft: handoffRow.still_left,
-    fileLinks: handoffRow.file_links,
-    gotchas: handoffRow.gotchas,
-    whoToAsk: handoffRow.who_to_ask
-  } : null
+  const handoffRow =
+    (Array.isArray(task.handoffs) ? task.handoffs[0] : task.handoffs) ?? null
+  const handoff = handoffRow
+    ? {
+        whatItIs: handoffRow.what_it_is,
+        currentStatus: handoffRow.current_status,
+        doneSoFar: handoffRow.done_so_far,
+        stillLeft: handoffRow.still_left,
+        fileLinks: handoffRow.file_links,
+        gotchas: handoffRow.gotchas,
+        whoToAsk: handoffRow.who_to_ask
+      }
+    : null
 
   // Drag-to-review: handoff gate. Same as the click path.
   if (toStatus === 'in_review' && task.status !== 'in_review') {
@@ -1242,13 +1416,19 @@ export async function moveDashboardTask(
   }
 
   const { data: columnTasks } = await supabase
-    .from('tasks').select('id')
-    .eq('company_id', member.companyId).eq('status', toStatus).neq('id', task.id)
+    .from('tasks')
+    .select('id')
+    .eq('company_id', member.companyId)
+    .eq('status', toStatus)
+    .neq('id', task.id)
     .is('deleted_at', null)
     .order('sort_order', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false })
 
-  const clampedIndex = Math.max(0, Math.min(toIndex, (columnTasks ?? []).length))
+  const clampedIndex = Math.max(
+    0,
+    Math.min(toIndex, (columnTasks ?? []).length)
+  )
   const newOrder = [
     ...(columnTasks ?? []).slice(0, clampedIndex).map((t) => t.id),
     task.id,
@@ -1260,14 +1440,32 @@ export async function moveDashboardTask(
   // (or a router.refresh) restores consistent ordering.
   await supabase.from('tasks').update({ status: toStatus }).eq('id', task.id)
   for (let i = 0; i < newOrder.length; i++) {
-    await supabase.from('tasks').update({ sort_order: i * SORT_STEP }).eq('id', newOrder[i])
+    await supabase
+      .from('tasks')
+      .update({ sort_order: i * SORT_STEP })
+      .eq('id', newOrder[i])
   }
 
   if (toStatus !== task.status) {
-    await logActivity(supabase, member.companyId, member.id, 'task.status_changed', 'task', task.id, {
-      from: task.status, to: toStatus
-    })
-    await autoAddToCurrentSprint(supabase, task.id, task.project_id, member.companyId, toStatus)
+    await logActivity(
+      supabase,
+      member.companyId,
+      member.id,
+      'task.status_changed',
+      'task',
+      task.id,
+      {
+        from: task.status,
+        to: toStatus
+      }
+    )
+    await autoAddToCurrentSprint(
+      supabase,
+      task.id,
+      task.project_id,
+      member.companyId,
+      toStatus
+    )
   }
   revalidatePath('/dashboard')
   revalidatePath(`/projects/${task.project_id}`)
@@ -1287,7 +1485,8 @@ export async function deleteDashboardTask(taskId: string) {
   const { data: snap } = await supabase
     .from('tasks')
     .select('title, ref, status, priority, assignee_id, lead_id, project_id')
-    .eq('id', taskId).eq('company_id', member.companyId)
+    .eq('id', taskId)
+    .eq('company_id', member.companyId)
     .is('deleted_at', null)
     .maybeSingle()
   if (!snap) return { error: 'Task not found.' }
@@ -1295,11 +1494,20 @@ export async function deleteDashboardTask(taskId: string) {
   const { error: updateError } = await supabase
     .from('tasks')
     .update({ deleted_at: new Date().toISOString(), deleted_by: member.id })
-    .eq('id', taskId).eq('company_id', member.companyId)
+    .eq('id', taskId)
+    .eq('company_id', member.companyId)
     .is('deleted_at', null)
   if (updateError) return { error: updateError.message }
 
-  await logActivity(supabase, member.companyId, member.id, 'task.deleted', 'task', taskId, snap)
+  await logActivity(
+    supabase,
+    member.companyId,
+    member.id,
+    'task.deleted',
+    'task',
+    taskId,
+    snap
+  )
   revalidatePath('/dashboard')
   revalidatePath('/dashboard/trash')
   return { ok: true }
@@ -1316,7 +1524,8 @@ export async function restoreDashboardTask(taskId: string) {
   const { data: tombstone } = await supabase
     .from('tasks')
     .select('deleted_at, deleted_by, project_id')
-    .eq('id', taskId).eq('company_id', member.companyId)
+    .eq('id', taskId)
+    .eq('company_id', member.companyId)
     .maybeSingle()
   if (!tombstone) return { error: 'Task not found.' }
   if (tombstone.deleted_at == null) return { error: 'Task is not deleted.' }
@@ -1324,13 +1533,22 @@ export async function restoreDashboardTask(taskId: string) {
   const { error: updateError } = await supabase
     .from('tasks')
     .update({ deleted_at: null, deleted_by: null })
-    .eq('id', taskId).eq('company_id', member.companyId)
+    .eq('id', taskId)
+    .eq('company_id', member.companyId)
   if (updateError) return { error: updateError.message }
 
-  await logActivity(supabase, member.companyId, member.id, 'task.restored', 'task', taskId, {
-    deletedAt: tombstone.deleted_at,
-    deletedBy: tombstone.deleted_by
-  })
+  await logActivity(
+    supabase,
+    member.companyId,
+    member.id,
+    'task.restored',
+    'task',
+    taskId,
+    {
+      deletedAt: tombstone.deleted_at,
+      deletedBy: tombstone.deleted_by
+    }
+  )
   revalidatePath('/dashboard')
   revalidatePath('/dashboard/trash')
   revalidatePath(`/projects/${tombstone.project_id}`)
@@ -1392,19 +1610,43 @@ export async function duplicateDashboardTask(taskId: string) {
   const supabase = createAdminClient()
 
   const { data: src } = await supabase
-    .from('tasks').select('*').eq('id', taskId).eq('company_id', member.companyId)
-    .is('deleted_at', null).maybeSingle()
+    .from('tasks')
+    .select('*')
+    .eq('id', taskId)
+    .eq('company_id', member.companyId)
+    .is('deleted_at', null)
+    .maybeSingle()
   if (!src) return { error: 'Task not found.' }
 
-  const [{ data: srcLabels }, { data: srcChecklist }, { data: lastTask }, { data: project }] = await Promise.all([
+  const [
+    { data: srcLabels },
+    { data: srcChecklist },
+    { data: lastTask },
+    { data: project }
+  ] = await Promise.all([
     supabase.from('task_labels').select('label_id').eq('task_id', src.id),
-    supabase.from('task_checklist_items').select('text, sort_order').eq('task_id', src.id),
-    supabase.from('tasks').select('seq_number').eq('project_id', src.project_id)
-      .order('seq_number', { ascending: false, nullsFirst: false }).limit(1).maybeSingle(),
-    supabase.from('projects').select('name').eq('id', src.project_id).maybeSingle()
+    supabase
+      .from('task_checklist_items')
+      .select('text, sort_order')
+      .eq('task_id', src.id),
+    supabase
+      .from('tasks')
+      .select('seq_number')
+      .eq('project_id', src.project_id)
+      .order('seq_number', { ascending: false, nullsFirst: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from('projects')
+      .select('name')
+      .eq('id', src.project_id)
+      .maybeSingle()
   ])
   const nextSeq = (lastTask?.seq_number ?? 0) + 1
-  const prefix = (project?.name ?? 'TASK').split(/\s+/)[0].toUpperCase().slice(0, 4)
+  const prefix = (project?.name ?? 'TASK')
+    .split(/\s+/)[0]
+    .toUpperCase()
+    .slice(0, 4)
   const ref = `${prefix}-${nextSeq}`
 
   const { data: clone, error } = await supabase
@@ -1422,18 +1664,27 @@ export async function duplicateDashboardTask(taskId: string) {
       due_date: src.due_date,
       created_by: member.id
     })
-    .select('*').single()
+    .select('*')
+    .single()
   if (error || !clone) return { error: error?.message ?? 'Duplicate failed.' }
 
   if ((srcLabels ?? []).length > 0) {
-    await supabase.from('task_labels').insert(
-      (srcLabels ?? []).map((l) => ({ task_id: clone.id, label_id: l.label_id }))
-    )
+    await supabase
+      .from('task_labels')
+      .insert(
+        (srcLabels ?? []).map((l) => ({
+          task_id: clone.id,
+          label_id: l.label_id
+        }))
+      )
   }
   if ((srcChecklist ?? []).length > 0) {
     await supabase.from('task_checklist_items').insert(
       (srcChecklist ?? []).map((c) => ({
-        task_id: clone.id, text: c.text, is_done: false, sort_order: c.sort_order
+        task_id: clone.id,
+        text: c.text,
+        is_done: false,
+        sort_order: c.sort_order
       }))
     )
   }
@@ -1445,14 +1696,26 @@ export async function duplicateDashboardTask(taskId: string) {
     kind: 'parent'
   })
 
-  await logActivity(supabase, member.companyId, member.id, 'task.duplicated', 'task', clone.id, { sourceId: taskId })
+  await logActivity(
+    supabase,
+    member.companyId,
+    member.id,
+    'task.duplicated',
+    'task',
+    clone.id,
+    { sourceId: taskId }
+  )
   revalidatePath('/dashboard')
   return { task: toCamelTask(clone) }
 }
 
 // ─── Comments ─────────────────────────────────────────────────────────────
 
-export async function addComment(taskId: string, body: string, mentions?: string[]) {
+export async function addComment(
+  taskId: string,
+  body: string,
+  mentions?: string[]
+) {
   const gate = await ensureTaskAccess(taskId, 'commenter')
   if ('error' in gate) return { error: gate.error }
   const { member } = gate
@@ -1467,7 +1730,8 @@ export async function addComment(taskId: string, body: string, mentions?: string
       body,
       mentions: mentions ?? []
     })
-    .select('*').single()
+    .select('*')
+    .single()
   if (error || !comment) return { error: error?.message ?? 'Comment failed.' }
 
   // Mention = implicit watcher invite (Slice B follow-up). For every
@@ -1493,9 +1757,7 @@ export async function addComment(taskId: string, body: string, mentions?: string
       .eq('company_id', member.companyId)
       .in('id', mentionMemberIds)
     const toWatch = (candidates ?? []).filter(
-      (m) =>
-        m.access_tier === 'member' &&
-        m.id !== (task?.assignee_id ?? null)
+      (m) => m.access_tier === 'member' && m.id !== (task?.assignee_id ?? null)
     )
     if (toWatch.length > 0) {
       await supabase.from('task_watchers').upsert(
@@ -1576,7 +1838,14 @@ export async function addComment(taskId: string, body: string, mentions?: string
     }
   }
 
-  await logActivity(supabase, member.companyId, member.id, 'comment.added', 'task', taskId)
+  await logActivity(
+    supabase,
+    member.companyId,
+    member.id,
+    'comment.added',
+    'task',
+    taskId
+  )
   revalidatePath('/dashboard')
   return { comment }
 }
@@ -1591,7 +1860,9 @@ export async function editComment(commentId: string, body: string) {
   const { data: existing } = await supabase
     .from('task_comments')
     .select('author_id, task_id')
-    .eq('id', commentId).eq('company_id', member.companyId).maybeSingle()
+    .eq('id', commentId)
+    .eq('company_id', member.companyId)
+    .maybeSingle()
   if (!existing) return { error: 'Comment not found.' }
 
   const isAuthor = existing.author_id === member.id
@@ -1603,7 +1874,14 @@ export async function editComment(commentId: string, body: string) {
     .update({ body: trimmed, edited_at: new Date().toISOString() })
     .eq('id', commentId)
 
-  await logActivity(supabase, member.companyId, member.id, 'comment.edited', 'task', existing.task_id)
+  await logActivity(
+    supabase,
+    member.companyId,
+    member.id,
+    'comment.edited',
+    'task',
+    existing.task_id
+  )
   revalidatePath('/dashboard')
   return { ok: true as const }
 }
@@ -1616,7 +1894,9 @@ export async function deleteComment(commentId: string) {
   const { data: existing } = await supabase
     .from('task_comments')
     .select('author_id, task_id')
-    .eq('id', commentId).eq('company_id', member.companyId).maybeSingle()
+    .eq('id', commentId)
+    .eq('company_id', member.companyId)
+    .maybeSingle()
   if (!existing) return { error: 'Comment not found.' }
 
   const isAuthor = existing.author_id === member.id
@@ -1624,7 +1904,14 @@ export async function deleteComment(commentId: string) {
   if (!isAuthor && !isAdmin) return { error: 'Not allowed.' }
 
   await supabase.from('task_comments').delete().eq('id', commentId)
-  await logActivity(supabase, member.companyId, member.id, 'comment.deleted', 'task', existing.task_id)
+  await logActivity(
+    supabase,
+    member.companyId,
+    member.id,
+    'comment.deleted',
+    'task',
+    existing.task_id
+  )
   revalidatePath('/dashboard')
   return { ok: true as const }
 }
@@ -1635,7 +1922,10 @@ export async function toggleChecklistItem(itemId: string, isDone: boolean) {
   const member = await getCurrentTeamMember()
   if (!member) return { error: 'Not signed in.' }
   const supabase = createAdminClient()
-  await supabase.from('task_checklist_items').update({ is_done: isDone }).eq('id', itemId)
+  await supabase
+    .from('task_checklist_items')
+    .update({ is_done: isDone })
+    .eq('id', itemId)
   revalidatePath('/dashboard')
   return { ok: true }
 }
@@ -1646,9 +1936,12 @@ export async function addChecklistItem(taskId: string, text: string) {
   const supabase = createAdminClient()
 
   const { data: last } = await supabase
-    .from('task_checklist_items').select('sort_order')
+    .from('task_checklist_items')
+    .select('sort_order')
     .eq('task_id', taskId)
-    .order('sort_order', { ascending: false }).limit(1).maybeSingle()
+    .order('sort_order', { ascending: false })
+    .limit(1)
+    .maybeSingle()
 
   await supabase
     .from('task_checklist_items')
@@ -1660,7 +1953,9 @@ export async function addChecklistItem(taskId: string, text: string) {
 
 // ─── Sprint CRUD ──────────────────────────────────────────────────────────
 
-const IsoDateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'expected YYYY-MM-DD')
+const IsoDateStr = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'expected YYYY-MM-DD')
 
 const CreateSprintInput = z
   .object({
@@ -1673,7 +1968,8 @@ const CreateSprintInput = z
     toDate: IsoDateStr
   })
   .refine((v) => v.fromDate <= v.toDate, {
-    message: 'fromDate must be on or before toDate', path: ['toDate']
+    message: 'fromDate must be on or before toDate',
+    path: ['toDate']
   })
 
 const UpdateSprintInput = z
@@ -1687,7 +1983,8 @@ const UpdateSprintInput = z
     toDate: IsoDateStr.optional()
   })
   .refine((v) => !v.fromDate || !v.toDate || v.fromDate <= v.toDate, {
-    message: 'fromDate must be on or before toDate', path: ['toDate']
+    message: 'fromDate must be on or before toDate',
+    path: ['toDate']
   })
 
 function nextMondayIso(): string {
@@ -1709,19 +2006,26 @@ function addDaysIso(iso: string, days: number): string {
 
 export async function createSprint(input: z.input<typeof CreateSprintInput>) {
   const parsed = CreateSprintInput.safeParse(input)
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
+  if (!parsed.success)
+    return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
   const member = await requireAccessTier(['admin', 'lead'])
   const supabase = createAdminClient()
 
   const { data: project } = await supabase
-    .from('projects').select('id')
-    .eq('id', parsed.data.projectId).eq('company_id', member.companyId).maybeSingle()
+    .from('projects')
+    .select('id')
+    .eq('id', parsed.data.projectId)
+    .eq('company_id', member.companyId)
+    .maybeSingle()
   if (!project) return { error: 'Project not found.' }
 
   const { data: last } = await supabase
-    .from('sprints').select('number')
+    .from('sprints')
+    .select('number')
     .eq('project_id', project.id)
-    .order('number', { ascending: false }).limit(1).maybeSingle()
+    .order('number', { ascending: false })
+    .limit(1)
+    .maybeSingle()
   const nextNumber = (last?.number ?? 0) + 1
 
   const { data: sprint, error } = await supabase
@@ -1738,7 +2042,8 @@ export async function createSprint(input: z.input<typeof CreateSprintInput>) {
       from_date: parsed.data.fromDate,
       to_date: parsed.data.toDate
     })
-    .select('*').single()
+    .select('*')
+    .single()
   if (error || !sprint) return { error: error?.message ?? 'Create failed.' }
 
   revalidatePath('/dashboard')
@@ -1747,19 +2052,24 @@ export async function createSprint(input: z.input<typeof CreateSprintInput>) {
 
 export async function updateSprint(input: z.input<typeof UpdateSprintInput>) {
   const parsed = UpdateSprintInput.safeParse(input)
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
+  if (!parsed.success)
+    return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
   const member = await requireAccessTier(['admin', 'lead'])
   const supabase = createAdminClient()
 
   const { data: existing } = await supabase
-    .from('sprints').select('id')
-    .eq('id', parsed.data.sprintId).eq('company_id', member.companyId).maybeSingle()
+    .from('sprints')
+    .select('id')
+    .eq('id', parsed.data.sprintId)
+    .eq('company_id', member.companyId)
+    .maybeSingle()
   if (!existing) return { error: 'Sprint not found.' }
 
   const patch: Database['public']['Tables']['sprints']['Update'] = {}
   if (parsed.data.name !== undefined) patch.name = parsed.data.name
   if (parsed.data.goal !== undefined) patch.goal = parsed.data.goal
-  if (parsed.data.description !== undefined) patch.description = parsed.data.description
+  if (parsed.data.description !== undefined)
+    patch.description = parsed.data.description
   if (parsed.data.docUrl !== undefined) patch.doc_url = parsed.data.docUrl
   if (parsed.data.fromDate) patch.from_date = parsed.data.fromDate
   if (parsed.data.toDate) patch.to_date = parsed.data.toDate
@@ -1776,8 +2086,10 @@ export async function deleteSprint(sprintId: string) {
   const supabase = createAdminClient()
 
   const { error, count } = await supabase
-    .from('sprints').delete({ count: 'exact' })
-    .eq('id', parsed.data).eq('company_id', member.companyId)
+    .from('sprints')
+    .delete({ count: 'exact' })
+    .eq('id', parsed.data)
+    .eq('company_id', member.companyId)
   if (error) return { error: error.message }
   if ((count ?? 0) === 0) return { error: 'Sprint not found.' }
 
@@ -1798,23 +2110,36 @@ export async function addTaskToSprint(input: z.input<typeof SprintTaskInput>) {
   const supabase = createAdminClient()
 
   const [sprintRes, taskRes] = await Promise.all([
-    supabase.from('sprints').select('id')
-      .eq('id', parsed.data.sprintId).eq('company_id', member.companyId).maybeSingle(),
-    supabase.from('tasks').select('id')
-      .eq('id', parsed.data.taskId).eq('company_id', member.companyId)
-      .is('deleted_at', null).maybeSingle()
+    supabase
+      .from('sprints')
+      .select('id')
+      .eq('id', parsed.data.sprintId)
+      .eq('company_id', member.companyId)
+      .maybeSingle(),
+    supabase
+      .from('tasks')
+      .select('id')
+      .eq('id', parsed.data.taskId)
+      .eq('company_id', member.companyId)
+      .is('deleted_at', null)
+      .maybeSingle()
   ])
-  if (!sprintRes.data || !taskRes.data) return { error: 'Sprint or task not found.' }
+  if (!sprintRes.data || !taskRes.data)
+    return { error: 'Sprint or task not found.' }
 
-  await supabase.from('sprint_tasks').upsert(
-    { sprint_id: sprintRes.data.id, task_id: taskRes.data.id },
-    { onConflict: 'sprint_id,task_id', ignoreDuplicates: true }
-  )
+  await supabase
+    .from('sprint_tasks')
+    .upsert(
+      { sprint_id: sprintRes.data.id, task_id: taskRes.data.id },
+      { onConflict: 'sprint_id,task_id', ignoreDuplicates: true }
+    )
   revalidatePath('/dashboard')
   return { ok: true as const }
 }
 
-export async function removeTaskFromSprint(input: z.input<typeof SprintTaskInput>) {
+export async function removeTaskFromSprint(
+  input: z.input<typeof SprintTaskInput>
+) {
   const parsed = SprintTaskInput.safeParse(input)
   if (!parsed.success) return { error: 'Invalid input.' }
   const member = await requireAccessTier(['admin', 'lead'])
@@ -1823,13 +2148,18 @@ export async function removeTaskFromSprint(input: z.input<typeof SprintTaskInput
 
   // company scoping via the parent sprint
   const { data: sprint } = await supabase
-    .from('sprints').select('id')
-    .eq('id', parsed.data.sprintId).eq('company_id', member.companyId).maybeSingle()
+    .from('sprints')
+    .select('id')
+    .eq('id', parsed.data.sprintId)
+    .eq('company_id', member.companyId)
+    .maybeSingle()
   if (!sprint) return { ok: true as const }
 
   await supabase
-    .from('sprint_tasks').delete()
-    .eq('sprint_id', parsed.data.sprintId).eq('task_id', parsed.data.taskId)
+    .from('sprint_tasks')
+    .delete()
+    .eq('sprint_id', parsed.data.sprintId)
+    .eq('task_id', parsed.data.taskId)
   revalidatePath('/dashboard')
   return { ok: true as const }
 }
@@ -1892,17 +2222,15 @@ export async function bulkMoveTasksToSprint(
       continue
     }
     if (targetSprint) {
-      const { error: linkErr } = await supabase
-        .from('sprint_tasks')
-        .upsert(
-          {
-            sprint_id: targetSprint.id,
-            task_id: taskId,
-            carry_count: 0,
-            carried_from_sprint_id: null
-          },
-          { onConflict: 'sprint_id,task_id', ignoreDuplicates: true }
-        )
+      const { error: linkErr } = await supabase.from('sprint_tasks').upsert(
+        {
+          sprint_id: targetSprint.id,
+          task_id: taskId,
+          carry_count: 0,
+          carried_from_sprint_id: null
+        },
+        { onConflict: 'sprint_id,task_id', ignoreDuplicates: true }
+      )
       if (linkErr) {
         errors.push({ taskId, reason: linkErr.message })
         continue
@@ -1974,10 +2302,14 @@ export async function startSprint(sprintId: string) {
   const { data: sprint } = await supabase
     .from('sprints')
     .select('id, project_id, number, name, goal, status')
-    .eq('id', parsed.data).eq('company_id', member.companyId).maybeSingle()
+    .eq('id', parsed.data)
+    .eq('company_id', member.companyId)
+    .maybeSingle()
   if (!sprint) return { error: 'Sprint not found.' }
-  if (sprint.status === 'current') return { error: 'Sprint is already current.' }
-  if (sprint.status === 'completed') return { error: 'Sprint is already completed.' }
+  if (sprint.status === 'current')
+    return { error: 'Sprint is already current.' }
+  if (sprint.status === 'completed')
+    return { error: 'Sprint is already completed.' }
 
   await supabase
     .from('sprints')
@@ -2031,7 +2363,9 @@ export async function endSprint(input: z.input<typeof EndSprintInput>) {
   const { data: sprint } = await supabase
     .from('sprints')
     .select('id, project_id, number, name, goal, status')
-    .eq('id', parsed.data.sprintId).eq('company_id', member.companyId).maybeSingle()
+    .eq('id', parsed.data.sprintId)
+    .eq('company_id', member.companyId)
+    .maybeSingle()
   if (!sprint) return { error: 'Sprint not found.' }
   if (sprint.status !== 'current') {
     return { error: 'Only a current sprint can be ended.' }
@@ -2087,7 +2421,8 @@ export async function endSprint(input: z.input<typeof EndSprintInput>) {
           from_date: fromIso,
           to_date: toIso
         })
-        .select('id').single()
+        .select('id')
+        .single()
       if (createErr || !created) {
         return { error: createErr?.message ?? 'Failed to create next sprint.' }
       }
@@ -2161,8 +2496,12 @@ export async function endSprint(input: z.input<typeof EndSprintInput>) {
 // ─── Project github repo + external refs ──────────────────────────────────
 
 const GithubRepoStr = z
-  .string().trim()
-  .regex(/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/, 'expected "owner/repo" (e.g. acme/web)')
+  .string()
+  .trim()
+  .regex(
+    /^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/,
+    'expected "owner/repo" (e.g. acme/web)'
+  )
   .max(120)
 
 const SetProjectRepoInput = z.object({
@@ -2170,15 +2509,20 @@ const SetProjectRepoInput = z.object({
   githubRepo: z.union([z.literal(''), GithubRepoStr])
 })
 
-export async function setProjectGithubRepo(input: z.input<typeof SetProjectRepoInput>) {
+export async function setProjectGithubRepo(
+  input: z.input<typeof SetProjectRepoInput>
+) {
   const parsed = SetProjectRepoInput.safeParse(input)
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
+  if (!parsed.success)
+    return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
   const member = await requireAccessTier(['admin', 'lead'])
   const supabase = createAdminClient()
 
   const { error, count } = await supabase
-    .from('projects').update({ github_repo: parsed.data.githubRepo || null }, { count: 'exact' })
-    .eq('id', parsed.data.projectId).eq('company_id', member.companyId)
+    .from('projects')
+    .update({ github_repo: parsed.data.githubRepo || null }, { count: 'exact' })
+    .eq('id', parsed.data.projectId)
+    .eq('company_id', member.companyId)
   if (error) return { error: error.message }
   if ((count ?? 0) === 0) return { error: 'Project not found.' }
 
@@ -2192,9 +2536,12 @@ const AddTaskExternalRefInput = z.object({
   label: z.string().trim().min(1).max(120).optional().nullable()
 })
 
-export async function addTaskExternalRef(input: z.input<typeof AddTaskExternalRefInput>) {
+export async function addTaskExternalRef(
+  input: z.input<typeof AddTaskExternalRefInput>
+) {
   const parsed = AddTaskExternalRefInput.safeParse(input)
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
+  if (!parsed.success)
+    return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
   const gate = await ensureTaskAccess(parsed.data.taskId, 'owner')
   if ('error' in gate) return { error: gate.error }
   const { member } = gate
@@ -2203,13 +2550,18 @@ export async function addTaskExternalRef(input: z.input<typeof AddTaskExternalRe
   const supabase = createAdminClient()
 
   const { data: task } = await supabase
-    .from('tasks').select('id')
-    .eq('id', parsed.data.taskId).eq('company_id', member.companyId)
-    .is('deleted_at', null).maybeSingle()
+    .from('tasks')
+    .select('id')
+    .eq('id', parsed.data.taskId)
+    .eq('company_id', member.companyId)
+    .is('deleted_at', null)
+    .maybeSingle()
   if (!task) return { error: 'Task not found.' }
 
   const providedLabel = parsed.data.label?.trim() || null
-  const scrapedLabel = providedLabel ? null : await scrapeDocTitle(parsedUrl.url)
+  const scrapedLabel = providedLabel
+    ? null
+    : await scrapeDocTitle(parsedUrl.url)
   const { data: ref, error } = await supabase
     .from('task_external_refs')
     .insert({
@@ -2220,12 +2572,23 @@ export async function addTaskExternalRef(input: z.input<typeof AddTaskExternalRe
       label: providedLabel ?? scrapedLabel,
       created_by: member.id
     })
-    .select('*').single()
-  if (error || !ref) return { error: error?.message ?? 'Could not add reference.' }
+    .select('*')
+    .single()
+  if (error || !ref)
+    return { error: error?.message ?? 'Could not add reference.' }
 
-  await logActivity(supabase, member.companyId, member.id, 'task.ref_added', 'task', task.id, {
-    kind: parsedUrl.kind, url: parsedUrl.url
-  })
+  await logActivity(
+    supabase,
+    member.companyId,
+    member.id,
+    'task.ref_added',
+    'task',
+    task.id,
+    {
+      kind: parsedUrl.kind,
+      url: parsedUrl.url
+    }
+  )
   revalidatePath('/dashboard')
   return { ref: toCamelTaskRef(ref) }
 }
@@ -2238,17 +2601,29 @@ export async function removeTaskExternalRef(refId: string) {
   const supabase = createAdminClient()
 
   const { data: existing } = await supabase
-    .from('task_external_refs').select('id, task_id, kind, url')
-    .eq('id', parsed.data).eq('company_id', member.companyId).maybeSingle()
+    .from('task_external_refs')
+    .select('id, task_id, kind, url')
+    .eq('id', parsed.data)
+    .eq('company_id', member.companyId)
+    .maybeSingle()
   if (!existing) return { error: 'Ref not found.' }
 
   const gate = await ensureTaskAccess(existing.task_id, 'owner')
   if ('error' in gate) return { error: gate.error }
 
   await supabase.from('task_external_refs').delete().eq('id', existing.id)
-  await logActivity(supabase, member.companyId, member.id, 'task.ref_removed', 'task', existing.task_id, {
-    kind: existing.kind, url: existing.url
-  })
+  await logActivity(
+    supabase,
+    member.companyId,
+    member.id,
+    'task.ref_removed',
+    'task',
+    existing.task_id,
+    {
+      kind: existing.kind,
+      url: existing.url
+    }
+  )
   revalidatePath('/dashboard')
   return { ok: true as const }
 }
@@ -2259,9 +2634,12 @@ const AddProjectExternalRefInput = z.object({
   label: z.string().trim().min(1).max(120).optional().nullable()
 })
 
-export async function addProjectExternalRef(input: z.input<typeof AddProjectExternalRefInput>) {
+export async function addProjectExternalRef(
+  input: z.input<typeof AddProjectExternalRefInput>
+) {
   const parsed = AddProjectExternalRefInput.safeParse(input)
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
+  if (!parsed.success)
+    return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
   const member = await getCurrentTeamMember()
   if (!member) return { error: 'Not signed in.' }
   const parsedUrl = parseExternalRef(parsed.data.url)
@@ -2269,12 +2647,17 @@ export async function addProjectExternalRef(input: z.input<typeof AddProjectExte
   const supabase = createAdminClient()
 
   const { data: project } = await supabase
-    .from('projects').select('id')
-    .eq('id', parsed.data.projectId).eq('company_id', member.companyId).maybeSingle()
+    .from('projects')
+    .select('id')
+    .eq('id', parsed.data.projectId)
+    .eq('company_id', member.companyId)
+    .maybeSingle()
   if (!project) return { error: 'Project not found.' }
 
   const providedLabel = parsed.data.label?.trim() || null
-  const scrapedLabel = providedLabel ? null : await scrapeDocTitle(parsedUrl.url)
+  const scrapedLabel = providedLabel
+    ? null
+    : await scrapeDocTitle(parsedUrl.url)
   const { data: ref, error } = await supabase
     .from('project_external_refs')
     .insert({
@@ -2285,8 +2668,10 @@ export async function addProjectExternalRef(input: z.input<typeof AddProjectExte
       label: providedLabel ?? scrapedLabel,
       created_by: member.id
     })
-    .select('*').single()
-  if (error || !ref) return { error: error?.message ?? 'Could not add reference.' }
+    .select('*')
+    .single()
+  if (error || !ref)
+    return { error: error?.message ?? 'Could not add reference.' }
 
   revalidatePath('/dashboard')
   return { ref: toCamelProjectRef(ref) }
@@ -2301,12 +2686,14 @@ export async function updateProjectExternalRefLabel(
   input: z.input<typeof UpdateExternalRefLabelInput>
 ) {
   const parsed = UpdateExternalRefLabelInput.safeParse(input)
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
+  if (!parsed.success)
+    return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
   const member = await getCurrentTeamMember()
   if (!member) return { error: 'Not signed in.' }
   const supabase = createAdminClient()
 
-  const next = parsed.data.label && parsed.data.label.length > 0 ? parsed.data.label : null
+  const next =
+    parsed.data.label && parsed.data.label.length > 0 ? parsed.data.label : null
   const { data: ref, error } = await supabase
     .from('project_external_refs')
     .update({ label: next })
@@ -2324,19 +2711,24 @@ export async function updateTaskExternalRefLabel(
   input: z.input<typeof UpdateExternalRefLabelInput>
 ) {
   const parsed = UpdateExternalRefLabelInput.safeParse(input)
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
+  if (!parsed.success)
+    return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
   const member = await getCurrentTeamMember()
   if (!member) return { error: 'Not signed in.' }
   const supabase = createAdminClient()
 
   const { data: existing } = await supabase
-    .from('task_external_refs').select('task_id')
-    .eq('id', parsed.data.refId).eq('company_id', member.companyId).maybeSingle()
+    .from('task_external_refs')
+    .select('task_id')
+    .eq('id', parsed.data.refId)
+    .eq('company_id', member.companyId)
+    .maybeSingle()
   if (!existing) return { error: 'Ref not found.' }
   const gate = await ensureTaskAccess(existing.task_id, 'owner')
   if ('error' in gate) return { error: gate.error }
 
-  const next = parsed.data.label && parsed.data.label.length > 0 ? parsed.data.label : null
+  const next =
+    parsed.data.label && parsed.data.label.length > 0 ? parsed.data.label : null
   const { data: ref, error } = await supabase
     .from('task_external_refs')
     .update({ label: next })
@@ -2358,8 +2750,10 @@ export async function removeProjectExternalRef(refId: string) {
   const supabase = createAdminClient()
 
   const { error, count } = await supabase
-    .from('project_external_refs').delete({ count: 'exact' })
-    .eq('id', parsed.data).eq('company_id', member.companyId)
+    .from('project_external_refs')
+    .delete({ count: 'exact' })
+    .eq('id', parsed.data)
+    .eq('company_id', member.companyId)
   if (error) return { error: error.message }
   if ((count ?? 0) === 0) return { error: 'Ref not found.' }
 
@@ -2395,19 +2789,25 @@ export async function fetchTaskHandoff(taskId: string) {
 
   const { data: row } = await supabase
     .from('handoffs')
-    .select('what_it_is, current_status, done_so_far, still_left, file_links, gotchas, who_to_ask')
-    .eq('task_id', parsed.data).eq('company_id', member.companyId).maybeSingle()
+    .select(
+      'what_it_is, current_status, done_so_far, still_left, file_links, gotchas, who_to_ask'
+    )
+    .eq('task_id', parsed.data)
+    .eq('company_id', member.companyId)
+    .maybeSingle()
 
   return {
-    handoff: row ? {
-      whatItIs: row.what_it_is,
-      currentStatus: row.current_status,
-      doneSoFar: row.done_so_far,
-      stillLeft: row.still_left,
-      fileLinks: row.file_links,
-      gotchas: row.gotchas,
-      whoToAsk: row.who_to_ask
-    } : null
+    handoff: row
+      ? {
+          whatItIs: row.what_it_is,
+          currentStatus: row.current_status,
+          doneSoFar: row.done_so_far,
+          stillLeft: row.still_left,
+          fileLinks: row.file_links,
+          gotchas: row.gotchas,
+          whoToAsk: row.who_to_ask
+        }
+      : null
   }
 }
 
@@ -2419,32 +2819,39 @@ export async function saveHandoffDraft(
   input: z.input<typeof SubmitHandoffInput>
 ): Promise<{ error: string } | { ok: true }> {
   const parsed = SubmitHandoffInput.safeParse(input)
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
+  if (!parsed.success)
+    return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
   const gate = await ensureTaskAccess(parsed.data.taskId, 'owner')
   if ('error' in gate) return { error: gate.error }
   const { member } = gate
   const supabase = createAdminClient()
 
   const { data: task } = await supabase
-    .from('tasks').select('id')
-    .eq('id', parsed.data.taskId).eq('company_id', member.companyId)
-    .is('deleted_at', null).maybeSingle()
+    .from('tasks')
+    .select('id')
+    .eq('id', parsed.data.taskId)
+    .eq('company_id', member.companyId)
+    .is('deleted_at', null)
+    .maybeSingle()
   if (!task) return { error: 'Task not found.' }
 
-  await supabase.from('handoffs').upsert({
-    company_id: member.companyId,
-    task_id: task.id,
-    from_member_id: member.id,
-    status: 'in_progress',
-    what_it_is: parsed.data.fields.whatItIs ?? null,
-    current_status: parsed.data.fields.currentStatus ?? null,
-    done_so_far: parsed.data.fields.doneSoFar ?? null,
-    still_left: parsed.data.fields.stillLeft ?? null,
-    file_links: parsed.data.fields.fileLinks ?? null,
-    gotchas: parsed.data.fields.gotchas ?? null,
-    who_to_ask: parsed.data.fields.whoToAsk ?? null,
-    updated_at: new Date().toISOString()
-  }, { onConflict: 'task_id' })
+  await supabase.from('handoffs').upsert(
+    {
+      company_id: member.companyId,
+      task_id: task.id,
+      from_member_id: member.id,
+      status: 'in_progress',
+      what_it_is: parsed.data.fields.whatItIs ?? null,
+      current_status: parsed.data.fields.currentStatus ?? null,
+      done_so_far: parsed.data.fields.doneSoFar ?? null,
+      still_left: parsed.data.fields.stillLeft ?? null,
+      file_links: parsed.data.fields.fileLinks ?? null,
+      gotchas: parsed.data.fields.gotchas ?? null,
+      who_to_ask: parsed.data.fields.whoToAsk ?? null,
+      updated_at: new Date().toISOString()
+    },
+    { onConflict: 'task_id' }
+  )
 
   revalidatePath('/dashboard')
   return { ok: true }
@@ -2457,16 +2864,20 @@ export async function submitHandoffForReview(
   input: z.input<typeof SubmitHandoffInput>
 ): Promise<{ error: string; missing?: string[] } | { ok: true }> {
   const parsed = SubmitHandoffInput.safeParse(input)
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
+  if (!parsed.success)
+    return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
   const gate = await ensureTaskAccess(parsed.data.taskId, 'owner')
   if ('error' in gate) return { error: gate.error }
   const { member } = gate
   const supabase = createAdminClient()
 
   const { data: task } = await supabase
-    .from('tasks').select('id')
-    .eq('id', parsed.data.taskId).eq('company_id', member.companyId)
-    .is('deleted_at', null).maybeSingle()
+    .from('tasks')
+    .select('id')
+    .eq('id', parsed.data.taskId)
+    .eq('company_id', member.companyId)
+    .is('deleted_at', null)
+    .maybeSingle()
   if (!task) return { error: 'Task not found.' }
 
   const missing: string[] = []
@@ -2481,20 +2892,23 @@ export async function submitHandoffForReview(
     }
   }
 
-  await supabase.from('handoffs').upsert({
-    company_id: member.companyId,
-    task_id: task.id,
-    from_member_id: member.id,
-    status: 'ready_for_review',
-    what_it_is: parsed.data.fields.whatItIs ?? null,
-    current_status: parsed.data.fields.currentStatus ?? null,
-    done_so_far: parsed.data.fields.doneSoFar ?? null,
-    still_left: parsed.data.fields.stillLeft ?? null,
-    file_links: parsed.data.fields.fileLinks ?? null,
-    gotchas: parsed.data.fields.gotchas ?? null,
-    who_to_ask: parsed.data.fields.whoToAsk ?? null,
-    updated_at: new Date().toISOString()
-  }, { onConflict: 'task_id' })
+  await supabase.from('handoffs').upsert(
+    {
+      company_id: member.companyId,
+      task_id: task.id,
+      from_member_id: member.id,
+      status: 'ready_for_review',
+      what_it_is: parsed.data.fields.whatItIs ?? null,
+      current_status: parsed.data.fields.currentStatus ?? null,
+      done_so_far: parsed.data.fields.doneSoFar ?? null,
+      still_left: parsed.data.fields.stillLeft ?? null,
+      file_links: parsed.data.fields.fileLinks ?? null,
+      gotchas: parsed.data.fields.gotchas ?? null,
+      who_to_ask: parsed.data.fields.whoToAsk ?? null,
+      updated_at: new Date().toISOString()
+    },
+    { onConflict: 'task_id' }
+  )
 
   revalidatePath('/dashboard')
   return { ok: true }
@@ -2503,13 +2917,21 @@ export async function submitHandoffForReview(
 // ─── Project CRUD (used by Panels.tsx) ────────────────────────────────────
 
 const CreateProjectSchema = z.object({
-  name: z.string().trim().min(2, { error: 'Name must be at least 2 characters.' }).max(80, { error: 'Name must be at most 80 characters.' }),
+  name: z
+    .string()
+    .trim()
+    .min(2, { error: 'Name must be at least 2 characters.' })
+    .max(80, { error: 'Name must be at most 80 characters.' }),
   kind: z.enum(['standard', 'operations'])
 })
 const ArchiveProjectSchema = z.object({ projectId: z.uuid() })
 const RenameProjectSchema = z.object({
   projectId: z.uuid(),
-  name: z.string().trim().min(2, { error: 'Name must be at least 2 characters.' }).max(80, { error: 'Name must be at most 80 characters.' })
+  name: z
+    .string()
+    .trim()
+    .min(2, { error: 'Name must be at least 2 characters.' })
+    .max(80, { error: 'Name must be at most 80 characters.' })
 })
 
 export async function createProjectInPlace(
@@ -2520,16 +2942,22 @@ export async function createProjectInPlace(
     name: formData.get('name'),
     kind: formData.get('kind') ?? 'standard'
   })
-  if (!parsed.success) return { error: 'Please enter a valid name (2 to 80 chars).' }
+  if (!parsed.success)
+    return { error: 'Please enter a valid name (2 to 80 chars).' }
   const supabase = createAdminClient()
 
   const { error } = await supabase
     .from('projects')
-    .insert({ company_id: member.companyId, name: parsed.data.name, kind: parsed.data.kind })
+    .insert({
+      company_id: member.companyId,
+      name: parsed.data.name,
+      kind: parsed.data.kind
+    })
   if (error) {
-    const message = error.code === '23505'
-      ? 'A project with that name already exists.'
-      : "Couldn't create the project. Try again."
+    const message =
+      error.code === '23505'
+        ? 'A project with that name already exists.'
+        : "Couldn't create the project. Try again."
     return { error: message }
   }
   revalidatePath('/dashboard')
@@ -2540,11 +2968,16 @@ export async function archiveProjectInPlace(
   formData: FormData
 ): Promise<{ error?: string } | undefined> {
   const member = await requireAccessTier(['admin', 'lead'])
-  const parsed = ArchiveProjectSchema.safeParse({ projectId: formData.get('projectId') })
+  const parsed = ArchiveProjectSchema.safeParse({
+    projectId: formData.get('projectId')
+  })
   if (!parsed.success) return { error: 'Invalid project id.' }
   const supabase = createAdminClient()
-  await supabase.from('projects').update({ is_archived: true })
-    .eq('id', parsed.data.projectId).eq('company_id', member.companyId)
+  await supabase
+    .from('projects')
+    .update({ is_archived: true })
+    .eq('id', parsed.data.projectId)
+    .eq('company_id', member.companyId)
   revalidatePath('/dashboard')
   return undefined
 }
@@ -2553,32 +2986,45 @@ export async function unarchiveProject(
   formData: FormData
 ): Promise<{ error?: string } | undefined> {
   const member = await requireAccessTier(['admin', 'lead'])
-  const parsed = ArchiveProjectSchema.safeParse({ projectId: formData.get('projectId') })
+  const parsed = ArchiveProjectSchema.safeParse({
+    projectId: formData.get('projectId')
+  })
   if (!parsed.success) return { error: 'Invalid project id.' }
   const supabase = createAdminClient()
-  await supabase.from('projects').update({ is_archived: false })
-    .eq('id', parsed.data.projectId).eq('company_id', member.companyId)
+  await supabase
+    .from('projects')
+    .update({ is_archived: false })
+    .eq('id', parsed.data.projectId)
+    .eq('company_id', member.companyId)
   revalidatePath('/dashboard')
   return undefined
 }
 
-export async function renameProject(formData: FormData): Promise<RenameProjectState> {
+export async function renameProject(
+  formData: FormData
+): Promise<RenameProjectState> {
   const member = await requireAccessTier(['admin', 'lead'])
   const parsed = RenameProjectSchema.safeParse({
     projectId: formData.get('projectId'),
     name: formData.get('name')
   })
   if (!parsed.success) {
-    return { error: 'Invalid input.', fieldErrors: z.flattenError(parsed.error).fieldErrors }
+    return {
+      error: 'Invalid input.',
+      fieldErrors: z.flattenError(parsed.error).fieldErrors
+    }
   }
   const supabase = createAdminClient()
   const { error } = await supabase
-    .from('projects').update({ name: parsed.data.name })
-    .eq('id', parsed.data.projectId).eq('company_id', member.companyId)
+    .from('projects')
+    .update({ name: parsed.data.name })
+    .eq('id', parsed.data.projectId)
+    .eq('company_id', member.companyId)
   if (error) {
-    const message = error.code === '23505'
-      ? 'A project with that name already exists.'
-      : "Couldn't rename the project. Try again."
+    const message =
+      error.code === '23505'
+        ? 'A project with that name already exists.'
+        : "Couldn't rename the project. Try again."
     return { error: message }
   }
   revalidatePath('/dashboard')
@@ -2779,16 +3225,14 @@ export async function addTaskWatcher(input: z.input<typeof AddWatcherInput>) {
     return { error: 'That member is already the assignee.' }
   }
 
-  const { error } = await supabase
-    .from('task_watchers')
-    .upsert(
-      {
-        task_id: parsed.data.taskId,
-        member_id: parsed.data.memberId,
-        invited_by: member.id
-      },
-      { onConflict: 'task_id,member_id', ignoreDuplicates: true }
-    )
+  const { error } = await supabase.from('task_watchers').upsert(
+    {
+      task_id: parsed.data.taskId,
+      member_id: parsed.data.memberId,
+      invited_by: member.id
+    },
+    { onConflict: 'task_id,member_id', ignoreDuplicates: true }
+  )
   if (error) return { error: error.message }
 
   await logActivity(
@@ -2911,7 +3355,9 @@ export async function toggleCommentReaction(input: {
 
   const { data: comment } = await supabase
     .from('task_comments')
-    .select('id, task_id, tasks!task_comment_task_id_fkey!inner(company_id, deleted_at)')
+    .select(
+      'id, task_id, tasks!task_comment_task_id_fkey!inner(company_id, deleted_at)'
+    )
     .eq('id', parsed.data.commentId)
     .maybeSingle()
   if (!comment || comment.tasks?.company_id !== member.companyId) {
@@ -2930,10 +3376,7 @@ export async function toggleCommentReaction(input: {
     .maybeSingle()
 
   if (existing) {
-    await supabase
-      .from('comment_reactions')
-      .delete()
-      .eq('id', existing.id)
+    await supabase.from('comment_reactions').delete().eq('id', existing.id)
     revalidatePath('/dashboard')
     return { ok: true as const, added: false }
   }
@@ -2978,10 +3421,7 @@ export async function toggleTaskReaction(input: {
     .maybeSingle()
 
   if (existing) {
-    await supabase
-      .from('task_reactions')
-      .delete()
-      .eq('id', existing.id)
+    await supabase.from('task_reactions').delete().eq('id', existing.id)
     revalidatePath('/dashboard')
     return { ok: true as const, added: false }
   }

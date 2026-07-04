@@ -96,8 +96,7 @@ export function MeetingCreateWizardProvider({
 }) {
   const { t } = useDashTheme()
   const team = useTeam()
-  const viewerTz =
-    team.find((m) => m.id === currentUserId)?.timezone ?? null
+  const viewerTz = team.find((m) => m.id === currentUserId)?.timezone ?? null
   const queryClient = useQueryClient()
   const [openSheet, setOpenSheet] = useState(false)
   const [step, setStep] = useState<Step>(1)
@@ -149,10 +148,13 @@ export function MeetingCreateWizardProvider({
     if (step === 2) return title.trim().length > 0
     if (step === 3) {
       if (isGroup) {
-        return groupTime.length > 0 && !Number.isNaN(new Date(groupTime).getTime())
+        return (
+          groupTime.length > 0 && !Number.isNaN(new Date(groupTime).getTime())
+        )
       }
       if (mode === 'day') {
-        if (!proposedDate || !/^\d{4}-\d{2}-\d{2}$/.test(proposedDate)) return false
+        if (!proposedDate || !/^\d{4}-\d{2}-\d{2}$/.test(proposedDate))
+          return false
         return proposedDate >= today
       }
       if (slots.length < 2) return false
@@ -173,10 +175,10 @@ export function MeetingCreateWizardProvider({
 
   function next() {
     if (!canProceed) return
-    if (step < 4) setStep(((step + 1) as Step))
+    if (step < 4) setStep((step + 1) as Step)
   }
   function back() {
-    if (step > 1) setStep(((step - 1) as Step))
+    if (step > 1) setStep((step - 1) as Step)
   }
 
   function submit() {
@@ -314,7 +316,7 @@ export function MeetingCreateWizardProvider({
                   viewerTz={viewerTz}
                   linkedTask={
                     linkedTaskId
-                      ? tasks.find((tk) => tk.id === linkedTaskId) ?? null
+                      ? (tasks.find((tk) => tk.id === linkedTaskId) ?? null)
                       : null
                   }
                 />
@@ -424,8 +426,7 @@ function StepAttendees({
   const [query, setQuery] = useState('')
   const filtered = candidates.filter(
     (m) =>
-      !query.trim() ||
-      m.name.toLowerCase().includes(query.trim().toLowerCase())
+      !query.trim() || m.name.toLowerCase().includes(query.trim().toLowerCase())
   )
 
   function toggle(id: string) {
@@ -451,7 +452,9 @@ function StepAttendees({
   return (
     <div className="flex flex-col gap-3">
       <div>
-        <h3 className={`text-sm font-medium ${t.text}`}>Who are you meeting with?</h3>
+        <h3 className={`text-sm font-medium ${t.text}`}>
+          Who are you meeting with?
+        </h3>
         <p className={`mt-0.5 text-[11px] ${t.textMuted}`}>
           Pick one teammate for a 1:1, or several for a group. Members on
           vacation or who have left are hidden.
@@ -529,9 +532,7 @@ function StepAttendees({
             >
               <span
                 className={`flex size-4 shrink-0 items-center justify-center rounded border ${
-                  checked
-                    ? 'border-teal-600 bg-teal-600 text-white'
-                    : t.border
+                  checked ? 'border-teal-600 bg-teal-600 text-white' : t.border
                 }`}
               >
                 {checked && <CheckCircle2 className="size-2.5" />}
@@ -607,8 +608,8 @@ function StepTopic({
             What&apos;s this meeting about?
           </h3>
           <p className={`mt-0.5 text-[11px] ${t.textMuted}`}>
-            Only a title is required; the brief is optional but helps
-            attendees walk in prepared.
+            Only a title is required; the brief is optional but helps attendees
+            walk in prepared.
           </p>
         </div>
       </div>
@@ -770,7 +771,9 @@ function StepWhen({
 
       {!isGroup && (
         <div className="flex flex-col gap-1">
-          <span className={`text-[9px] tracking-wider uppercase ${t.textMuted}`}>
+          <span
+            className={`text-[9px] tracking-wider uppercase ${t.textMuted}`}
+          >
             Mode
           </span>
           <div
@@ -796,7 +799,9 @@ function StepWhen({
 
       {isGroup ? (
         <label className="flex flex-col gap-1">
-          <span className={`text-[9px] tracking-wider uppercase ${t.textMuted}`}>
+          <span
+            className={`text-[9px] tracking-wider uppercase ${t.textMuted}`}
+          >
             Locked time
           </span>
           <input
@@ -813,7 +818,9 @@ function StepWhen({
         </label>
       ) : mode === 'day' ? (
         <label className="flex flex-col gap-1">
-          <span className={`text-[9px] tracking-wider uppercase ${t.textMuted}`}>
+          <span
+            className={`text-[9px] tracking-wider uppercase ${t.textMuted}`}
+          >
             Day
           </span>
           <input
@@ -857,7 +864,9 @@ function StepWhen({
                   type="datetime-local"
                   value={slot}
                   onChange={(e) =>
-                    setSlots(slots.map((s, idx) => (idx === i ? e.target.value : s)))
+                    setSlots(
+                      slots.map((s, idx) => (idx === i ? e.target.value : s))
+                    )
                   }
                   className={`h-8 flex-1 rounded-md border px-2 text-xs ${t.input}`}
                 />
@@ -1193,7 +1202,7 @@ function TaskPickerField({
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
 
-  const selected = value ? tasks.find((tk) => tk.id === value) ?? null : null
+  const selected = value ? (tasks.find((tk) => tk.id === value) ?? null) : null
 
   // Tasks where the current user is a participant (assignee OR lead).
   // "Shared" narrows further to tasks where at least one selected
@@ -1233,7 +1242,10 @@ function TaskPickerField({
           className={`flex items-center gap-2 rounded-md border px-2 py-1.5 text-[11px] ${t.border}`}
         >
           <span className={`font-mono ${t.textMuted}`}>{selected.ref}</span>
-          <span className={`min-w-0 flex-1 truncate ${t.text}`} title={selected.title}>
+          <span
+            className={`min-w-0 flex-1 truncate ${t.text}`}
+            title={selected.title}
+          >
             {selected.title}
           </span>
           <button
@@ -1256,7 +1268,9 @@ function TaskPickerField({
               <Plus className="size-3" /> Link a task from your projects
             </button>
           ) : (
-            <div className={`flex flex-col gap-2 rounded-md border p-2 ${t.border}`}>
+            <div
+              className={`flex flex-col gap-2 rounded-md border p-2 ${t.border}`}
+            >
               <div
                 className={`inline-flex items-center rounded-md border p-0.5 ${t.border}`}
               >
@@ -1265,7 +1279,9 @@ function TaskPickerField({
                   onClick={() => setScope('shared')}
                   disabled={sharedDisabled}
                   title={
-                    sharedDisabled ? 'Pick attendees first to see shared tasks.' : undefined
+                    sharedDisabled
+                      ? 'Pick attendees first to see shared tasks.'
+                      : undefined
                   }
                   className={`flex-1 rounded px-2 py-1 text-[11px] transition disabled:opacity-40 ${
                     scope === 'shared' ? t.tabActive : t.tab
@@ -1313,7 +1329,9 @@ function TaskPickerField({
                       }}
                       className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-[11px] transition hover:bg-zinc-100/60`}
                     >
-                      <span className={`font-mono ${t.textMuted}`}>{tk.ref}</span>
+                      <span className={`font-mono ${t.textMuted}`}>
+                        {tk.ref}
+                      </span>
                       <span className={`min-w-0 flex-1 truncate ${t.text}`}>
                         {tk.title}
                       </span>

@@ -188,8 +188,11 @@ export function parseExternalRef(rawUrl: string): ParsedExternalRef | null {
   // Stripe dashboard: dashboard.stripe.com/acct_<id>/... The account id is
   // the canonical identifier. Plain dashboard.stripe.com or stripe.com
   // URLs without an account fall back to "Stripe" with no identifier.
-  if (host === 'dashboard.stripe.com' || host === 'stripe.com' ||
-      host === 'www.stripe.com') {
+  if (
+    host === 'dashboard.stripe.com' ||
+    host === 'stripe.com' ||
+    host === 'www.stripe.com'
+  ) {
     const parts = url.pathname.split('/').filter(Boolean)
     const acct = parts.find((p) => p.startsWith('acct_'))
     // Strip "acct_" prefix for display; the URL keeps the full form.
@@ -316,7 +319,8 @@ export function defaultExternalRefLabel(parsed: ParsedExternalRef): string {
     const host = u.hostname.toLowerCase().replace(/^www\./, '')
     const path = u.pathname.toLowerCase()
     if (host === 'resend.com' || host.endsWith('.resend.com')) return 'Resend'
-    if (host === 'godaddy.com' || host.endsWith('.godaddy.com')) return 'GoDaddy'
+    if (host === 'godaddy.com' || host.endsWith('.godaddy.com'))
+      return 'GoDaddy'
     if (
       host === 'wordpress.com' ||
       host.endsWith('.wordpress.com') ||

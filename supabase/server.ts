@@ -8,7 +8,7 @@ import type { Database } from './types'
 // Node 20 has no native WebSocket; @supabase/realtime-js throws without one.
 // Decision 0010.
 if (typeof globalThis.WebSocket === 'undefined') {
-  (globalThis as unknown as { WebSocket: unknown }).WebSocket = WebSocket
+  ;(globalThis as unknown as { WebSocket: unknown }).WebSocket = WebSocket
 }
 
 export async function createClient() {

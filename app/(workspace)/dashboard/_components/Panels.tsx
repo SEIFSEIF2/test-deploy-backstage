@@ -2270,7 +2270,9 @@ export function SettingsPanel({
           <button
             onClick={toggle}
             aria-label={
-              mode === 'light' ? 'Switch to dark theme' : 'Switch to light theme'
+              mode === 'light'
+                ? 'Switch to dark theme'
+                : 'Switch to light theme'
             }
             className={`inline-flex items-center gap-2 rounded-md border px-2.5 py-1 text-xs transition ${t.border} ${t.tab}`}
           >
@@ -2519,11 +2521,7 @@ function GoogleCalendarConnection() {
   )
 }
 
-function QuickMeetUrlSetting({
-  initialUrl
-}: {
-  initialUrl: string | null
-}) {
+function QuickMeetUrlSetting({ initialUrl }: { initialUrl: string | null }) {
   const { t } = useDashTheme()
   const [value, setValue] = useState(initialUrl ?? '')
   const [savedValue, setSavedValue] = useState(initialUrl ?? '')
@@ -2565,9 +2563,9 @@ function QuickMeetUrlSetting({
         className={`h-8 w-full rounded-md border px-2 text-xs ${t.input}`}
       />
       <p className={`text-[10px] leading-relaxed ${t.textSubtle}`}>
-        Always-on Google Meet room joinable from the topbar Mon-Fri,
-        7:00-18:00 workspace time. Paste a Meet link you keep open in the
-        background or one that auto-admits members.
+        Always-on Google Meet room joinable from the topbar Mon-Fri, 7:00-18:00
+        workspace time. Paste a Meet link you keep open in the background or one
+        that auto-admits members.
       </p>
     </div>
   )
@@ -2597,7 +2595,6 @@ function FeaturesPointer() {
     </div>
   )
 }
-
 
 function AppearanceSection() {
   const { t } = useDashTheme()
@@ -2637,9 +2634,9 @@ function AppearanceSection() {
       <div className="flex flex-col gap-1">
         <h3 className={`text-sm font-medium ${t.text}`}>Appearance</h3>
         <p className={`text-[11px] leading-relaxed ${t.textSubtle}`}>
-          Upload a workspace logo (PNG, JPG, WEBP, or SVG, 2 MB max). Shown
-          on the sidebar and login screen. Leave blank to fall back to the
-          {' '}{config.appName} wordmark.
+          Upload a workspace logo (PNG, JPG, WEBP, or SVG, 2 MB max). Shown on
+          the sidebar and login screen. Leave blank to fall back to the{' '}
+          {config.appName} wordmark.
         </p>
       </div>
       <div className="flex items-center gap-3">

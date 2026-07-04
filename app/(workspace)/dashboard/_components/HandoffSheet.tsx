@@ -309,7 +309,9 @@ export default function HandoffSheet({
       }
       // Task status is intentionally left untouched - the member moves
       // the card to In review themselves once they're ready.
-      toast.success(`${task.ref} handoff ready. Move it to In review when you're set.`)
+      toast.success(
+        `${task.ref} handoff ready. Move it to In review when you're set.`
+      )
       clearDraft(task.id)
       onDone(task.id)
       onClose()

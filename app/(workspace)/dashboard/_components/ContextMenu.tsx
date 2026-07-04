@@ -179,7 +179,7 @@ const Menu = ({
         ref={ref}
         onClick={(e) => e.stopPropagation()}
         onContextMenu={(e) => e.preventDefault()}
-        className={`absolute min-w-[200px] rounded-md border shadow-xl py-1 ${surface}`}
+        className={`absolute min-w-[200px] rounded-md border py-1 shadow-xl ${surface}`}
         style={{ left: x, top: y }}
       >
         {items.map((item, i) =>
@@ -210,20 +210,20 @@ const Menu = ({
                 item.onSelect?.()
                 onClose()
               }}
-              className={`w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-left transition disabled:opacity-40 disabled:cursor-not-allowed ${
+              className={`flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-xs transition disabled:cursor-not-allowed disabled:opacity-40 ${
                 item.destructive
                   ? 'text-rose-500 hover:bg-rose-500/10'
                   : `${theme.tab} ${theme.rowHover}`
               }`}
             >
               {item.icon && (
-                <span className="shrink-0 inline-flex items-center justify-center w-4">
+                <span className="inline-flex w-4 shrink-0 items-center justify-center">
                   {item.icon}
                 </span>
               )}
               <span className="flex-1 truncate">{item.label}</span>
               {item.trailingIcon && (
-                <span className="shrink-0 inline-flex items-center justify-center">
+                <span className="inline-flex shrink-0 items-center justify-center">
                   {item.trailingIcon}
                 </span>
               )}
@@ -247,7 +247,7 @@ const Menu = ({
         <div
           onClick={(e) => e.stopPropagation()}
           onContextMenu={(e) => e.preventDefault()}
-          className={`absolute min-w-[180px] rounded-md border shadow-xl py-1 ${surface}`}
+          className={`absolute min-w-[180px] rounded-md border py-1 shadow-xl ${surface}`}
           style={{ left: submenu.x + 4, top: submenu.y }}
         >
           {submenu.items.map((sub, i) =>
@@ -265,14 +265,14 @@ const Menu = ({
                   sub.onSelect?.()
                   onClose()
                 }}
-                className={`w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-left transition disabled:opacity-40 ${
+                className={`flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-xs transition disabled:opacity-40 ${
                   sub.destructive
                     ? 'text-rose-500 hover:bg-rose-500/10'
                     : `${theme.tab} ${theme.rowHover}`
                 }`}
               >
                 {sub.icon && (
-                  <span className="shrink-0 inline-flex items-center justify-center w-4">
+                  <span className="inline-flex w-4 shrink-0 items-center justify-center">
                     {sub.icon}
                   </span>
                 )}

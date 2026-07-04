@@ -1,6 +1,12 @@
 'use client'
 
-import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState
+} from 'react'
 import { AtSign, Briefcase, Mail, MessageCircle, Link2 } from 'lucide-react'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { VisuallyHidden } from 'radix-ui'
@@ -48,7 +54,8 @@ const PortfolioCtx = createContext<Ctx | null>(null)
 
 export function usePortfolioSheet(): Ctx {
   const ctx = useContext(PortfolioCtx)
-  if (!ctx) throw new Error('usePortfolioSheet outside <PortfolioSheetProvider>')
+  if (!ctx)
+    throw new Error('usePortfolioSheet outside <PortfolioSheetProvider>')
   return ctx
 }
 
@@ -83,10 +90,7 @@ export function PortfolioSheetProvider({
     // Fetch profile and recent reviews in parallel - they're
     // independent and either one rendering early is better than
     // blocking on the other.
-    Promise.all([
-      fetchMemberPortfolio(openId),
-      listMemberReviews(openId, 10)
-    ])
+    Promise.all([fetchMemberPortfolio(openId), listMemberReviews(openId, 10)])
       .then(([portfolioRes, reviewsRes]) => {
         if (cancelled) return
         if ('error' in portfolioRes) {
@@ -135,9 +139,7 @@ export function PortfolioSheetProvider({
               className={`flex flex-col gap-3 border-b px-5 py-4 ${t.border}`}
             >
               <div className="flex items-center gap-3">
-                {assignee && (
-                  <Avatar user={assignee} size={48} showPresence />
-                )}
+                {assignee && <Avatar user={assignee} size={48} showPresence />}
                 <div className="flex min-w-0 flex-1 flex-col">
                   <h2
                     className={`truncate text-sm leading-tight font-semibold ${t.text}`}
@@ -195,9 +197,7 @@ export function PortfolioSheetProvider({
                   Loading profile...
                 </p>
               )}
-              {error && (
-                <p className="text-[11px] text-red-500">{error}</p>
-              )}
+              {error && <p className="text-[11px] text-red-500">{error}</p>}
               {data && (
                 <>
                   {data.headline && (
@@ -242,9 +242,7 @@ export function PortfolioSheetProvider({
                             className={`inline-flex items-center gap-1.5 text-[11px] hover:underline ${t.text}`}
                           >
                             <Link2 className="size-3 shrink-0" />
-                            <span className="truncate">
-                              {l.label || l.url}
-                            </span>
+                            <span className="truncate">{l.label || l.url}</span>
                           </a>
                         ))}
                       </div>
@@ -256,7 +254,10 @@ export function PortfolioSheetProvider({
               )}
 
               {reviews.length > 0 && (
-                <Section title={`Recent meeting reviews (${reviews.length})`} t={t}>
+                <Section
+                  title={`Recent meeting reviews (${reviews.length})`}
+                  t={t}
+                >
                   <MeetingReviewsList reviews={reviews} t={t} />
                 </Section>
               )}
@@ -279,9 +280,7 @@ function Section({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <span
-        className={`text-[9px] tracking-wider uppercase ${t.textMuted}`}
-      >
+      <span className={`text-[9px] tracking-wider uppercase ${t.textMuted}`}>
         {title}
       </span>
       {children}
@@ -299,7 +298,8 @@ function Facts({
   // role + timezone live in the header chips now; the Facts list focuses
   // on the longer-form context that doesn't fit a chip.
   const rows: { label: string; value: string }[] = []
-  if (portfolio.workStyle) rows.push({ label: 'Works best', value: portfolio.workStyle })
+  if (portfolio.workStyle)
+    rows.push({ label: 'Works best', value: portfolio.workStyle })
   if (portfolio.languages.length)
     rows.push({ label: 'Languages', value: portfolio.languages.join(', ') })
   if (rows.length === 0) return null
@@ -338,7 +338,12 @@ function Socials({
   portfolio: MemberPortfolio
   t: ReturnType<typeof useDashTheme>['t']
 }) {
-  const items: { key: string; href: string; icon: React.ReactNode; label: string }[] = []
+  const items: {
+    key: string
+    href: string
+    icon: React.ReactNode
+    label: string
+  }[] = []
   if (portfolio.contactEmail) {
     items.push({
       key: 'email',
@@ -392,20 +397,14 @@ function Socials({
   )
 }
 
-const REVIEW_OUTCOME_LABEL: Record<
-  MemberReviewSummary['outcome'],
-  string
-> = {
+const REVIEW_OUTCOME_LABEL: Record<MemberReviewSummary['outcome'], string> = {
   resolved: 'Resolved',
   partial: 'Partial',
   needs_followup: 'Needs follow-up',
   failed: "Didn't deliver"
 }
 
-const REVIEW_OUTCOME_TONE: Record<
-  MemberReviewSummary['outcome'],
-  string
-> = {
+const REVIEW_OUTCOME_TONE: Record<MemberReviewSummary['outcome'], string> = {
   resolved: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700',
   partial: 'border-amber-500/30 bg-amber-500/10 text-amber-700',
   needs_followup: 'border-sky-500/30 bg-sky-500/10 text-sky-700',

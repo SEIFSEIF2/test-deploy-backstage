@@ -104,7 +104,10 @@ try {
       if (applied.has(version)) continue
 
       console.log(`[migrate] applying plugin ${id}/${file}`)
-      const sql = await readFile(join(pluginsRoot, id, 'migrations', file), 'utf8')
+      const sql = await readFile(
+        join(pluginsRoot, id, 'migrations', file),
+        'utf8'
+      )
       await client.query('begin')
       try {
         await client.query(sql)

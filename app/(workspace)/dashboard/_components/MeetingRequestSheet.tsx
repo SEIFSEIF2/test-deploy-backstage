@@ -96,8 +96,7 @@ export function MeetingRequestSheetProvider({
 }) {
   const { t } = useDashTheme()
   const team = useTeam()
-  const viewerTz =
-    team.find((m) => m.id === currentUserId)?.timezone ?? null
+  const viewerTz = team.find((m) => m.id === currentUserId)?.timezone ?? null
   const queryClient = useQueryClient()
   const [openId, setOpenId] = useState<string | null>(null)
   const [extraAttendees, setExtraAttendees] = useState<string[]>([])
@@ -132,7 +131,9 @@ export function MeetingRequestSheetProvider({
 
   const open = useCallback((args: OpenArgs) => {
     setOpenId(args.memberId)
-    setExtraAttendees((args.additionalMemberIds ?? []).filter((id) => id !== args.memberId))
+    setExtraAttendees(
+      (args.additionalMemberIds ?? []).filter((id) => id !== args.memberId)
+    )
     setPrefill(args.prefill ?? null)
   }, [])
 
@@ -169,14 +170,10 @@ export function MeetingRequestSheetProvider({
     setContext(draft?.context ?? '')
     setQuestions(draft?.questions ?? '')
     setPreRead(draft?.preRead ?? '')
-    setDurationMin(
-      (draft?.durationMin as (typeof DURATIONS)[number]) ?? 30
-    )
+    setDurationMin((draft?.durationMin as (typeof DURATIONS)[number]) ?? 30)
     setMode(draft?.mode ?? 'day')
     setProposedDate(draft?.proposedDate ?? dateOffset(1))
-    setSlots(
-      draft?.slots ?? [datetimeLocalOffset(24), datetimeLocalOffset(48)]
-    )
+    setSlots(draft?.slots ?? [datetimeLocalOffset(24), datetimeLocalOffset(48)])
     setGroupTime(datetimeLocalOffset(24))
     setLinkedTask(
       prefill?.linkedTaskId
@@ -345,7 +342,9 @@ export function MeetingRequestSheetProvider({
         >
           <VisuallyHidden.Root>
             <SheetTitle>
-              {target ? `Request meeting with ${target.name}` : 'Request meeting'}
+              {target
+                ? `Request meeting with ${target.name}`
+                : 'Request meeting'}
             </SheetTitle>
           </VisuallyHidden.Root>
 
@@ -368,10 +367,7 @@ export function MeetingRequestSheetProvider({
                     {!isGroup && target?.timezone && (
                       <>
                         {' · '}
-                        <span
-                          className="tabular-nums"
-                          title={target.timezone}
-                        >
+                        <span className="tabular-nums" title={target.timezone}>
                           {formatTzDiff(
                             new Date(),
                             viewerTz,
@@ -619,9 +615,7 @@ export function MeetingRequestSheetProvider({
                   </div>
                   {slots.map((slot, i) => {
                     const targetPreview =
-                      target?.timezone &&
-                      target.timezone !== viewerTz &&
-                      slot
+                      target?.timezone && target.timezone !== viewerTz && slot
                         ? formatTimeIn(new Date(slot), target.timezone, {
                             hour: 'numeric',
                             minute: '2-digit',
@@ -704,10 +698,7 @@ function AttendeePicker({
 }) {
   const { t } = useDashTheme()
   const team = useTeam()
-  const known = useMemo(
-    () => new Map(team.map((m) => [m.id, m])),
-    [team]
-  )
+  const known = useMemo(() => new Map(team.map((m) => [m.id, m])), [team])
   const addable = team.filter(
     (m) =>
       m.id !== primaryId &&

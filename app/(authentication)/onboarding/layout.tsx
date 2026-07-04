@@ -1,8 +1,8 @@
-import { Suspense } from "react";
-import { redirect } from "next/navigation";
+import { Suspense } from 'react'
+import { redirect } from 'next/navigation'
 
-import { getCurrentTeamMember } from "@/lib/dal";
-import { DEFAULT_LOGIN_ROUTE } from "@/routes";
+import { getCurrentTeamMember } from '@/lib/dal'
+import { DEFAULT_LOGIN_ROUTE } from '@/routes'
 
 // Decision 0029 (revised): members reach /onboarding the first time they
 // have a session but haven't finished the wizard, AND any time later
@@ -15,21 +15,21 @@ import { DEFAULT_LOGIN_ROUTE } from "@/routes";
 // uncached and would otherwise block route rendering.
 
 export default function OnboardingLayout({
-  children,
+  children
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
     <Suspense fallback={null}>
       <Gated>{children}</Gated>
     </Suspense>
-  );
+  )
 }
 
 async function Gated({ children }: { children: React.ReactNode }) {
-  const member = await getCurrentTeamMember();
+  const member = await getCurrentTeamMember()
   if (!member) {
-    redirect(DEFAULT_LOGIN_ROUTE);
+    redirect(DEFAULT_LOGIN_ROUTE)
   }
-  return <>{children}</>;
+  return <>{children}</>
 }

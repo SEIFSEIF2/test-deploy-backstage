@@ -34,11 +34,7 @@ import type {
 const PRIORITIES: TaskPriority[] = ['urgent', 'high', 'medium', 'low', 'none']
 const PRESENCES: Presence[] = ['online', 'today', 'away', 'on_vacation', 'left']
 
-type MeetingStatusKey =
-  | 'pending'
-  | 'approved'
-  | 'scheduled'
-  | 'completed'
+type MeetingStatusKey = 'pending' | 'approved' | 'scheduled' | 'completed'
 
 const MEETING_STATUSES: {
   id: MeetingStatusKey

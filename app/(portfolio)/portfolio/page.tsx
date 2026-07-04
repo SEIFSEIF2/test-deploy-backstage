@@ -31,13 +31,13 @@ export default function PortfolioComingSoonPage() {
           href="/"
           className="inline-flex items-center transition hover:opacity-80"
         >
-          <span className="text-xl font-display tracking-tight text-zinc-900 dark:text-zinc-50">
+          <span className="font-display text-xl tracking-tight text-zinc-900 dark:text-zinc-50">
             {config.appName}
           </span>
         </Link>
 
         <article className="flex w-full flex-col items-center gap-5 rounded-3xl border border-zinc-200/70 bg-white p-9 text-center shadow-[0_1px_0_rgba(15,18,23,0.04),0_18px_50px_-24px_rgba(15,18,23,0.18)] sm:p-12 dark:border-white/10 dark:bg-[#161F1F] dark:shadow-[0_18px_50px_-24px_rgba(0,0,0,0.6)]">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#948CC0]/12 px-3 py-1 text-[11px] font-medium tracking-[0.18em] uppercase text-[#6E62B0] dark:bg-[#948CC0]/15 dark:text-[#BCB3DD]">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#948CC0]/12 px-3 py-1 text-[11px] font-medium tracking-[0.18em] text-[#6E62B0] uppercase dark:bg-[#948CC0]/15 dark:text-[#BCB3DD]">
             <Sparkles className="size-3" />
             Coming soon
           </span>
@@ -48,9 +48,8 @@ export default function PortfolioComingSoonPage() {
 
           <p className="max-w-md text-[15px] leading-relaxed text-zinc-600 dark:text-zinc-300">
             We&apos;re still building this page. It&apos;ll surface the
-            portfolio: members, projects, public stats, and the stuff
-            worth showing off. For now the dashboard is the source of
-            truth.
+            portfolio: members, projects, public stats, and the stuff worth
+            showing off. For now the dashboard is the source of truth.
           </p>
 
           <Link
@@ -62,7 +61,7 @@ export default function PortfolioComingSoonPage() {
           </Link>
         </article>
 
-        <p className="text-[11px] tracking-[0.18em] uppercase text-zinc-400 dark:text-zinc-600">
+        <p className="text-[11px] tracking-[0.18em] text-zinc-400 uppercase dark:text-zinc-600">
           Individual profiles live at /your-handle.
         </p>
       </div>

@@ -1198,8 +1198,7 @@ function InviteModal({
         <p className={`mt-1 text-xs ${t.textSubtle}`}>
           We will generate a{' '}
           <span className="font-mono">@{config.emailDomain}</span> login from
-          their name and email the invite to the contact email you enter
-          below.
+          their name and email the invite to the contact email you enter below.
         </p>
         <form onSubmit={submit} className="mt-4 flex flex-col gap-3">
           <label className="flex flex-col gap-1">

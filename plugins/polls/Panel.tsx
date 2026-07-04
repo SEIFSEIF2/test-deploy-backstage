@@ -55,7 +55,12 @@ export default function PollsPanel({ member }: PluginPanelProps) {
       )}
 
       {(polls ?? []).map((poll) => (
-        <PollCard key={poll.id} poll={poll} member={member} onChange={refresh} />
+        <PollCard
+          key={poll.id}
+          poll={poll}
+          member={member}
+          onChange={refresh}
+        />
       ))}
     </div>
   )
@@ -129,7 +134,9 @@ function PollCard({
         {poll.options.map((option, i) => {
           const count = poll.votes[i] ?? 0
           const pct =
-            poll.totalVotes === 0 ? 0 : Math.round((count / poll.totalVotes) * 100)
+            poll.totalVotes === 0
+              ? 0
+              : Math.round((count / poll.totalVotes) * 100)
           const mine = poll.myVote === i
           return (
             <button
@@ -221,7 +228,9 @@ function CreatePollButton({ onCreated }: { onCreated: () => void }) {
           placeholder={`Option ${i + 1}`}
           value={option}
           onChange={(e) =>
-            setOptions((prev) => prev.map((o, j) => (j === i ? e.target.value : o)))
+            setOptions((prev) =>
+              prev.map((o, j) => (j === i ? e.target.value : o))
+            )
           }
           maxLength={80}
         />

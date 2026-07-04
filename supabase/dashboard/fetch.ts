@@ -322,7 +322,9 @@ export async function fetchDashboardData(
 
   if (myProjectIds !== null) {
     if (myProjectIds.length === 0) {
-      taskQuery = taskQuery.in('project_id', ['00000000-0000-0000-0000-000000000000'])
+      taskQuery = taskQuery.in('project_id', [
+        '00000000-0000-0000-0000-000000000000'
+      ])
     } else {
       taskQuery = taskQuery.in('project_id', myProjectIds)
     }
@@ -353,9 +355,8 @@ export async function fetchDashboardData(
     : myProjectIds
   const safeProjectIds = (ids: string[]) =>
     ids.length === 0 ? ['00000000-0000-0000-0000-000000000000'] : ids
-  const safeTaskIds = taskIds.length === 0
-    ? ['00000000-0000-0000-0000-000000000000']
-    : taskIds
+  const safeTaskIds =
+    taskIds.length === 0 ? ['00000000-0000-0000-0000-000000000000'] : taskIds
 
   const [
     membersRes,
@@ -446,7 +447,9 @@ export async function fetchDashboardData(
     // task_labels join rows for visible tasks, including the label name
     supabase
       .from('task_labels')
-      .select('task_id, label_id, labels!task_label_label_id_fkey(id, name, color)')
+      .select(
+        'task_id, label_id, labels!task_label_label_id_fkey(id, name, color)'
+      )
       .in('task_id', safeTaskIds),
     // checklist items for visible tasks
     supabase
@@ -474,12 +477,16 @@ export async function fetchDashboardData(
     // sprintTasksRes but with the sprint name fetched inline.
     supabase
       .from('sprint_tasks')
-      .select('task_id, carry_count, sprint:sprints!cycle_task_cycle_id_fkey(id, name)')
+      .select(
+        'task_id, carry_count, sprint:sprints!cycle_task_cycle_id_fkey(id, name)'
+      )
       .in('task_id', safeTaskIds),
     // comments scoped to visible tasks
     supabase
       .from('task_comments')
-      .select('*, author:team_members!task_comment_author_id_fkey(id, full_name)')
+      .select(
+        '*, author:team_members!task_comment_author_id_fkey(id, full_name)'
+      )
       .eq('company_id', member.companyId)
       .in('task_id', safeTaskIds)
       .order('created_at', { ascending: true }),
@@ -736,8 +743,8 @@ export async function fetchDashboardData(
     createdAt: t.created_at,
     updatedAt: t.updated_at,
     createdBy: t.created_by,
-    assignee: t.assignee_id ? memberById.get(t.assignee_id) ?? null : null,
-    lead: t.lead_id ? memberById.get(t.lead_id) ?? null : null,
+    assignee: t.assignee_id ? (memberById.get(t.assignee_id) ?? null) : null,
+    lead: t.lead_id ? (memberById.get(t.lead_id) ?? null) : null,
     project: projectById.get(t.project_id) ?? null,
     labels: labelsByTask.get(t.id) ?? [],
     checklist: checklistByTask.get(t.id) ?? [],
@@ -864,19 +871,19 @@ export async function fetchDashboardData(
     }
   })
 
-  const teamActivity: DashboardActivityRow[] = (
-    teamActivityRes.data ?? []
-  ).map((a) => {
-    const actor = a.actor as { id: string; full_name: string } | null
-    return {
-      id: a.id,
-      entityId: a.entity_id,
-      action: a.action,
-      createdAt: a.created_at,
-      metadata: a.metadata,
-      actor: actor ? { id: actor.id, fullName: actor.full_name } : null
+  const teamActivity: DashboardActivityRow[] = (teamActivityRes.data ?? []).map(
+    (a) => {
+      const actor = a.actor as { id: string; full_name: string } | null
+      return {
+        id: a.id,
+        entityId: a.entity_id,
+        action: a.action,
+        createdAt: a.created_at,
+        metadata: a.metadata,
+        actor: actor ? { id: actor.id, fullName: actor.full_name } : null
+      }
     }
-  })
+  )
 
   const meetingActivity: DashboardActivityRow[] = (
     meetingActivityRes.data ?? []
@@ -909,16 +916,13 @@ export async function fetchDashboardData(
   // Scope sprint events to the viewer's visible projects so a member in
   // project A doesn't see project B's sprint announcements. metadata
   // carries project_id from logActivity in mutations.ts.
-  const visibleProjectIds = myProjectIds === null
-    ? null
-    : new Set(myProjectIds)
+  const visibleProjectIds = myProjectIds === null ? null : new Set(myProjectIds)
   const sprintActivity: DashboardActivityRow[] = (sprintActivityRes.data ?? [])
     .filter((a) => {
       if (visibleProjectIds === null) return true
       const meta = a.metadata as Record<string, unknown> | null
-      const pid = meta && typeof meta.project_id === 'string'
-        ? meta.project_id
-        : null
+      const pid =
+        meta && typeof meta.project_id === 'string' ? meta.project_id : null
       return pid !== null && visibleProjectIds.has(pid)
     })
     .map((a) => {

@@ -10,11 +10,9 @@ import { exchangeCodeForTokens, verifyState } from '@/lib/google/oauth'
 
 function back(qs: string): NextResponse {
   const base =
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ?? 'http://localhost:3000'
-  return NextResponse.redirect(
-    `${base}/dashboard/settings?${qs}`,
-    302
-  )
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ??
+    'http://localhost:3000'
+  return NextResponse.redirect(`${base}/dashboard/settings?${qs}`, 302)
 }
 
 export async function GET(request: Request) {
@@ -54,22 +52,20 @@ export async function GET(request: Request) {
   }
 
   const supabase = createAdminClient()
-  await supabase
-    .from('google_oauth_tokens')
-    .upsert(
-      {
-        company_id: member.companyId,
-        member_id: member.id,
-        google_email: tokens.email,
-        access_token: tokens.accessToken,
-        refresh_token: tokens.refreshToken,
-        scope: tokens.scope,
-        expires_at: tokens.expiresAt.toISOString(),
-        connected_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      },
-      { onConflict: 'company_id' }
-    )
+  await supabase.from('google_oauth_tokens').upsert(
+    {
+      company_id: member.companyId,
+      member_id: member.id,
+      google_email: tokens.email,
+      access_token: tokens.accessToken,
+      refresh_token: tokens.refreshToken,
+      scope: tokens.scope,
+      expires_at: tokens.expiresAt.toISOString(),
+      connected_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    { onConflict: 'company_id' }
+  )
 
   return back('google=connected')
 }

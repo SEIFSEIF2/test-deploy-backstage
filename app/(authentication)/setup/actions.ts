@@ -48,7 +48,9 @@ export async function createWorkspace(
       email_confirm: true
     })
   if (userError || !created?.user) {
-    return { error: userError?.message ?? 'Could not create the admin account.' }
+    return {
+      error: userError?.message ?? 'Could not create the admin account.'
+    }
   }
   const userId = created.user.id
 

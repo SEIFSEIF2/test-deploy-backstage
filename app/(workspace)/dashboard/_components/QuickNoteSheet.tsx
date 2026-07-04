@@ -64,8 +64,7 @@ export function QuickNoteSheetProvider({
     () =>
       tasks.filter(
         (task) =>
-          task.assignee?.id === currentUserId ||
-          task.lead?.id === currentUserId
+          task.assignee?.id === currentUserId || task.lead?.id === currentUserId
       ),
     [tasks, currentUserId]
   )
@@ -125,9 +124,7 @@ export function QuickNoteSheetProvider({
             >
               {target && <Avatar user={target} size={32} showPresence />}
               <div className="flex min-w-0 flex-1 flex-col">
-                <span
-                  className={`text-xs leading-tight font-medium ${t.text}`}
-                >
+                <span className={`text-xs leading-tight font-medium ${t.text}`}>
                   Drop a note
                 </span>
                 <span className={`text-[11px] ${t.textMuted}`}>

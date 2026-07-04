@@ -18,8 +18,7 @@ function partsInAppTz(date: Date): DateParts {
     minute: '2-digit',
     hourCycle: 'h23'
   }).formatToParts(date)
-  const get = (type: string) =>
-    parts.find((p) => p.type === type)?.value ?? ''
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? ''
   const weekdayIdx = WEEKDAYS.indexOf(get('weekday'))
   return {
     weekdayIdx,
@@ -58,7 +57,15 @@ export function isQuickRoomOpen(date: Date = new Date()): QuickRoomWindow {
       ? 'today'
       : daysAhead === 1
         ? 'tomorrow'
-        : ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][nextWeekdayIdx]
+        : [
+            'Sunday',
+            'Monday',
+            'Tuesday',
+            'Wednesday',
+            'Thursday',
+            'Friday',
+            'Saturday'
+          ][nextWeekdayIdx]
   return {
     open: false,
     label: `Opens ${nextDayName} at ${OPEN_HOUR}:00`

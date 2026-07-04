@@ -21,9 +21,7 @@ export interface Target {
 // don't see it in the sidebar and the server actions reject them.
 export function canSeeTeamPage(actor: Actor): boolean {
   return (
-    actor.isOwner ||
-    actor.accessTier === 'admin' ||
-    actor.accessTier === 'lead'
+    actor.isOwner || actor.accessTier === 'admin' || actor.accessTier === 'lead'
   )
 }
 
@@ -82,9 +80,6 @@ export function canChangeTier(
 
 // Cancel a pending invite: same surface as removing a member at that
 // tier (you wouldn't grant access you couldn't otherwise grant).
-export function canCancelInvite(
-  actor: Actor,
-  inviteTier: AccessTier
-): boolean {
+export function canCancelInvite(actor: Actor, inviteTier: AccessTier): boolean {
   return canInvite(actor, inviteTier)
 }

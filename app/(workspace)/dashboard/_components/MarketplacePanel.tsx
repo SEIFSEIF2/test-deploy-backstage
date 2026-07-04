@@ -42,11 +42,7 @@ type Entry = {
   state: EntryState
 }
 
-export default function MarketplacePanel({
-  isAdmin
-}: {
-  isAdmin: boolean
-}) {
+export default function MarketplacePanel({ isAdmin }: { isAdmin: boolean }) {
   const router = useRouter()
   const enabled = useEnabledFeatures()
   const [selected, setSelected] = useState<Entry | null>(null)
@@ -129,7 +125,8 @@ export default function MarketplacePanel({
           <Store className="size-5" /> Marketplace
         </h2>
         <p className="text-muted-foreground text-sm">
-          Everything optional lives here: built-in modules and installed plugins.
+          Everything optional lives here: built-in modules and installed
+          plugins.
           {isAdmin
             ? ' Enable installed plugins instantly; installing new ones takes a redeploy.'
             : ' Ask an admin to enable the ones you need.'}
@@ -253,7 +250,9 @@ function ActionButton({
         toast.error(res.error)
         return
       }
-      toast.success(enabled ? `${entry.name} enabled.` : `${entry.name} disabled.`)
+      toast.success(
+        enabled ? `${entry.name} enabled.` : `${entry.name} disabled.`
+      )
       onChanged()
     })
   }
@@ -340,26 +339,28 @@ function DetailSheet({
           </a>
         )}
 
-        {entry.kind === 'plugin' && entry.state === 'not-installed' && isAdmin && (
-          <div className="bg-muted/50 flex flex-col gap-2 rounded-md border p-3">
-            <p className="font-medium">Install (one redeploy)</p>
-            <ol className="text-muted-foreground list-decimal space-y-1 pl-4 text-xs">
-              <li>
-                Copy <code>plugins/{entry.id}/</code> from the plugin repo into
-                your deployment&apos;s <code>plugins/</code> folder.
-              </li>
-              <li>
-                Register it: one import line each in{' '}
-                <code>plugins.config.ts</code> and{' '}
-                <code>plugins.config.server.ts</code>.
-              </li>
-              <li>
-                Push — the build applies the plugin&apos;s migrations
-                automatically, then enable it here.
-              </li>
-            </ol>
-          </div>
-        )}
+        {entry.kind === 'plugin' &&
+          entry.state === 'not-installed' &&
+          isAdmin && (
+            <div className="bg-muted/50 flex flex-col gap-2 rounded-md border p-3">
+              <p className="font-medium">Install (one redeploy)</p>
+              <ol className="text-muted-foreground list-decimal space-y-1 pl-4 text-xs">
+                <li>
+                  Copy <code>plugins/{entry.id}/</code> from the plugin repo
+                  into your deployment&apos;s <code>plugins/</code> folder.
+                </li>
+                <li>
+                  Register it: one import line each in{' '}
+                  <code>plugins.config.ts</code> and{' '}
+                  <code>plugins.config.server.ts</code>.
+                </li>
+                <li>
+                  Push — the build applies the plugin&apos;s migrations
+                  automatically, then enable it here.
+                </li>
+              </ol>
+            </div>
+          )}
 
         <ActionButton entry={entry} isAdmin={isAdmin} onChanged={onChanged} />
       </div>

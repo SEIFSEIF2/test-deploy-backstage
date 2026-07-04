@@ -72,10 +72,7 @@ export function updatesToMarkdown(
   return lines.join('\n')
 }
 
-export function updatesToJson(
-  rows: UpdateRow[],
-  meta: UpdatesMeta
-): string {
+export function updatesToJson(rows: UpdateRow[], meta: UpdatesMeta): string {
   return JSON.stringify(
     {
       version: EXPORT_VERSION,
@@ -84,7 +81,7 @@ export function updatesToJson(
       meta: {
         title: meta.title,
         scopeLabel: meta.scopeLabel ?? null,
-        count: rows.length,
+        count: rows.length
       },
       updates: rows.map((r) => ({
         id: r.id,
@@ -95,9 +92,9 @@ export function updatesToJson(
         task: {
           id: r.taskId,
           ref: r.taskRef,
-          title: r.taskTitle,
-        },
-      })),
+          title: r.taskTitle
+        }
+      }))
     },
     null,
     2

@@ -75,7 +75,8 @@ async function createPoll(ctx: PluginContext, payload: unknown) {
     })
     .select('id')
     .single()
-  if (error || !poll) throw new Error(error?.message ?? 'Could not create poll.')
+  if (error || !poll)
+    throw new Error(error?.message ?? 'Could not create poll.')
 
   await ctx.logActivity('poll_created', 'poll', poll.id, {
     question: input.question

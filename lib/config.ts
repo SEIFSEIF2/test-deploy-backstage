@@ -19,17 +19,14 @@ function validTimezone(tz: string | undefined): string {
 
 export const config = {
   appName: process.env.NEXT_PUBLIC_APP_NAME ?? 'Backstage',
-  appTagline:
-    process.env.NEXT_PUBLIC_APP_TAGLINE ??
-    'Team ops in one place.',
+  appTagline: process.env.NEXT_PUBLIC_APP_TAGLINE ?? 'Team ops in one place.',
   emailDomain: process.env.NEXT_PUBLIC_APP_EMAIL_DOMAIN ?? 'example.com',
   timezone: validTimezone(process.env.NEXT_PUBLIC_TIMEZONE),
   appUrl:
     process.env.NEXT_PUBLIC_APP_URL ??
     process.env.NEXT_PUBLIC_SITE_URL ??
     'http://localhost:3000',
-  supportEmail:
-    process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? 'support@example.com'
+  supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? 'support@example.com'
 } as const
 
 export type AppConfig = typeof config

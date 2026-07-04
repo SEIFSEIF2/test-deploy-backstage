@@ -112,9 +112,7 @@ export default function MentionInput({
   const targets = useMemo(() => {
     const built = buildMentionTargets(team)
     const filtered =
-      accessTier === 'member'
-        ? built.filter((t) => t.id !== 'team')
-        : built
+      accessTier === 'member' ? built.filter((t) => t.id !== 'team') : built
     if (!prioritizedIds || prioritizedIds.length === 0) return filtered
     const rank = new Map(prioritizedIds.map((id, i) => [id, i]))
     // Stable sort: prioritized members lead the list in the order they were
@@ -218,9 +216,7 @@ export default function MentionInput({
   // so "@Karim Saleh" wins over "@Karim".
   const targetsByFirstCharLower = useMemo(() => {
     // Sort longer labels first so longest-match-wins on each candidate.
-    const sorted = [...targets].sort(
-      (a, b) => b.label.length - a.label.length
-    )
+    const sorted = [...targets].sort((a, b) => b.label.length - a.label.length)
     return sorted
   }, [targets])
 
@@ -356,13 +352,21 @@ export default function MentionInput({
             ? 'border-emerald-400 dark:border-emerald-400/60'
             : focused
               ? 'border-zinc-400 dark:border-white/30'
-              : t.input.split(' ').filter((c) => c.startsWith('border-')).join(' ')
-        } ${t.input.split(' ').filter((c) => !c.startsWith('border-') && !c.startsWith('placeholder')).join(' ')}`}
+              : t.input
+                  .split(' ')
+                  .filter((c) => c.startsWith('border-'))
+                  .join(' ')
+        } ${t.input
+          .split(' ')
+          .filter(
+            (c) => !c.startsWith('border-') && !c.startsWith('placeholder')
+          )
+          .join(' ')}`}
       >
         <div
           ref={overlayRef}
           aria-hidden="true"
-          className={`${sharedTextClasses} pointer-events-none absolute inset-0 overflow-hidden whitespace-pre-wrap break-words`}
+          className={`${sharedTextClasses} pointer-events-none absolute inset-0 overflow-hidden break-words whitespace-pre-wrap`}
         >
           {overlayTokens.length === 0 && !value ? (
             <span className={`${t.textSubtle}`}>{placeholder}</span>
@@ -406,9 +410,7 @@ export default function MentionInput({
               }
               if (e.key === 'ArrowUp') {
                 e.preventDefault()
-                setHighlight(
-                  (h) => (h - 1 + matches.length) % matches.length
-                )
+                setHighlight((h) => (h - 1 + matches.length) % matches.length)
                 return
               }
               if (e.key === 'Enter' || e.key === 'Tab') {

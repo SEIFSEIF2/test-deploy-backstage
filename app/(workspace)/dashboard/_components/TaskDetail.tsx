@@ -37,9 +37,7 @@ import {
 } from '../actions'
 import { toast } from 'sonner'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
-import TaskImageDropZone, {
-  type TaskAttachmentView
-} from './TaskImageDropZone'
+import TaskImageDropZone, { type TaskAttachmentView } from './TaskImageDropZone'
 import TaskImageGallery from './TaskImageGallery'
 import { useFeature } from '@/lib/features/client'
 import { VisuallyHidden } from 'radix-ui'
@@ -312,8 +310,7 @@ export default function TaskDetail({
     placeholderData: (prev) => prev
   })
   const spectators = watchersQuery.data ?? []
-  const spectatorsLoading =
-    watchersQuery.isLoading && spectators.length === 0
+  const spectatorsLoading = watchersQuery.isLoading && spectators.length === 0
   const refreshSpectators = () => {
     if (watchersTaskId) {
       void queryClient.invalidateQueries({
@@ -376,10 +373,7 @@ export default function TaskDetail({
           >
             <X className="size-3.5" />
           </button>
-          <span
-            aria-hidden
-            className={`h-4 w-px ${t.border} border-l`}
-          />
+          <span aria-hidden className={`h-4 w-px ${t.border} border-l`} />
           <span
             className={`rounded-md border px-1.5 py-0.5 text-[10px] tracking-[0.2em] uppercase tabular-nums ${t.metaTag}`}
           >
@@ -469,13 +463,25 @@ export default function TaskDetail({
           </DismissWrap>
         )}
 
-        <div className={`flex flex-wrap items-center gap-1.5 border-y py-2 ${t.borderSoft}`}>
-          <span className={`text-[10px] tracking-wider uppercase ${t.textSubtle}`}>Add:</span>
+        <div
+          className={`flex flex-wrap items-center gap-1.5 border-y py-2 ${t.borderSoft}`}
+        >
+          <span
+            className={`text-[10px] tracking-wider uppercase ${t.textSubtle}`}
+          >
+            Add:
+          </span>
           {!showBrief && (
             <AddChip label="Brief" onClick={() => setShowBrief(true)} />
           )}
           {!showHandoff && (
-            <AddChip label="Handoff" onClick={() => { setShowHandoff(true); onOpenHandoff(task) }} />
+            <AddChip
+              label="Handoff"
+              onClick={() => {
+                setShowHandoff(true)
+                onOpenHandoff(task)
+              }}
+            />
           )}
           {meetingsEnabled && !showMeetings && (
             <AddChip label="Meeting" onClick={() => setShowMeetings(true)} />
@@ -650,7 +656,7 @@ export default function TaskDetail({
                     <Avatar user={m} size={20} />
                     {m.name}
                   </button>
-              ))}
+                ))}
             </Popover>
             {task.lead &&
               task.assignee?.id === currentUserId &&
@@ -683,7 +689,6 @@ export default function TaskDetail({
             availableTags={availableTags}
             onChange={(next) => onChangeTags(task.id, next)}
           />
-
         </div>
 
         {showRelations && (
@@ -796,7 +801,9 @@ export default function TaskDetail({
                         {c.author}
                       </span>
                       {c.editedAt && (
-                        <span className={`text-[9px] ${t.textSubtle} opacity-60`}>
+                        <span
+                          className={`text-[9px] ${t.textSubtle} opacity-60`}
+                        >
                           edited
                         </span>
                       )}
@@ -916,7 +923,9 @@ export default function TaskDetail({
 
         <div className="flex flex-col gap-2 text-xs">
           <div className="flex items-center justify-between">
-            <div className={`text-[10px] tracking-[0.22em] uppercase ${t.textMuted}`}>
+            <div
+              className={`text-[10px] tracking-[0.22em] uppercase ${t.textMuted}`}
+            >
               Activity {activity.length > 0 && `(${activity.length})`}
             </div>
             {activity.length > 1 && (
@@ -925,7 +934,9 @@ export default function TaskDetail({
                 onClick={() => setActivityExpanded((v) => !v)}
                 className={`text-[10px] underline ${t.textMuted}`}
               >
-                {activityExpanded ? 'Collapse' : `Show ${activity.length - 1} more`}
+                {activityExpanded
+                  ? 'Collapse'
+                  : `Show ${activity.length - 1} more`}
               </button>
             )}
           </div>
@@ -971,9 +982,7 @@ export default function TaskDetail({
             prioritizedIds={spectatorIds}
             taskId={task.id}
             onAttachmentAdded={onAttachmentAdded}
-            onSubmit={(body, mentions) =>
-              onAddComment(task.id, body, mentions)
-            }
+            onSubmit={(body, mentions) => onAddComment(task.id, body, mentions)}
           />
         </div>
       ) : (
@@ -1621,9 +1630,10 @@ function DueDateField({
   // Sprint-aware hint. Renders below the value when the task is in a
   // sprint AND has a due date set. Soft-warn only - never blocks the save.
   const activeDateForChip = editing && value ? value : initial
-  const sprintChip = sprintWindow && activeDateForChip
-    ? buildSprintDueChip(activeDateForChip, sprintWindow)
-    : null
+  const sprintChip =
+    sprintWindow && activeDateForChip
+      ? buildSprintDueChip(activeDateForChip, sprintWindow)
+      : null
 
   if (readOnly) {
     return (
@@ -2091,7 +2101,7 @@ function EditableTitle({
     return (
       <h2
         className={`text-xl leading-snug font-medium ${t.text} ${
-          canEdit ? 'cursor-text rounded-sm hover:bg-foreground/5' : ''
+          canEdit ? 'hover:bg-foreground/5 cursor-text rounded-sm' : ''
         }`}
         onClick={() => canEdit && setEditing(true)}
         title={canEdit ? 'Click to edit' : undefined}
@@ -2155,11 +2165,13 @@ function EditableDescription({
         onClick={() => canEdit && setEditing(true)}
         title={canEdit ? 'Click to edit' : undefined}
         className={`rounded-md ${
-          canEdit ? 'cursor-text hover:bg-foreground/5' : ''
+          canEdit ? 'hover:bg-foreground/5 cursor-text' : ''
         }`}
       >
         {value ? (
-          <p className={`text-xs leading-relaxed whitespace-pre-wrap ${t.text}`}>
+          <p
+            className={`text-xs leading-relaxed whitespace-pre-wrap ${t.text}`}
+          >
             {value}
           </p>
         ) : (
@@ -2314,7 +2326,9 @@ function LinkedMeetingsSection({
 
   function openRequest() {
     if (!defaultRequesteeId) {
-      toast.error('Assign this task first; we use the assignee as the requestee.')
+      toast.error(
+        'Assign this task first; we use the assignee as the requestee.'
+      )
       return
     }
     meetingRequest.open({
@@ -2335,7 +2349,9 @@ function LinkedMeetingsSection({
       <div
         className={`mb-2 flex items-center justify-between text-[10px] tracking-[0.22em] uppercase ${t.textMuted}`}
       >
-        <span>Linked meetings{items.length > 0 ? ` (${items.length})` : ''}</span>
+        <span>
+          Linked meetings{items.length > 0 ? ` (${items.length})` : ''}
+        </span>
         {canEdit && (
           <button
             onClick={openRequest}
@@ -2363,7 +2379,7 @@ function LinkedMeetingsSection({
             const counterparty =
               m.requesterId === currentUserId
                 ? m.attendees.length === 1
-                  ? m.attendees[0]?.fullName ?? 'someone'
+                  ? (m.attendees[0]?.fullName ?? 'someone')
                   : `${m.attendees[0]?.fullName ?? 'someone'} + ${m.attendees.length - 1} more`
                 : m.requesterName
             const when =
@@ -2472,9 +2488,7 @@ function WatchersSection({
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between">
-        <span
-          className={`text-[10px] tracking-wider uppercase ${t.textMuted}`}
-        >
+        <span className={`text-[10px] tracking-wider uppercase ${t.textMuted}`}>
           Spectators
         </span>
         {canInvite && (
@@ -2521,10 +2535,7 @@ function WatchersSection({
             const teamMember = team.find((m) => m.id === w.memberId)
             const canRemove = canInvite || w.memberId === currentUserId
             return (
-              <div
-                key={w.memberId}
-                className="flex items-center gap-2 text-xs"
-              >
+              <div key={w.memberId} className="flex items-center gap-2 text-xs">
                 {teamMember ? (
                   <Avatar user={teamMember} size={20} />
                 ) : (

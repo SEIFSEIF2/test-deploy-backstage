@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 export default function NotFound() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center">
-      <div className="animate-in fade-in slide-in-from-top-4 relative select-none duration-500">
+      <div className="animate-in fade-in slide-in-from-top-4 relative duration-500 select-none">
         <span className="text-muted-foreground/10 text-[12rem] leading-none font-black tracking-tighter">
           404
         </span>

@@ -248,9 +248,7 @@ export function OnboardingWizard({ initial }: { initial: OnboardingInitial }) {
       if (!r.ok) setError(r.error)
       else advance()
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Upload failed. Try again."
-      )
+      setError(err instanceof Error ? err.message : 'Upload failed. Try again.')
     } finally {
       setUploading(false)
     }
@@ -454,8 +452,8 @@ export function OnboardingWizard({ initial }: { initial: OnboardingInitial }) {
                       placeholder="you@example.com"
                     />
                     <p className="text-muted-foreground text-[10px]">
-                      Where you&apos;d like notifications. Different from your
-                      @{config.emailDomain} sign-in.
+                      Where you&apos;d like notifications. Different from your @
+                      {config.emailDomain} sign-in.
                     </p>
                   </Field>
                   <Field>
@@ -1049,7 +1047,12 @@ const SKILL_SUGGESTIONS: Record<string, readonly string[]> = {
     'Recruiting',
     'Finance ops'
   ],
-  Security: ['Pen testing', 'Threat modeling', 'Incident response', 'Compliance']
+  Security: [
+    'Pen testing',
+    'Threat modeling',
+    'Incident response',
+    'Compliance'
+  ]
 }
 
 function SkillSuggestions({

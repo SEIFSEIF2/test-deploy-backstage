@@ -35,7 +35,8 @@ export function redirectUri(): string {
   const explicit = process.env.GOOGLE_OAUTH_REDIRECT_URI
   if (explicit) return explicit
   const base =
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ?? 'http://localhost:3000'
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ??
+    'http://localhost:3000'
   return `${base}/api/google/oauth/callback`
 }
 
@@ -73,7 +74,10 @@ async function loadStateSecret(): Promise<string> {
 export async function buildState(memberId: string): Promise<string> {
   const secret = await loadStateSecret()
   const payload = `${memberId}.${Date.now()}`
-  const sig = createHmac('sha256', secret).update(payload).digest('hex').slice(0, 32)
+  const sig = createHmac('sha256', secret)
+    .update(payload)
+    .digest('hex')
+    .slice(0, 32)
   return Buffer.from(`${payload}.${sig}`).toString('base64url')
 }
 
@@ -133,13 +137,16 @@ interface GoogleTokenResponse {
   id_token?: string
 }
 
-export async function exchangeCodeForTokens(code: string): Promise<{
-  accessToken: string
-  refreshToken: string
-  expiresAt: Date
-  scope: string
-  email: string | null
-} | { error: string }> {
+export async function exchangeCodeForTokens(code: string): Promise<
+  | {
+      accessToken: string
+      refreshToken: string
+      expiresAt: Date
+      scope: string
+      email: string | null
+    }
+  | { error: string }
+> {
   const creds = clientCreds()
   if (!creds) return { error: 'Google OAuth client not configured.' }
   const body = new URLSearchParams({
@@ -188,9 +195,10 @@ export async function exchangeCodeForTokens(code: string): Promise<{
   }
 }
 
-export async function refreshAccessToken(refreshToken: string): Promise<
-  | { accessToken: string; expiresAt: Date; scope: string }
-  | { error: string }
+export async function refreshAccessToken(
+  refreshToken: string
+): Promise<
+  { accessToken: string; expiresAt: Date; scope: string } | { error: string }
 > {
   const creds = clientCreds()
   if (!creds) return { error: 'Google OAuth client not configured.' }
@@ -228,7 +236,8 @@ export async function getSchedulerAccessToken(
     .select('access_token, refresh_token, expires_at, member_id')
     .eq('company_id', companyId)
     .maybeSingle()
-  if (!row) return { error: 'Google Calendar is not connected for this workspace.' }
+  if (!row)
+    return { error: 'Google Calendar is not connected for this workspace.' }
 
   const expiresAt = new Date(row.expires_at).getTime()
   if (Date.now() < expiresAt) {

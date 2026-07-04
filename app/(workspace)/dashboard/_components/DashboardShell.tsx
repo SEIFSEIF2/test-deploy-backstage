@@ -693,7 +693,7 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
   const showGreetingPhase = phaseIndex === 0
   const showWordmarkPhase = phaseIndex === 1
   const welcomeName =
-    phaseIndex >= 2 ? newJoinerNames[phaseIndex - 2] ?? null : null
+    phaseIndex >= 2 ? (newJoinerNames[phaseIndex - 2] ?? null) : null
 
   const [tasks, setTasks] = useState<BoardTask[]>(initial.tasks)
   const [comments, setComments] = useState<Record<string, TaskComment[]>>(
@@ -715,7 +715,9 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
   const [commentReactions, setCommentReactions] = useState(
     initial.commentReactionsByComment
   )
-  const [taskReactions, setTaskReactions] = useState(initial.taskReactionsByTask)
+  const [taskReactions, setTaskReactions] = useState(
+    initial.taskReactionsByTask
+  )
 
   // Resync local state when the server hands us fresh data via router.refresh
   // (bulk create, "reset board", project switch). Per-mutation flows update
@@ -758,18 +760,15 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
       return { ...prev, [a.taskId]: [...list, a] }
     })
   }, [])
-  const handleAttachmentRemoved = useCallback(
-    (attachmentId: string) => {
-      setAttachments((prev) => {
-        const next: Record<string, TaskAttachmentView[]> = {}
-        for (const [taskId, list] of Object.entries(prev)) {
-          next[taskId] = list.filter((a) => a.id !== attachmentId)
-        }
-        return next
-      })
-    },
-    []
-  )
+  const handleAttachmentRemoved = useCallback((attachmentId: string) => {
+    setAttachments((prev) => {
+      const next: Record<string, TaskAttachmentView[]> = {}
+      for (const [taskId, list] of Object.entries(prev)) {
+        next[taskId] = list.filter((a) => a.id !== attachmentId)
+      }
+      return next
+    })
+  }, [])
   // Swap an optimistic temp attachment (id starting with 'local-') for the
   // server-assigned row. Preserves position so the gallery doesn't jump.
   const handleAttachmentSwap = useCallback(
@@ -1044,8 +1043,7 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
   const boardSprintLensTaskIdSet = useMemo<Set<string> | null>(() => {
     if (!boardSprintLens || !initial.currentProjectId) return null
     const sprint = sprints.find(
-      (s) =>
-        s.projectId === initial.currentProjectId && s.status === 'current'
+      (s) => s.projectId === initial.currentProjectId && s.status === 'current'
     )
     if (!sprint) return null
     return new Set(sprint.taskIds)
@@ -1305,9 +1303,7 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
     setTasks((cur) => {
       snapshot = cur
       return cur.map((t) =>
-        t.id === pending.taskId
-          ? { ...t, projectId: pending.toProjectId }
-          : t
+        t.id === pending.taskId ? { ...t, projectId: pending.toProjectId } : t
       )
     })
     startTransition(async () => {
@@ -1322,9 +1318,7 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
       }
       setTasks((cur) =>
         cur.map((t) =>
-          t.id === pending.taskId && res.ref
-            ? { ...t, ref: res.ref }
-            : t
+          t.id === pending.taskId && res.ref ? { ...t, ref: res.ref } : t
         )
       )
       const fromLabel = pending.fromProjectName ?? 'previous project'
@@ -1335,9 +1329,7 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
         }`
       )
       toast.success(
-        `Moved to ${pending.toProjectName}${
-          res.ref ? ` as ${res.ref}` : ''
-        }`
+        `Moved to ${pending.toProjectName}${res.ref ? ` as ${res.ref}` : ''}`
       )
     })
   }
@@ -1895,9 +1887,9 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
     }
   ) => {
     // Only fall back to the current view's project (when the user is
-     // looking at a specific project). Never silently default to the
-     // workspace-wide "first active project" - that's how tasks ended
-     // up in the wrong project by accident.
+    // looking at a specific project). Never silently default to the
+    // workspace-wide "first active project" - that's how tasks ended
+    // up in the wrong project by accident.
     const targetProjectId = draft.projectId ?? initial.currentProjectId
     if (!targetProjectId) {
       toast.error('Pick a project before creating the task.')
@@ -2654,8 +2646,7 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
         if (!Array.isArray(to) || !to.includes(currentUserId)) return
         const meetUrl = row.metadata?.meetUrl ?? null
         if (!meetUrl) return
-        const inviter =
-          row.metadata?.inviterName ?? lookupName(row.actor_id)
+        const inviter = row.metadata?.inviterName ?? lookupName(row.actor_id)
         // Prepend to the Updates feed so this invite is reachable later
         // even if the user dismisses the toast.
         const createdRaw = row.created_at ?? new Date().toISOString()
@@ -2706,7 +2697,12 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [currentUserId, popLiveToast, lookupName, initial.currentMember.accessTier])
+  }, [
+    currentUserId,
+    popLiveToast,
+    lookupName,
+    initial.currentMember.accessTier
+  ])
 
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [pendingProjectMove, setPendingProjectMove] = useState<{
@@ -2749,7 +2745,12 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
     const onKey = (e: KeyboardEvent) => {
       // Cmd/Ctrl+K opens the command palette. Allowed even when focus is in
       // an input so users can summon search mid-typing, just like Vercel.
-      if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.code === 'KeyK') {
+      if (
+        (e.metaKey || e.ctrlKey) &&
+        !e.altKey &&
+        !e.shiftKey &&
+        e.code === 'KeyK'
+      ) {
         e.preventDefault()
         setPaletteOpen((o) => !o)
         return
@@ -2821,9 +2822,7 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
               {
                 key: 'no-lead',
                 label: 'No lead',
-                items: filtered
-                  .filter((task) => !task.lead)
-                  .sort(byColumnOrder)
+                items: filtered.filter((task) => !task.lead).sort(byColumnOrder)
               }
             ]
           : [
@@ -3023,13 +3022,8 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
 
   return (
     <TaskActionsProvider value={actions}>
-      <TimezoneGate
-        savedTimezone={savedTimezone}
-        onSaved={setSavedTimezone}
-      />
-      {firstRunOpen && (
-        <FirstRunWizard onDone={() => setFirstRunOpen(false)} />
-      )}
+      <TimezoneGate savedTimezone={savedTimezone} onSaved={setSavedTimezone} />
+      {firstRunOpen && <FirstRunWizard onDone={() => setFirstRunOpen(false)} />}
       <div
         className={`fixed inset-0 flex flex-col overflow-hidden font-(--font-favorit) ${t.page}`}
       >
@@ -3330,11 +3324,11 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
               onOpenSearch={() => setPaletteOpen(true)}
               sprintPillSlot={(() => {
                 const currentSprint = initial.currentProjectId
-                  ? sprints.find(
+                  ? (sprints.find(
                       (s) =>
                         s.projectId === initial.currentProjectId &&
                         s.status === 'current'
-                    ) ?? null
+                    ) ?? null)
                   : null
                 if (!currentSprint) return null
                 const now = new Date()
@@ -3488,7 +3482,9 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                       ) : undefined,
                     disabled: tab === 'board',
                     title:
-                      tab === 'board' ? "You're already on the board view." : undefined,
+                      tab === 'board'
+                        ? "You're already on the board view."
+                        : undefined,
                     onSelect: () => setTab('board')
                   },
                   {
@@ -3500,7 +3496,9 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                       ) : undefined,
                     disabled: tab === 'list',
                     title:
-                      tab === 'list' ? "You're already on the list view." : undefined,
+                      tab === 'list'
+                        ? "You're already on the list view."
+                        : undefined,
                     onSelect: () => setTab('list')
                   },
                   {
@@ -3550,7 +3548,7 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                               label: c.name,
                               trailingIcon:
                                 c.status === 'current' ? (
-                                  <span className="text-[9px] tracking-wider uppercase text-teal-500">
+                                  <span className="text-[9px] tracking-wider text-teal-500 uppercase">
                                     Now
                                   </span>
                                 ) : undefined,
@@ -3631,19 +3629,18 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                           )
                           if (projectSprints.length === 0) return null
                           const currentSprint =
-                            projectSprints.find((c) => c.status === 'current') ??
-                            null
+                            projectSprints.find(
+                              (c) => c.status === 'current'
+                            ) ?? null
                           // Fall back to the nearest upcoming sprint when no
                           // current one is running. PM intent: "I planned a
                           // sprint, show me what's queued up + a Start
                           // button" instead of the generic empty state.
-                          const upcomingSprint =
-                            currentSprint
-                              ? null
-                              : [...projectSprints]
-                                  .filter((c) => c.status === 'upcoming')
-                                  .sort((a, b) => a.number - b.number)[0] ??
-                                null
+                          const upcomingSprint = currentSprint
+                            ? null
+                            : ([...projectSprints]
+                                .filter((c) => c.status === 'upcoming')
+                                .sort((a, b) => a.number - b.number)[0] ?? null)
                           const heroSprint = currentSprint ?? upcomingSprint
                           return (
                             <SprintHero
@@ -3657,9 +3654,8 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                               onStart={
                                 upcomingSprint
                                   ? async () => {
-                                      const { startSprint } = await import(
-                                        '../actions'
-                                      )
+                                      const { startSprint } =
+                                        await import('../actions')
                                       const res = await startSprint(
                                         upcomingSprint.id
                                       )
@@ -4246,12 +4242,14 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
                 {pendingProjectMove && (
                   <>
                     <span className="block">
-                      {pendingProjectMove.taskRef} . {pendingProjectMove.taskTitle}
+                      {pendingProjectMove.taskRef} .{' '}
+                      {pendingProjectMove.taskTitle}
                     </span>
                     <span className="mt-2 block">
-                      The reference will change (e.g. {pendingProjectMove.taskRef}{' '}
-                      becomes a new {pendingProjectMove.toProjectName} reference).
-                      Old links to {pendingProjectMove.taskRef} will not resolve.
+                      The reference will change (e.g.{' '}
+                      {pendingProjectMove.taskRef} becomes a new{' '}
+                      {pendingProjectMove.toProjectName} reference). Old links
+                      to {pendingProjectMove.taskRef} will not resolve.
                     </span>
                     {pendingProjectMove.inSprint && (
                       <span className="mt-2 block">
@@ -4296,9 +4294,7 @@ function DashboardShellInner({ initial }: { initial: DashboardInitial }) {
           onSelectTab={(t) => setTab(t)}
           onSelectView={(v) => setView(v)}
           onSelectMember={(id) => openPortfolio(id)}
-          onSelectMeeting={(id) =>
-            meetingsSheet.open({ focusedRequestId: id })
-          }
+          onSelectMeeting={(id) => meetingsSheet.open({ focusedRequestId: id })}
         />
       </div>
     </TaskActionsProvider>

@@ -243,10 +243,7 @@ const STATUS_LABEL: Record<MeetingRequestRow['status'], string> = {
 // Same status, different reading depending on which side the viewer is
 // on. 'approved' for the requester means "the other side has to pick,"
 // for the attendee means "you have to pick."
-function statusLabelFor(
-  req: MeetingRequestRow,
-  viewerId: string
-): string {
+function statusLabelFor(req: MeetingRequestRow, viewerId: string): string {
   if (req.status === 'approved' && req.attendees.length === 1) {
     if (req.requesterId === viewerId) {
       const attendee = req.attendees[0]?.fullName ?? 'requestee'
@@ -306,8 +303,7 @@ export function MeetingsSheetProvider({
 
   const isPlanner = accessTier === 'admin' || accessTier === 'lead'
   const team = useTeam()
-  const viewerTz =
-    team.find((m) => m.id === currentUserId)?.timezone ?? null
+  const viewerTz = team.find((m) => m.id === currentUserId)?.timezone ?? null
 
   const pendingQuery = useQuery({
     queryKey: ['meetingRequests', 'pending'],
@@ -472,7 +468,9 @@ function ListView({
   focus: FocusKey | null
   onResolved: () => void
 }) {
-  const show = (key: 'pending' | 'awaiting' | 'review' | 'mine' | 'with-you') => {
+  const show = (
+    key: 'pending' | 'awaiting' | 'review' | 'mine' | 'with-you'
+  ) => {
     if (focus === null) return true
     if (focus === 'pending') return key === 'pending'
     if (focus === 'awaiting') return key === 'awaiting'
@@ -500,8 +498,7 @@ function ListView({
   // surfaces unreviewed ones.
   const awaitingReview = mine.filter(
     (r) =>
-      (r.requesterId === currentUserId ||
-        isAttendeeOf(r, currentUserId)) &&
+      (r.requesterId === currentUserId || isAttendeeOf(r, currentUserId)) &&
       r.status === 'scheduled' &&
       r.selectedStartsAt &&
       isMeetingOver(r) &&
@@ -937,7 +934,7 @@ function PendingApprovalCard({
             <button
               onClick={approve}
               disabled={busy}
-              className={`inline-flex h-7 items-center gap-1 rounded-md bg-teal-600 px-2 text-[11px] text-white disabled:opacity-40 hover:bg-teal-700`}
+              className={`inline-flex h-7 items-center gap-1 rounded-md bg-teal-600 px-2 text-[11px] text-white hover:bg-teal-700 disabled:opacity-40`}
             >
               <Check className="size-3" /> Approve
             </button>
@@ -1068,99 +1065,97 @@ function PickCard({
       </p>
       <BriefPreview request={request} />
 
-      {request.mode === 'day' && request.proposedDate ? (
-        (() => {
-          // End-of-day: the proposed_date is just YYYY-MM-DD; treat the
-          // day as "past" once the local 23:59:59 has passed.
-          const dayPast =
-            new Date(`${request.proposedDate}T23:59:59`).getTime() < Date.now()
-          if (dayPast) {
-            return (
-              <div
-                className={`mb-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1.5 text-[11px] text-amber-700`}
-              >
-                Proposed day ({fmtDate(request.proposedDate, viewerTz)}) has
-                passed. Ask {request.requesterName.split(/\s+/)[0]} to
-                reschedule.
-              </div>
-            )
-          }
-          return (
-            <>
-              <p className={`mb-2 text-[11px] ${t.text}`}>
-                Day: <strong>{fmtDate(request.proposedDate, viewerTz)}</strong>
-              </p>
-              <div className="mb-2 flex items-center gap-2">
-                <span className={`text-[10px] ${t.textMuted}`}>Time</span>
-                <input
-                  type="time"
-                  value={timeStr}
-                  onChange={(e) => setTimeStr(e.target.value)}
-                  step={900}
-                  className={`h-8 flex-1 rounded-md border px-2 text-xs ${t.input}`}
-                />
-                <button
-                  onClick={pickDayTime}
-                  disabled={busy || !timeStr}
-                  className={`inline-flex h-8 items-center gap-1 rounded-md bg-teal-600 px-2.5 text-[11px] text-white disabled:opacity-40 hover:bg-teal-700`}
+      {request.mode === 'day' && request.proposedDate
+        ? (() => {
+            // End-of-day: the proposed_date is just YYYY-MM-DD; treat the
+            // day as "past" once the local 23:59:59 has passed.
+            const dayPast =
+              new Date(`${request.proposedDate}T23:59:59`).getTime() <
+              Date.now()
+            if (dayPast) {
+              return (
+                <div
+                  className={`mb-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1.5 text-[11px] text-amber-700`}
                 >
-                  <Check className="size-3" /> Pick
-                </button>
-              </div>
-            </>
-          )
-        })()
-      ) : (
-        (() => {
-          const slotsList = request.slots ?? []
-          const now = Date.now()
-          const slotPast = (iso: string) =>
-            new Date(iso).getTime() < now
-          const allPast =
-            slotsList.length > 0 && slotsList.every(slotPast)
-          if (allPast) {
+                  Proposed day ({fmtDate(request.proposedDate, viewerTz)}) has
+                  passed. Ask {request.requesterName.split(/\s+/)[0]} to
+                  reschedule.
+                </div>
+              )
+            }
             return (
-              <div
-                className={`mb-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1.5 text-[11px] text-amber-700`}
-              >
-                All proposed slots have passed. Ask{' '}
-                {request.requesterName.split(/\s+/)[0]} to reschedule.
+              <>
+                <p className={`mb-2 text-[11px] ${t.text}`}>
+                  Day:{' '}
+                  <strong>{fmtDate(request.proposedDate, viewerTz)}</strong>
+                </p>
+                <div className="mb-2 flex items-center gap-2">
+                  <span className={`text-[10px] ${t.textMuted}`}>Time</span>
+                  <input
+                    type="time"
+                    value={timeStr}
+                    onChange={(e) => setTimeStr(e.target.value)}
+                    step={900}
+                    className={`h-8 flex-1 rounded-md border px-2 text-xs ${t.input}`}
+                  />
+                  <button
+                    onClick={pickDayTime}
+                    disabled={busy || !timeStr}
+                    className={`inline-flex h-8 items-center gap-1 rounded-md bg-teal-600 px-2.5 text-[11px] text-white hover:bg-teal-700 disabled:opacity-40`}
+                  >
+                    <Check className="size-3" /> Pick
+                  </button>
+                </div>
+              </>
+            )
+          })()
+        : (() => {
+            const slotsList = request.slots ?? []
+            const now = Date.now()
+            const slotPast = (iso: string) => new Date(iso).getTime() < now
+            const allPast = slotsList.length > 0 && slotsList.every(slotPast)
+            if (allPast) {
+              return (
+                <div
+                  className={`mb-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1.5 text-[11px] text-amber-700`}
+                >
+                  All proposed slots have passed. Ask{' '}
+                  {request.requesterName.split(/\s+/)[0]} to reschedule.
+                </div>
+              )
+            }
+            return (
+              <div className="mb-2 flex flex-col gap-1">
+                {slotsList.map((s, i) => {
+                  const past = slotPast(s)
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => pickSlot(i)}
+                      disabled={busy || past}
+                      className={`flex items-center justify-between rounded-md border px-2 py-1.5 text-[11px] transition hover:bg-teal-500/10 disabled:cursor-not-allowed disabled:opacity-50 ${t.border} ${t.text}`}
+                    >
+                      <div className="flex flex-col items-start">
+                        <span className={past ? 'line-through' : ''}>
+                          {fmtDateTime(s, viewerTz)}
+                        </span>
+                        {!past && requesterPreview(s) && (
+                          <span className={`text-[9px] ${t.textSubtle}`}>
+                            requester: {requesterPreview(s)}
+                          </span>
+                        )}
+                      </div>
+                      <span
+                        className={`text-[9px] ${past ? 'text-amber-600' : t.textMuted}`}
+                      >
+                        {past ? 'slot passed' : 'Pick'}
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
             )
-          }
-          return (
-            <div className="mb-2 flex flex-col gap-1">
-              {slotsList.map((s, i) => {
-                const past = slotPast(s)
-                return (
-                  <button
-                    key={i}
-                    onClick={() => pickSlot(i)}
-                    disabled={busy || past}
-                    className={`flex items-center justify-between rounded-md border px-2 py-1.5 text-[11px] transition disabled:cursor-not-allowed disabled:opacity-50 hover:bg-teal-500/10 ${t.border} ${t.text}`}
-                  >
-                    <div className="flex flex-col items-start">
-                      <span className={past ? 'line-through' : ''}>
-                        {fmtDateTime(s, viewerTz)}
-                      </span>
-                      {!past && requesterPreview(s) && (
-                        <span className={`text-[9px] ${t.textSubtle}`}>
-                          requester: {requesterPreview(s)}
-                        </span>
-                      )}
-                    </div>
-                    <span
-                      className={`text-[9px] ${past ? 'text-amber-600' : t.textMuted}`}
-                    >
-                      {past ? 'slot passed' : 'Pick'}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-          )
-        })()
-      )}
+          })()}
 
       {declining && (
         <textarea
@@ -1338,41 +1333,40 @@ function RequestStatusCard({
       {isMeetingOver(request) &&
         request.status === 'scheduled' &&
         isParticipant &&
-        !justReviewed && (
-          reviewing ? (
-            <div
-              className={`mt-2 rounded-md border p-2 ${t.border} ${t.surfaceMuted}`}
+        !justReviewed &&
+        (reviewing ? (
+          <div
+            className={`mt-2 rounded-md border p-2 ${t.border} ${t.surfaceMuted}`}
+          >
+            <ReviewForm
+              meetingId={request.id}
+              onResolved={() => {
+                setReviewing(false)
+                // Mark this card as "just reviewed" so the success
+                // panel (with share buttons) stays visible until the
+                // user dismisses it. Otherwise the meeting status
+                // flips to 'completed' on refetch and the card
+                // disappears, taking the share affordance with it.
+                setJustReviewed(true)
+                onResolved()
+              }}
+              onCancel={() => setReviewing(false)}
+            />
+          </div>
+        ) : (
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-md border border-dashed px-2 py-1.5">
+            <span className={`text-[10px] italic ${t.textSubtle}`}>
+              This meeting has ended.
+            </span>
+            <button
+              type="button"
+              onClick={() => setReviewing(true)}
+              className={`inline-flex h-6 items-center gap-1 rounded-md px-2 text-[10px] font-medium transition ${t.accent}`}
             >
-              <ReviewForm
-                meetingId={request.id}
-                onResolved={() => {
-                  setReviewing(false)
-                  // Mark this card as "just reviewed" so the success
-                  // panel (with share buttons) stays visible until the
-                  // user dismisses it. Otherwise the meeting status
-                  // flips to 'completed' on refetch and the card
-                  // disappears, taking the share affordance with it.
-                  setJustReviewed(true)
-                  onResolved()
-                }}
-                onCancel={() => setReviewing(false)}
-              />
-            </div>
-          ) : (
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-md border border-dashed px-2 py-1.5">
-              <span className={`text-[10px] italic ${t.textSubtle}`}>
-                This meeting has ended.
-              </span>
-              <button
-                type="button"
-                onClick={() => setReviewing(true)}
-                className={`inline-flex h-6 items-center gap-1 rounded-md px-2 text-[10px] font-medium transition ${t.accent}`}
-              >
-                <Check className="size-3" /> Mark as done
-              </button>
-            </div>
-          )
-        )}
+              <Check className="size-3" /> Mark as done
+            </button>
+          </div>
+        ))}
       {justReviewed && (
         <div
           className={`mt-2 flex flex-col gap-2 rounded-md border border-teal-500/30 bg-teal-500/10 p-2 text-[11px]`}
@@ -1484,7 +1478,8 @@ const OUTCOMES: OutcomeMeta[] = [
     label: 'Resolved',
     tone: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30',
     whyPrompt: 'How was it resolved?',
-    whyPlaceholder: 'In a sentence or two: what was agreed / what got unblocked.'
+    whyPlaceholder:
+      'In a sentence or two: what was agreed / what got unblocked.'
   },
   {
     id: 'partial',
@@ -1505,7 +1500,8 @@ const OUTCOMES: OutcomeMeta[] = [
     label: "Didn't deliver",
     tone: 'bg-rose-500/10 text-rose-700 border-rose-500/30',
     whyPrompt: 'What went wrong?',
-    whyPlaceholder: 'No-show, blocked, off-topic, ran out of time... a short note for next time.'
+    whyPlaceholder:
+      'No-show, blocked, off-topic, ran out of time... a short note for next time.'
   }
 ]
 
@@ -1572,7 +1568,7 @@ function ReviewForm({
   const [why, setWhy] = useState('')
   const [nextSteps, setNextSteps] = useState('')
   const [busy, startBusy] = useTransition()
-  const meta = outcome ? OUTCOMES.find((o) => o.id === outcome) ?? null : null
+  const meta = outcome ? (OUTCOMES.find((o) => o.id === outcome) ?? null) : null
   const whyTrimmed = why.trim()
   const canSave = Boolean(outcome) && whyTrimmed.length > 0
 
@@ -1780,7 +1776,9 @@ function RequesteeContextEditor({
   }
 
   return (
-    <div className={`mt-2 flex flex-col gap-1.5 rounded border p-2 ${t.border}`}>
+    <div
+      className={`mt-2 flex flex-col gap-1.5 rounded border p-2 ${t.border}`}
+    >
       <span className={`text-[9px] tracking-wider uppercase ${t.textMuted}`}>
         What you&apos;re bringing (optional)
       </span>
@@ -1892,7 +1890,9 @@ function RescheduleForm({
     >
       {isGroup ? (
         <label className="flex flex-col gap-1">
-          <span className={`text-[9px] tracking-wider uppercase ${t.textMuted}`}>
+          <span
+            className={`text-[9px] tracking-wider uppercase ${t.textMuted}`}
+          >
             New locked time
           </span>
           <input
@@ -1904,7 +1904,9 @@ function RescheduleForm({
         </label>
       ) : request.mode === 'day' ? (
         <label className="flex flex-col gap-1">
-          <span className={`text-[9px] tracking-wider uppercase ${t.textMuted}`}>
+          <span
+            className={`text-[9px] tracking-wider uppercase ${t.textMuted}`}
+          >
             New day
           </span>
           <input
@@ -1916,7 +1918,9 @@ function RescheduleForm({
         </label>
       ) : (
         <div className="flex flex-col gap-1">
-          <span className={`text-[9px] tracking-wider uppercase ${t.textMuted}`}>
+          <span
+            className={`text-[9px] tracking-wider uppercase ${t.textMuted}`}
+          >
             New slots ({newSlots.length}/3)
           </span>
           {newSlots.map((s, i) => (
@@ -1955,7 +1959,7 @@ function RescheduleForm({
                 const iso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:00`
                 setNewSlots([...newSlots, iso])
               }}
-              className={`text-[10px] ${t.textMuted} hover:underline self-start`}
+              className={`text-[10px] ${t.textMuted} self-start hover:underline`}
             >
               + Add slot
             </button>
@@ -1985,7 +1989,7 @@ function RescheduleForm({
         <button
           onClick={submit}
           disabled={busy}
-          className={`h-7 rounded-md bg-teal-600 px-2.5 text-[11px] text-white disabled:opacity-40 hover:bg-teal-700`}
+          className={`h-7 rounded-md bg-teal-600 px-2.5 text-[11px] text-white hover:bg-teal-700 disabled:opacity-40`}
         >
           {busy ? 'Saving...' : 'Reschedule'}
         </button>

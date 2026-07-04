@@ -35,9 +35,7 @@ const RING_CLASS: Record<ReturnType<typeof getPresence>, string> = {
   left: 'ring-zinc-500/30'
 }
 
-const DIM_CLASS: Partial<
-  Record<ReturnType<typeof getPresence>, string>
-> = {
+const DIM_CLASS: Partial<Record<ReturnType<typeof getPresence>, string>> = {
   on_vacation: 'opacity-50 grayscale',
   left: 'opacity-30 grayscale'
 }
@@ -53,12 +51,12 @@ export default function Avatar({
   const presenceRing = presence
     ? `ring-1 ring-offset-1 ring-offset-transparent ${RING_CLASS[presence]}`
     : ''
-  const presenceDim = presence ? DIM_CLASS[presence] ?? '' : ''
+  const presenceDim = presence ? (DIM_CLASS[presence] ?? '') : ''
 
   if (user.photo) {
     return (
       <span
-        className={`relative inline-flex rounded-full overflow-hidden shrink-0 align-middle ${presenceRing} ${presenceDim} ${className}`}
+        className={`relative inline-flex shrink-0 overflow-hidden rounded-full align-middle ${presenceRing} ${presenceDim} ${className}`}
         style={{ width: size, height: size }}
         title={user.name}
       >
@@ -76,7 +74,7 @@ export default function Avatar({
   return (
     <span
       title={user.name}
-      className={`inline-flex items-center justify-center rounded-full font-semibold text-white shrink-0 align-middle ${user.color} ${textClass} ${presenceRing} ${presenceDim} ${className}`}
+      className={`inline-flex shrink-0 items-center justify-center rounded-full align-middle font-semibold text-white ${user.color} ${textClass} ${presenceRing} ${presenceDim} ${className}`}
       style={{ width: size, height: size }}
     >
       {user.initials}

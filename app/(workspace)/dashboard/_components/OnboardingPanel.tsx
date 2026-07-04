@@ -207,7 +207,9 @@ function IndexView({
                 >
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     <div className="flex items-center gap-2">
-                      <span className={`truncate text-sm font-medium ${t.text}`}>
+                      <span
+                        className={`truncate text-sm font-medium ${t.text}`}
+                      >
                         {m.fullName}
                       </span>
                       <span
@@ -237,9 +239,7 @@ function IndexView({
                       </span>
                     </div>
                   </div>
-                  <ChevronRight
-                    className={`size-4 shrink-0 ${t.textSubtle}`}
-                  />
+                  <ChevronRight className={`size-4 shrink-0 ${t.textSubtle}`} />
                 </button>
                 {canEditChecklist && m.done > 0 && (
                   <button
@@ -353,7 +353,8 @@ function MemberView({
               )}
             </h1>
             <p className={`text-[11px] ${t.textMuted}`}>
-              {member && `${member.accessTier} · ${member.skills.length} skills`}
+              {member &&
+                `${member.accessTier} · ${member.skills.length} skills`}
             </p>
           </div>
         </div>
@@ -496,7 +497,7 @@ function StepRow({
 
   const inviteUrl =
     mode === 'onboard'
-      ? row.adminInviteUrl ?? row.memberHelpUrl
+      ? (row.adminInviteUrl ?? row.memberHelpUrl)
       : row.adminInviteUrl
 
   const primaryAction =
@@ -534,9 +535,7 @@ function StepRow({
           </p>
         )}
         {row.note && (
-          <p
-            className={`mt-1 text-[11px] italic leading-snug ${t.textSubtle}`}
-          >
+          <p className={`mt-1 text-[11px] leading-snug italic ${t.textSubtle}`}>
             Note: {row.note}
           </p>
         )}
@@ -675,8 +674,7 @@ function TemplatesView({
             className={`rounded-lg border border-dashed p-8 text-center ${t.borderSoft}`}
           >
             <p className={`text-sm ${t.text}`}>
-              No templates yet. Seed the starter set from the Onboarding
-              index.
+              No templates yet. Seed the starter set from the Onboarding index.
             </p>
           </div>
         )}
@@ -895,9 +893,7 @@ function TemplateForm({
         </label>
       </div>
       <div className="flex flex-col gap-1">
-        <span
-          className={`text-[10px] tracking-wider uppercase ${t.textMuted}`}
-        >
+        <span className={`text-[10px] tracking-wider uppercase ${t.textMuted}`}>
           Tiers
         </span>
         <div className="flex items-center gap-1.5">

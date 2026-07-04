@@ -10,7 +10,12 @@ export type TaskStatus =
 
 export type TaskPriority = 'urgent' | 'high' | 'medium' | 'low' | 'none'
 
-export type RelationKind = 'blocked_by' | 'blocks' | 'parent' | 'sub_issue' | 'triage'
+export type RelationKind =
+  | 'blocked_by'
+  | 'blocks'
+  | 'parent'
+  | 'sub_issue'
+  | 'triage'
 
 export interface StatusConfig {
   id: TaskStatus

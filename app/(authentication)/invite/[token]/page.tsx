@@ -42,15 +42,17 @@ export default async function InvitePage({
           Join {invite.companyName}
         </h1>
         <p className="mt-2 text-sm text-zinc-600">
-          {invite.inviterName ? `${invite.inviterName} invited` : 'You were invited'}{' '}
+          {invite.inviterName
+            ? `${invite.inviterName} invited`
+            : 'You were invited'}{' '}
           you to join as {TIER_LABEL[invite.accessTier]}.
         </p>
 
         <div className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 p-3">
-          <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">
+          <p className="text-[10px] font-medium tracking-wide text-zinc-500 uppercase">
             Your login
           </p>
-          <p className="mt-1 font-mono text-xs text-zinc-900 break-all">
+          <p className="mt-1 font-mono text-xs break-all text-zinc-900">
             {invite.loginEmail}
           </p>
           <p className="mt-2 text-[11px] text-zinc-600">

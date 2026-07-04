@@ -3,7 +3,10 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowUpRight, CalendarDays, Clock, Video } from 'lucide-react'
-import { fetchMeetingForShare, type SharedMeeting } from '@/supabase/dashboard/meetings'
+import {
+  fetchMeetingForShare,
+  type SharedMeeting
+} from '@/supabase/dashboard/meetings'
 import { config } from '@/lib/config'
 
 /* eslint-disable @next/next/no-img-element */
@@ -22,7 +25,10 @@ function descriptionFor(m: SharedMeeting): string {
   // Completed meetings lead with the outcome - more useful in a
   // WhatsApp preview than the date now in the past.
   if (m.status === 'completed' && m.outcome) {
-    const outcomeLabel: Record<NonNullable<SharedMeeting['outcome']>, string> = {
+    const outcomeLabel: Record<
+      NonNullable<SharedMeeting['outcome']>,
+      string
+    > = {
       resolved: 'Resolved',
       partial: 'Partial',
       needs_followup: 'Needs follow-up',
@@ -65,11 +71,7 @@ export async function generateMetadata({
   }
 }
 
-export default function SharedMeetingPage({
-  params
-}: {
-  params: Params
-}) {
+export default function SharedMeetingPage({ params }: { params: Params }) {
   return (
     <Suspense fallback={null}>
       <SharedMeetingContent params={params} />
@@ -168,9 +170,7 @@ async function SharedMeetingContent({ params }: { params: Params }) {
             meeting.questions ||
             meeting.agenda) && (
             <div className="flex flex-col gap-3 border-t border-zinc-200/70 pt-6 dark:border-white/10">
-              {meeting.goal && (
-                <BriefBlock label="Goal" body={meeting.goal} />
-              )}
+              {meeting.goal && <BriefBlock label="Goal" body={meeting.goal} />}
               {meeting.context && (
                 <BriefBlock label="Context" body={meeting.context} />
               )}
@@ -188,14 +188,14 @@ async function SharedMeetingContent({ params }: { params: Params }) {
             meeting.slots.length > 0 &&
             !meeting.selectedStartsAt && (
               <div className="flex flex-col gap-2 border-t border-zinc-200/70 pt-6 dark:border-white/10">
-                <span className="text-[10px] tracking-[0.22em] uppercase text-zinc-500 dark:text-zinc-400">
+                <span className="text-[10px] tracking-[0.22em] text-zinc-500 uppercase dark:text-zinc-400">
                   Proposed slots
                 </span>
                 <ul className="flex flex-col gap-1.5">
                   {meeting.slots.map((iso) => (
                     <li
                       key={iso}
-                      className="text-sm tabular-nums text-zinc-700 dark:text-zinc-200"
+                      className="text-sm text-zinc-700 tabular-nums dark:text-zinc-200"
                     >
                       {formatSlotLabel(iso)}
                     </li>
@@ -206,7 +206,7 @@ async function SharedMeetingContent({ params }: { params: Params }) {
 
           {meeting.preRead && (
             <div className="flex flex-col gap-2 border-t border-zinc-200/70 pt-6 dark:border-white/10">
-              <span className="text-[10px] tracking-[0.22em] uppercase text-zinc-500 dark:text-zinc-400">
+              <span className="text-[10px] tracking-[0.22em] text-zinc-500 uppercase dark:text-zinc-400">
                 Pre-read
               </span>
               <ul className="flex flex-col gap-1.5">
@@ -228,7 +228,7 @@ async function SharedMeetingContent({ params }: { params: Params }) {
           )}
         </article>
 
-        <footer className="flex items-center justify-center gap-1.5 text-[11px] tracking-[0.18em] uppercase text-zinc-400 dark:text-zinc-600">
+        <footer className="flex items-center justify-center gap-1.5 text-[11px] tracking-[0.18em] text-zinc-400 uppercase dark:text-zinc-600">
           <span className="size-1 rounded-full bg-[#948CC0]" />
           Shared from {config.appName}
         </footer>
@@ -301,7 +301,7 @@ function RecapBlock({
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-[#948CC0]/30 bg-[#948CC0]/5 p-4 dark:border-[#948CC0]/30 dark:bg-[#948CC0]/10">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-[10px] tracking-[0.22em] uppercase text-zinc-500 dark:text-zinc-400">
+        <span className="text-[10px] tracking-[0.22em] text-zinc-500 uppercase dark:text-zinc-400">
           Recap
         </span>
         <span
@@ -317,7 +317,7 @@ function RecapBlock({
       )}
       {nextSteps && (
         <div className="flex flex-col gap-1">
-          <span className="text-[10px] tracking-[0.22em] uppercase text-zinc-500 dark:text-zinc-400">
+          <span className="text-[10px] tracking-[0.22em] text-zinc-500 uppercase dark:text-zinc-400">
             Next steps
           </span>
           <p className="text-sm leading-relaxed whitespace-pre-wrap text-zinc-700 dark:text-zinc-200">
@@ -351,7 +351,7 @@ function splitRecapNotes(raw: string | null): {
 function BriefBlock({ label, body }: { label: string; body: string }) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-[10px] tracking-[0.22em] uppercase text-zinc-500 dark:text-zinc-400">
+      <span className="text-[10px] tracking-[0.22em] text-zinc-500 uppercase dark:text-zinc-400">
         {label}
       </span>
       <p className="text-sm leading-relaxed whitespace-pre-wrap text-zinc-700 dark:text-zinc-200">
@@ -396,7 +396,7 @@ function MemberCell({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-[10px] tracking-[0.22em] uppercase text-zinc-500 dark:text-zinc-400">
+      <span className="text-[10px] tracking-[0.22em] text-zinc-500 uppercase dark:text-zinc-400">
         {label}
       </span>
       <div className="flex items-center gap-2.5">
@@ -447,12 +447,10 @@ const STATUS_LABEL: Record<SharedMeeting['status'], string> = {
 const STATUS_PALETTE: Record<SharedMeeting['status'], string> = {
   pending:
     'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-200',
-  approved:
-    'bg-sky-100 text-sky-800 dark:bg-sky-500/20 dark:text-sky-200',
+  approved: 'bg-sky-100 text-sky-800 dark:bg-sky-500/20 dark:text-sky-200',
   scheduled:
     'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200',
-  completed:
-    'bg-zinc-100 text-zinc-700 dark:bg-white/10 dark:text-zinc-200',
+  completed: 'bg-zinc-100 text-zinc-700 dark:bg-white/10 dark:text-zinc-200',
   rejected: 'bg-zinc-100 text-zinc-500 dark:bg-white/10 dark:text-zinc-400',
   declined: 'bg-zinc-100 text-zinc-500 dark:bg-white/10 dark:text-zinc-400',
   canceled: 'bg-zinc-100 text-zinc-500 dark:bg-white/10 dark:text-zinc-400'
@@ -468,8 +466,7 @@ function initials(name: string): string {
 
 function isOver(m: SharedMeeting): boolean {
   if (!m.selectedStartsAt) return false
-  const ends =
-    new Date(m.selectedStartsAt).getTime() + m.durationMin * 60_000
+  const ends = new Date(m.selectedStartsAt).getTime() + m.durationMin * 60_000
   return ends < Date.now()
 }
 
@@ -489,11 +486,14 @@ function formatWhen(m: SharedMeeting): string {
   }
   if (m.proposedDate) {
     try {
-      return new Date(`${m.proposedDate}T12:00:00`).toLocaleDateString('en-US', {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric'
-      })
+      return new Date(`${m.proposedDate}T12:00:00`).toLocaleDateString(
+        'en-US',
+        {
+          weekday: 'long',
+          month: 'long',
+          day: 'numeric'
+        }
+      )
     } catch {
       return m.proposedDate
     }

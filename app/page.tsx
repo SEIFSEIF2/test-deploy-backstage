@@ -116,7 +116,7 @@ function TopBar() {
 function Hero() {
   return (
     <section className="flex flex-col items-center gap-6 pt-6 text-center sm:pt-10">
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-[#948CC0]/12 px-3 py-1 text-[11px] font-medium tracking-[0.18em] uppercase text-[#6E62B0] dark:bg-[#948CC0]/15 dark:text-[#BCB3DD]">
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-[#948CC0]/12 px-3 py-1 text-[11px] font-medium tracking-[0.18em] text-[#6E62B0] uppercase dark:bg-[#948CC0]/15 dark:text-[#BCB3DD]">
         <Zap className="size-3" />
         Self-hosted team ops
       </span>
@@ -125,8 +125,8 @@ function Hero() {
       </h1>
       <p className="max-w-xl text-[15px] leading-relaxed text-zinc-600 sm:text-base dark:text-zinc-300">
         Sprint board, one-on-ones, onboarding checklists, retros. Modular
-        features you flip on when you need them, off when you don&apos;t.
-        Deploy your own copy in a click.
+        features you flip on when you need them, off when you don&apos;t. Deploy
+        your own copy in a click.
       </p>
       <div className="mt-2 flex flex-col items-center gap-3 sm:flex-row">
         <Link
@@ -180,8 +180,8 @@ function DeployBlock() {
         Own the whole stack
       </h2>
       <p className="max-w-lg text-[14px] leading-relaxed text-zinc-600 dark:text-zinc-300">
-        MIT-licensed. One click provisions the backend and deploys the
-        app. Your data, your rules.
+        MIT-licensed. One click provisions the backend and deploys the app. Your
+        data, your rules.
       </p>
       <a
         href={DEPLOY_URL}
@@ -198,7 +198,7 @@ function DeployBlock() {
 
 function Footer() {
   return (
-    <footer className="flex flex-col items-center gap-2 border-t border-zinc-200/70 pt-8 text-[11px] tracking-[0.15em] uppercase text-zinc-400 dark:border-white/10 dark:text-zinc-600">
+    <footer className="flex flex-col items-center gap-2 border-t border-zinc-200/70 pt-8 text-[11px] tracking-[0.15em] text-zinc-400 uppercase dark:border-white/10 dark:text-zinc-600">
       <div className="flex items-center gap-3">
         <a
           href="https://github.com/SEIFSEIF4/backstage"

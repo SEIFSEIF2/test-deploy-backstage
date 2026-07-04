@@ -40,11 +40,7 @@ import { usePortfolioSheet } from './PortfolioSheet'
 import { useQuickNoteSheet } from './QuickNoteSheet'
 import { useMeetingRequestSheet } from './MeetingRequestSheet'
 import { useMeetingsSheet } from './MeetingsSheet'
-import {
-  Calendar,
-  CalendarPlus,
-  MessageSquare
-} from 'lucide-react'
+import { Calendar, CalendarPlus, MessageSquare } from 'lucide-react'
 import { useDashTheme } from './theme'
 import { useContextMenu } from './ContextMenu'
 import { config } from '@/lib/config'
@@ -73,8 +69,7 @@ import {
 const HINTS = {
   all: 'Every task in your projects.',
   mine: 'Tasks assigned to you.',
-  inbox:
-    'Every task in the active sprint. Disabled when no sprint is current.',
+  inbox: 'Every task in the active sprint. Disabled when no sprint is current.',
   mentions: 'Tasks where someone @-mentioned you in a comment.',
   archive: 'Completed sprints and old tasks.',
   trash: 'Soft-deleted tasks. Admins and leads can restore them.',
@@ -243,9 +238,7 @@ export default function Sidebar({
   const orderedTeam = [
     ...team.filter((m) => m.id === currentUserId),
     ...team
-      .filter(
-        (m) => m.id !== currentUserId && m.activityStatus !== 'left'
-      )
+      .filter((m) => m.id !== currentUserId && m.activityStatus !== 'left')
       .sort((a, b) => {
         const dr = presenceRank(a) - presenceRank(b)
         if (dr !== 0) return dr
@@ -441,7 +434,7 @@ export default function Sidebar({
           {projectMenuOpen && (
             <div
               role="menu"
-              className={`absolute top-full left-2 right-2 z-40 mt-1 max-h-72 overflow-auto rounded-md border py-1 shadow-xl ${t.detail}`}
+              className={`absolute top-full right-2 left-2 z-40 mt-1 max-h-72 overflow-auto rounded-md border py-1 shadow-xl ${t.detail}`}
             >
               <button
                 onClick={() => {
@@ -635,7 +628,7 @@ export default function Sidebar({
                     memberMenu(e, m.id, m.name)
                   }}
                   aria-label={`Open menu for ${m.name}`}
-                  className={`absolute top-1/2 right-1 flex size-5 -translate-y-1/2 items-center justify-center rounded transition opacity-0 group-hover/member:opacity-100 focus-visible:opacity-100 ${t.btn}`}
+                  className={`absolute top-1/2 right-1 flex size-5 -translate-y-1/2 items-center justify-center rounded opacity-0 transition group-hover/member:opacity-100 focus-visible:opacity-100 ${t.btn}`}
                 >
                   <MoreHorizontal className="size-3" />
                 </button>
@@ -741,7 +734,9 @@ export default function Sidebar({
         </div>
 
         {!onboardingComplete && (
-          <div className={`mt-auto flex flex-col gap-0.5 border-t pt-3 ${t.border}`}>
+          <div
+            className={`mt-auto flex flex-col gap-0.5 border-t pt-3 ${t.border}`}
+          >
             <SidebarItem
               icon={<UserCog className="size-3.5" />}
               label="Finish your profile"

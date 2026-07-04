@@ -63,7 +63,8 @@ async function copyToClipboard(content: string): Promise<boolean> {
 async function runCopy(content: string, label: string) {
   const ok = await copyToClipboard(content)
   if (ok) toast.success(`Copied ${label}`)
-  else toast.error('Copy failed. Your browser may have blocked clipboard access.')
+  else
+    toast.error('Copy failed. Your browser may have blocked clipboard access.')
 }
 
 export function CopyButton({
@@ -74,7 +75,7 @@ export function CopyButton({
   size = 'sm',
   className,
   iconOnly = false,
-  responsiveLabel = false,
+  responsiveLabel = false
 }: CopyButtonProps) {
   const [open, setOpen] = useState(false)
   const [openSubmenuId, setOpenSubmenuId] = useState<string | null>(null)
@@ -128,14 +129,14 @@ export function CopyButton({
 
   return (
     <div ref={wrapperRef} className={cn('relative inline-flex', className)}>
-      <div className="flex rounded-md bg-secondary text-secondary-foreground shadow-none">
+      <div className="bg-secondary text-secondary-foreground flex rounded-md shadow-none">
         <button
           type="button"
           onClick={handlePrimary}
           className={cn(
-            'inline-flex shrink-0 items-center gap-1.5 rounded-l-md px-2.5 text-[11px] font-medium transition hover:bg-secondary/80 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
+            'hover:bg-secondary/80 focus-visible:ring-ring/40 inline-flex shrink-0 items-center gap-1.5 rounded-l-md px-2.5 text-[11px] font-medium transition focus-visible:z-10 focus-visible:ring-2 focus-visible:outline-none',
             heightClass,
-            iconOnly && 'px-2 rounded-md',
+            iconOnly && 'rounded-md px-2',
             !iconOnly && menu.length === 0 && 'rounded-md'
           )}
           aria-label={iconOnly || responsiveLabel ? primaryLabel : undefined}
@@ -154,12 +155,12 @@ export function CopyButton({
         </button>
         {menu.length > 0 && !iconOnly && (
           <>
-            <span className="self-center bg-foreground/10 w-px h-4" />
+            <span className="bg-foreground/10 h-4 w-px self-center" />
             <button
               type="button"
               onClick={() => setOpen((v) => !v)}
               className={cn(
-                'flex shrink-0 items-center justify-center rounded-r-md px-1.5 transition hover:bg-secondary/80 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
+                'hover:bg-secondary/80 focus-visible:ring-ring/40 flex shrink-0 items-center justify-center rounded-r-md px-1.5 transition focus-visible:z-10 focus-visible:ring-2 focus-visible:outline-none',
                 heightClass
               )}
               aria-haspopup="menu"
@@ -180,7 +181,7 @@ export function CopyButton({
       {open && menu.length > 0 && (
         <div
           role="menu"
-          className="absolute top-full right-0 z-50 mt-1 min-w-56 overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-lg ring-1 ring-foreground/5"
+          className="border-border bg-popover text-popover-foreground ring-foreground/5 absolute top-full right-0 z-50 mt-1 min-w-56 overflow-hidden rounded-md border shadow-lg ring-1"
         >
           <ul className="flex flex-col py-1">
             {menu.map((item) => (
@@ -201,7 +202,7 @@ export function CopyButton({
 function CopyMenuRow({
   item,
   isSubmenuOpen,
-  onSelect,
+  onSelect
 }: {
   item: CopyMenuItem
   isSubmenuOpen: boolean
@@ -211,17 +212,17 @@ function CopyMenuRow({
   return (
     <li>
       {item.separatorBefore && (
-        <div className="my-1 h-px bg-border" aria-hidden="true" />
+        <div className="bg-border my-1 h-px" aria-hidden="true" />
       )}
       <button
         type="button"
         onClick={() => onSelect(item)}
-        className="flex w-full items-center justify-between gap-3 px-3 py-1.5 text-left text-xs transition hover:bg-accent hover:text-accent-foreground"
+        className="hover:bg-accent hover:text-accent-foreground flex w-full items-center justify-between gap-3 px-3 py-1.5 text-left text-xs transition"
       >
         <span className="flex min-w-0 flex-col gap-0.5">
           <span className="truncate">{item.label}</span>
           {item.description && (
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-muted-foreground text-[10px]">
               {item.description}
             </span>
           )}
@@ -236,13 +237,13 @@ function CopyMenuRow({
         )}
       </button>
       {hasSubmenu && isSubmenuOpen && (
-        <ul className="flex flex-col bg-muted/30">
+        <ul className="bg-muted/30 flex flex-col">
           {item.submenu!.map((sub) => (
             <li key={sub.id}>
               <button
                 type="button"
                 onClick={() => onSelect(sub)}
-                className="flex w-full items-center gap-2 px-6 py-1.5 text-left text-xs transition hover:bg-accent hover:text-accent-foreground"
+                className="hover:bg-accent hover:text-accent-foreground flex w-full items-center gap-2 px-6 py-1.5 text-left text-xs transition"
               >
                 <span className="truncate">{sub.label}</span>
               </button>

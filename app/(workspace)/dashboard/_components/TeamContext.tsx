@@ -12,9 +12,7 @@ export function TeamProvider({
   members: BoardAssignee[]
   children: ReactNode
 }) {
-  return (
-    <TeamContext.Provider value={members}>{children}</TeamContext.Provider>
-  )
+  return <TeamContext.Provider value={members}>{children}</TeamContext.Provider>
 }
 
 export function useTeam(): BoardAssignee[] {

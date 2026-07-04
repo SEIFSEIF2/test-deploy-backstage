@@ -53,6 +53,8 @@ export async function invokePluginAction(
     return { ok: true, data: await handler(ctx, payload) }
   } catch (err) {
     console.error(`[plugin:${pluginId}] ${action} failed`, err)
-    return { error: err instanceof Error ? err.message : 'Plugin action failed.' }
+    return {
+      error: err instanceof Error ? err.message : 'Plugin action failed.'
+    }
   }
 }

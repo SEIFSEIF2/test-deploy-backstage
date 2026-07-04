@@ -65,11 +65,7 @@ export async function generateMetadata({
   }
 }
 
-export default function SharedTaskPage({
-  params
-}: {
-  params: Params
-}) {
+export default function SharedTaskPage({ params }: { params: Params }) {
   return (
     <Suspense fallback={null}>
       <SharedTaskContent params={params} />
@@ -108,7 +104,7 @@ async function SharedTaskContent({ params }: { params: Params }) {
 
         <article className="flex flex-col gap-6 rounded-3xl border border-zinc-200/70 bg-white p-7 shadow-[0_1px_0_rgba(15,18,23,0.04),0_18px_50px_-24px_rgba(15,18,23,0.18)] sm:p-9 dark:border-white/10 dark:bg-[#161F1F] dark:shadow-[0_18px_50px_-24px_rgba(0,0,0,0.6)]">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] tracking-[0.18em] uppercase">
-            <span className="rounded-md bg-[#948CC0]/10 px-2 py-0.5 font-medium tabular-nums text-[#6E62B0] dark:bg-[#948CC0]/15 dark:text-[#BCB3DD]">
+            <span className="rounded-md bg-[#948CC0]/10 px-2 py-0.5 font-medium text-[#6E62B0] tabular-nums dark:bg-[#948CC0]/15 dark:text-[#BCB3DD]">
               {task.ref}
             </span>
             <span className="inline-flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400">
@@ -133,7 +129,7 @@ async function SharedTaskContent({ params }: { params: Params }) {
           </div>
 
           {task.description && (
-            <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-zinc-700 dark:text-zinc-300">
+            <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-zinc-700 dark:text-zinc-300">
               {task.description}
             </p>
           )}
@@ -144,7 +140,7 @@ async function SharedTaskContent({ params }: { params: Params }) {
           </div>
         </article>
 
-        <footer className="flex items-center justify-center gap-1.5 text-[11px] tracking-[0.18em] uppercase text-zinc-400 dark:text-zinc-600">
+        <footer className="flex items-center justify-center gap-1.5 text-[11px] tracking-[0.18em] text-zinc-400 uppercase dark:text-zinc-600">
           <span className="size-1 rounded-full bg-[#948CC0]" />
           Shared from {config.appName}
         </footer>
@@ -182,7 +178,7 @@ function MemberCell({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-[10px] tracking-[0.22em] uppercase text-zinc-500 dark:text-zinc-400">
+      <span className="text-[10px] tracking-[0.22em] text-zinc-500 uppercase dark:text-zinc-400">
         {label}
       </span>
       {member ? (

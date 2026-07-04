@@ -109,9 +109,7 @@ export default function QuickRoomButton({
         (payload) => {
           if (payload.eventType === 'DELETE') {
             const old = payload.old as Partial<PresenceRow>
-            setRows((r) =>
-              r.filter((x) => x.member_id !== old.member_id)
-            )
+            setRows((r) => r.filter((x) => x.member_id !== old.member_id))
             if (old.member_id === me.id) setInRoom(false)
             return
           }
@@ -198,10 +196,7 @@ export default function QuickRoomButton({
     [present]
   )
   const invitableMembers = useMemo(
-    () =>
-      team.filter(
-        (m) => m.id !== me.id && !presentIds.has(m.id)
-      ),
+    () => team.filter((m) => m.id !== me.id && !presentIds.has(m.id)),
     [team, me.id, presentIds]
   )
 
@@ -225,9 +220,7 @@ export default function QuickRoomButton({
         onClick={() => setOpen((o) => !o)}
         aria-label="Quick meeting room"
         title={
-          present.length > 0
-            ? `${present.length} in the room`
-            : 'Quick room'
+          present.length > 0 ? `${present.length} in the room` : 'Quick room'
         }
         className={`flex items-center gap-1.5 rounded-full border px-2 py-1 transition ${
           open ? t.btnActive : t.btn
@@ -402,9 +395,7 @@ function InviteList({
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return members.slice(0, 8)
-    return members
-      .filter((m) => m.name.toLowerCase().includes(q))
-      .slice(0, 8)
+    return members.filter((m) => m.name.toLowerCase().includes(q)).slice(0, 8)
   }, [members, query])
 
   async function invite(id: string) {

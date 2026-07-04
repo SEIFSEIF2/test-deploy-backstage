@@ -45,9 +45,7 @@ export async function fetchInitial(
   const externalRefsByProject = groupExternalRefsByProject(
     data.projectExternalRefs
   )
-  const memberNamesById = new Map(
-    data.members.map((m) => [m.id, m.fullName])
-  )
+  const memberNamesById = new Map(data.members.map((m) => [m.id, m.fullName]))
   const teamUpdates: TeamUpdate[] = mapTeamActivity(
     data.teamActivity,
     memberNamesById,

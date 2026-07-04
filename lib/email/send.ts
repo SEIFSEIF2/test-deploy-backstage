@@ -13,8 +13,7 @@ import { config } from '@/lib/config'
 // instead of crashing, so contributors can run the app without a key.
 
 const FROM_DEFAULT =
-  process.env.EMAIL_FROM ??
-  `${config.appName} <noreply@${config.emailDomain}>`
+  process.env.EMAIL_FROM ?? `${config.appName} <noreply@${config.emailDomain}>`
 const REPLY_TO_DEFAULT =
   process.env.EMAIL_REPLY_TO ?? `noreply@${config.emailDomain}`
 
@@ -50,7 +49,9 @@ export interface SendEmailResult {
   id?: string
 }
 
-export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
+export async function sendEmail(
+  input: SendEmailInput
+): Promise<SendEmailResult> {
   const resend = client()
   if (!resend) {
     if (process.env.NODE_ENV !== 'production') {
@@ -62,7 +63,10 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
   }
 
   if (input.prefCheck) {
-    const allowed = await checkEmailPref(input.prefCheck.memberId, input.prefCheck.key)
+    const allowed = await checkEmailPref(
+      input.prefCheck.memberId,
+      input.prefCheck.key
+    )
     if (!allowed) return { ok: false, reason: 'opted_out' }
   }
 
@@ -117,14 +121,19 @@ export async function checkEmailPref(
 // the dev fallback.
 export function absoluteUrl(path: string): string {
   const base =
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ?? 'http://localhost:3000'
-  return path.startsWith('http') ? path : `${base}${path.startsWith('/') ? '' : '/'}${path}`
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ??
+    'http://localhost:3000'
+  return path.startsWith('http')
+    ? path
+    : `${base}${path.startsWith('/') ? '' : '/'}${path}`
 }
 
 // Resolves the address we should send to for a given member: contact_email
 // takes priority (the address they chose), email (auth/login) is the
 // fallback. Returns null when both are missing.
-export async function resolveMemberEmail(memberId: string): Promise<string | null> {
+export async function resolveMemberEmail(
+  memberId: string
+): Promise<string | null> {
   const supabase = createAdminClient()
   const { data } = await supabase
     .from('team_members')

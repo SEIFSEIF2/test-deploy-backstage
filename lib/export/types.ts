@@ -10,9 +10,12 @@ import type {
   BoardTask,
   Sprint,
   ProjectExternalRef,
-  TaskExternalRef,
+  TaskExternalRef
 } from '@/app/(workspace)/dashboard/_components/boardData'
-import type { TaskComment, TaskActivity } from '@/app/(workspace)/dashboard/_components/TaskDetail'
+import type {
+  TaskComment,
+  TaskActivity
+} from '@/app/(workspace)/dashboard/_components/TaskDetail'
 
 export type ExportFormat = 'md' | 'json'
 

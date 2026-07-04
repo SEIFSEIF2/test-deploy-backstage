@@ -67,13 +67,13 @@ function matchesMember(
   memberSkills: string[]
 ): boolean {
   if (!template.target_tiers.includes(memberTier)) return false
-  if (!template.target_skills || template.target_skills.length === 0) return true
+  if (!template.target_skills || template.target_skills.length === 0)
+    return true
   return template.target_skills.some((s) => memberSkills.includes(s))
 }
 
 export async function listOnboardingProgress(): Promise<
-  | { error: string }
-  | { members: OnboardingMemberProgress[] }
+  { error: string } | { members: OnboardingMemberProgress[] }
 > {
   const member = await requireAccessTier(['admin', 'lead'])
   if (!member) return { error: 'Admin or lead only.' }
@@ -97,10 +97,7 @@ export async function listOnboardingProgress(): Promise<
         .eq('company_id', member.companyId)
     ])
 
-  const completionsByMember = new Map<
-    string,
-    Map<string, StepStatus>
-  >()
+  const completionsByMember = new Map<string, Map<string, StepStatus>>()
   for (const c of completions ?? []) {
     let m = completionsByMember.get(c.member_id)
     if (!m) {
@@ -276,20 +273,18 @@ export async function markStep(input: z.input<typeof MarkStepInput>) {
     return { error: 'Member not found.' }
   }
 
-  const { error } = await supabase
-    .from('onboarding_step_completions')
-    .upsert(
-      {
-        company_id: actor.companyId,
-        member_id: parsed.data.memberId,
-        template_id: parsed.data.templateId,
-        status: parsed.data.status,
-        note: parsed.data.note ?? null,
-        completed_by: actor.id,
-        completed_at: new Date().toISOString()
-      },
-      { onConflict: 'member_id,template_id' }
-    )
+  const { error } = await supabase.from('onboarding_step_completions').upsert(
+    {
+      company_id: actor.companyId,
+      member_id: parsed.data.memberId,
+      template_id: parsed.data.templateId,
+      status: parsed.data.status,
+      note: parsed.data.note ?? null,
+      completed_by: actor.id,
+      completed_at: new Date().toISOString()
+    },
+    { onConflict: 'member_id,template_id' }
+  )
   if (error) return { error: error.message }
 
   await logActivity(
@@ -315,9 +310,7 @@ const CreateTemplateInput = z.object({
   title: z.string().trim().min(2).max(120),
   description: z.string().trim().max(500).optional().nullable(),
   category: z.string().trim().min(1).max(40).default('tooling'),
-  targetTiers: z
-    .array(z.enum(['admin', 'lead', 'member']))
-    .min(1),
+  targetTiers: z.array(z.enum(['admin', 'lead', 'member'])).min(1),
   targetSkills: z.array(z.string().trim()).optional().nullable(),
   toolKey: z.string().trim().max(40).optional().nullable(),
   adminInviteUrl: z.string().trim().url().max(500).optional().nullable(),
@@ -378,15 +371,22 @@ export async function updateTemplate(
   const patch: Database['public']['Tables']['onboarding_step_templates']['Update'] =
     {}
   if (parsed.data.title !== undefined) patch.title = parsed.data.title
-  if (parsed.data.description !== undefined) patch.description = parsed.data.description
+  if (parsed.data.description !== undefined)
+    patch.description = parsed.data.description
   if (parsed.data.category !== undefined) patch.category = parsed.data.category
-  if (parsed.data.targetTiers !== undefined) patch.target_tiers = parsed.data.targetTiers
-  if (parsed.data.targetSkills !== undefined) patch.target_skills = parsed.data.targetSkills
+  if (parsed.data.targetTiers !== undefined)
+    patch.target_tiers = parsed.data.targetTiers
+  if (parsed.data.targetSkills !== undefined)
+    patch.target_skills = parsed.data.targetSkills
   if (parsed.data.toolKey !== undefined) patch.tool_key = parsed.data.toolKey
-  if (parsed.data.adminInviteUrl !== undefined) patch.admin_invite_url = parsed.data.adminInviteUrl
-  if (parsed.data.memberHelpUrl !== undefined) patch.member_help_url = parsed.data.memberHelpUrl
-  if (parsed.data.isRequired !== undefined) patch.is_required = parsed.data.isRequired
-  if (parsed.data.sortOrder !== undefined) patch.sort_order = parsed.data.sortOrder
+  if (parsed.data.adminInviteUrl !== undefined)
+    patch.admin_invite_url = parsed.data.adminInviteUrl
+  if (parsed.data.memberHelpUrl !== undefined)
+    patch.member_help_url = parsed.data.memberHelpUrl
+  if (parsed.data.isRequired !== undefined)
+    patch.is_required = parsed.data.isRequired
+  if (parsed.data.sortOrder !== undefined)
+    patch.sort_order = parsed.data.sortOrder
 
   const { error } = await supabase
     .from('onboarding_step_templates')
@@ -482,8 +482,7 @@ const DEFAULTS: DefaultTemplate[] = [
     target_tiers: ['admin', 'lead', 'member'],
     target_skills: BACKEND_SKILLS,
     tool_key: 'gcloud',
-    admin_invite_url:
-      'https://console.cloud.google.com/iam-admin/iam',
+    admin_invite_url: 'https://console.cloud.google.com/iam-admin/iam',
     member_help_url: null,
     sort_order: 40
   },
@@ -533,7 +532,8 @@ const DEFAULTS: DefaultTemplate[] = [
   },
   {
     title: 'Brevo access',
-    description: 'Marketing sender. Add only if they own a marketing workstream.',
+    description:
+      'Marketing sender. Add only if they own a marketing workstream.',
     category: 'access',
     target_tiers: ['admin', 'lead'],
     target_skills: null,
@@ -567,7 +567,8 @@ const DEFAULTS: DefaultTemplate[] = [
   },
   {
     title: 'Team Google Drive',
-    description: 'Browse the shared Drive and the main working doc for context.',
+    description:
+      'Browse the shared Drive and the main working doc for context.',
     category: 'docs',
     target_tiers: ['admin', 'lead', 'member'],
     target_skills: null,

@@ -3,10 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { requireAccessTier } from '@/lib/dal'
 import { createAdminClient } from '@/supabase/admin'
-import {
-  ALL_FEATURE_KEYS,
-  type AnyFeatureKey
-} from '@/lib/features/keys'
+import { ALL_FEATURE_KEYS, type AnyFeatureKey } from '@/lib/features/keys'
 import { PLUGIN_IDS } from '@/lib/plugins/registry'
 
 // Accepts core keys and `plugin:<id>` keys for INSTALLED plugins. This

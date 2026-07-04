@@ -217,13 +217,19 @@ function briefHtml(input: {
     )
   }
   if (input.context) {
-    const trimmed = input.context.length > 600 ? input.context.slice(0, 600) + '...' : input.context
+    const trimmed =
+      input.context.length > 600
+        ? input.context.slice(0, 600) + '...'
+        : input.context
     blocks.push(
       `<p style="margin:0 0 6px;color:#444"><strong>Context:</strong> ${escape(trimmed)}</p>`
     )
   }
   if (input.questions) {
-    const trimmed = input.questions.length > 800 ? input.questions.slice(0, 800) + '...' : input.questions
+    const trimmed =
+      input.questions.length > 800
+        ? input.questions.slice(0, 800) + '...'
+        : input.questions
     blocks.push(
       `<div style="margin:0 0 12px;color:#444"><strong>Questions:</strong><br>${escape(trimmed).replace(/\n/g, '<br>')}</div>`
     )
@@ -243,9 +249,11 @@ function briefText(input: {
   return out
 }
 
-export function meetingRequestSubmittedEmail(
-  input: MeetingRequestEmailInput
-): { subject: string; html: string; text: string } {
+export function meetingRequestSubmittedEmail(input: MeetingRequestEmailInput): {
+  subject: string
+  html: string
+  text: string
+} {
   const subject = `Meeting request: ${input.requesterName} - ${input.requesteeName}`
   const agendaHtml = input.agenda
     ? `<p style="margin:0 0 12px;color:#444"><strong>Agenda:</strong> ${input.agenda.replace(/</g, '&lt;')}</p>`
@@ -333,9 +341,11 @@ export interface MeetingApprovedEmailInput {
   unsubscribeUrl?: string
 }
 
-export function meetingApprovedEmail(
-  input: MeetingApprovedEmailInput
-): { subject: string; html: string; text: string } {
+export function meetingApprovedEmail(input: MeetingApprovedEmailInput): {
+  subject: string
+  html: string
+  text: string
+} {
   const subject = `Pick a time: meeting with ${input.requesterName}`
   const agendaHtml = input.agenda
     ? `<p style="margin:0 0 12px;color:#444"><strong>Agenda:</strong> ${input.agenda.replace(/</g, '&lt;')}</p>`
@@ -415,9 +425,11 @@ export interface MeetingScheduledEmailInput {
   unsubscribeUrl?: string
 }
 
-export function meetingScheduledEmail(
-  input: MeetingScheduledEmailInput
-): { subject: string; html: string; text: string } {
+export function meetingScheduledEmail(input: MeetingScheduledEmailInput): {
+  subject: string
+  html: string
+  text: string
+} {
   const d = new Date(input.startsAt)
   const opts: Intl.DateTimeFormatOptions = {
     weekday: 'long',
@@ -489,9 +501,11 @@ export interface MeetingRescheduledEmailInput {
   unsubscribeUrl?: string
 }
 
-export function meetingRescheduledEmail(
-  input: MeetingRescheduledEmailInput
-): { subject: string; html: string; text: string } {
+export function meetingRescheduledEmail(input: MeetingRescheduledEmailInput): {
+  subject: string
+  html: string
+  text: string
+} {
   const subject = `Rescheduled: ${input.title}`
   const reasonHtml = input.reason
     ? `<p style="margin:0 0 12px;color:#444"><strong>Reason:</strong> ${input.reason.replace(/</g, '&lt;')}</p>`
@@ -526,7 +540,10 @@ export function meetingRescheduledEmail(
       input.recipientTimezone
     )
     const slotsHtml = list
-      .map((s) => `<li style="margin:4px 0;color:#333">${s.replace(/</g, '&lt;')}</li>`)
+      .map(
+        (s) =>
+          `<li style="margin:4px 0;color:#333">${s.replace(/</g, '&lt;')}</li>`
+      )
       .join('')
     timingHtml =
       `<p style="margin:0 0 6px"><strong>New slots (${input.durationMin} min):</strong></p>` +
@@ -689,32 +706,33 @@ export function inviteMemberEmail(input: InviteMemberEmailInput): {
     ctaLabel: 'Accept invite',
     ctaUrl: input.acceptUrl
   })
-  const text = (input.existingAccount
-    ? [
-        `Hi ${input.recipientName.split(' ')[0] || input.recipientName},`,
-        '',
-        `${input.inviterName} invited you to join ${input.companyName} on Backstage as ${tierLabel}.`,
-        '',
-        `This workspace will be added to your existing account (${input.loginEmail}).`,
-        '',
-        `Accept here: ${input.acceptUrl}`,
-        `Then sign in with your existing password at: ${input.loginUrl}`,
-        `Link expires on ${expiresPretty}.`
-      ]
-    : [
-        `Hi ${input.recipientName.split(' ')[0] || input.recipientName},`,
-        '',
-        `${input.inviterName} invited you to join ${input.companyName} on Backstage as ${tierLabel}.`,
-        '',
-        `Your login:`,
-        `  Email: ${input.loginEmail}`,
-        `  Password: ${input.initialPassword}`,
-        '',
-        `Accept here: ${input.acceptUrl}`,
-        `Or sign in directly at: ${input.loginUrl}`,
-        `You will be asked to change your password on first sign-in.`,
-        `Link expires on ${expiresPretty}.`
-      ]
+  const text = (
+    input.existingAccount
+      ? [
+          `Hi ${input.recipientName.split(' ')[0] || input.recipientName},`,
+          '',
+          `${input.inviterName} invited you to join ${input.companyName} on Backstage as ${tierLabel}.`,
+          '',
+          `This workspace will be added to your existing account (${input.loginEmail}).`,
+          '',
+          `Accept here: ${input.acceptUrl}`,
+          `Then sign in with your existing password at: ${input.loginUrl}`,
+          `Link expires on ${expiresPretty}.`
+        ]
+      : [
+          `Hi ${input.recipientName.split(' ')[0] || input.recipientName},`,
+          '',
+          `${input.inviterName} invited you to join ${input.companyName} on Backstage as ${tierLabel}.`,
+          '',
+          `Your login:`,
+          `  Email: ${input.loginEmail}`,
+          `  Password: ${input.initialPassword}`,
+          '',
+          `Accept here: ${input.acceptUrl}`,
+          `Or sign in directly at: ${input.loginUrl}`,
+          `You will be asked to change your password on first sign-in.`,
+          `Link expires on ${expiresPretty}.`
+        ]
   ).join('\n')
   return { subject, html, text }
 }

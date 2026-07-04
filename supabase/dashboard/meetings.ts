@@ -237,7 +237,10 @@ async function fetchMeetingForGate(
 
 export async function createMeetingRequest(
   raw: z.input<typeof CreateMeetingInput>
-): Promise<{ request: MeetingRequest; emailStatus?: EmailFanoutResult } | { error: string }> {
+): Promise<
+  | { request: MeetingRequest; emailStatus?: EmailFanoutResult }
+  | { error: string }
+> {
   const parsed = CreateMeetingInput.safeParse(raw)
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
@@ -279,8 +282,7 @@ export async function createMeetingRequest(
     status: 'pending',
     mode: input.mode,
     proposed_date: input.mode === 'day' ? input.proposedDate : null,
-    slots:
-      input.mode === 'slots' ? (input.slots as unknown as Json) : null,
+    slots: input.mode === 'slots' ? (input.slots as unknown as Json) : null,
     selected_slot_index: null,
     selected_starts_at: lockedStartsAt,
     goal: input.goal?.trim() || null,
@@ -366,8 +368,10 @@ export async function listMyMeetingRequests(): Promise<
       .order('created_at', { ascending: false })
   ])
   const byId = new Map<string, RawMeetingRow>()
-  for (const r of (requested ?? []) as unknown as RawMeetingRow[]) byId.set(r.id, r)
-  for (const r of (attending ?? []) as unknown as RawMeetingRow[]) byId.set(r.id, r)
+  for (const r of (requested ?? []) as unknown as RawMeetingRow[])
+    byId.set(r.id, r)
+  for (const r of (attending ?? []) as unknown as RawMeetingRow[])
+    byId.set(r.id, r)
   const merged = Array.from(byId.values()).sort((a, b) =>
     b.created_at.localeCompare(a.created_at)
   )
@@ -398,7 +402,10 @@ export async function listPendingApprovals(): Promise<
 
 export async function approveMeetingRequest(
   meetingId: string
-): Promise<{ request: MeetingRequest; emailStatus?: EmailFanoutResult } | { error: string }> {
+): Promise<
+  | { request: MeetingRequest; emailStatus?: EmailFanoutResult }
+  | { error: string }
+> {
   const member = await getCurrentTeamMember()
   if (!member) return { error: 'Not signed in.' }
   if (member.accessTier !== 'admin' && member.accessTier !== 'lead') {
@@ -457,7 +464,10 @@ export async function approveMeetingRequest(
 export async function rejectMeetingRequest(
   meetingId: string,
   reason?: string
-): Promise<{ request: MeetingRequest; emailStatus?: EmailFanoutResult } | { error: string }> {
+): Promise<
+  | { request: MeetingRequest; emailStatus?: EmailFanoutResult }
+  | { error: string }
+> {
   const member = await getCurrentTeamMember()
   if (!member) return { error: 'Not signed in.' }
   if (member.accessTier !== 'admin' && member.accessTier !== 'lead') {
@@ -514,7 +524,10 @@ function isAttendee(
 export async function pickMeetingTime(
   meetingId: string,
   startsAt: string
-): Promise<{ request: MeetingRequest; emailStatus?: EmailFanoutResult } | { error: string }> {
+): Promise<
+  | { request: MeetingRequest; emailStatus?: EmailFanoutResult }
+  | { error: string }
+> {
   const parsed = ISO_DATETIME.safeParse(startsAt)
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? 'Invalid datetime.' }
@@ -580,7 +593,10 @@ export async function pickMeetingTime(
 export async function pickMeetingSlot(
   meetingId: string,
   slotIndex: number
-): Promise<{ request: MeetingRequest; emailStatus?: EmailFanoutResult } | { error: string }> {
+): Promise<
+  | { request: MeetingRequest; emailStatus?: EmailFanoutResult }
+  | { error: string }
+> {
   const member = await getCurrentTeamMember()
   if (!member) return { error: 'Not signed in.' }
   const supabase = createAdminClient()
@@ -607,7 +623,9 @@ export async function pickMeetingSlot(
   // missing it - a stale proposal could still be booked into the past
   // and create a Calendar event for a meeting that's already over.
   if (new Date(pickedStartsAt).getTime() < Date.now()) {
-    return { error: 'That slot has already passed. Ask the requester to reschedule.' }
+    return {
+      error: 'That slot has already passed. Ask the requester to reschedule.'
+    }
   }
 
   const { data, error } = await supabase
@@ -651,7 +669,10 @@ export async function pickMeetingSlot(
 export async function declineMeetingRequest(
   meetingId: string,
   reason?: string
-): Promise<{ request: MeetingRequest; emailStatus?: EmailFanoutResult } | { error: string }> {
+): Promise<
+  | { request: MeetingRequest; emailStatus?: EmailFanoutResult }
+  | { error: string }
+> {
   const member = await getCurrentTeamMember()
   if (!member) return { error: 'Not signed in.' }
   const trimmed = (reason ?? '').trim().slice(0, 500) || null
@@ -707,24 +728,26 @@ export async function declineMeetingRequest(
 
 // ─── Reschedule (either party) ───────────────────────────────────────────
 
-const RescheduleInput = z
-  .discriminatedUnion('mode', [
-    z.object({
-      mode: z.literal('day'),
-      proposedDate: DATE_ONLY,
-      reason: z.string().trim().max(500).optional().nullable()
-    }),
-    z.object({
-      mode: z.literal('slots'),
-      slots: z.array(ISO_DATETIME).min(1).max(3),
-      reason: z.string().trim().max(500).optional().nullable()
-    })
-  ])
+const RescheduleInput = z.discriminatedUnion('mode', [
+  z.object({
+    mode: z.literal('day'),
+    proposedDate: DATE_ONLY,
+    reason: z.string().trim().max(500).optional().nullable()
+  }),
+  z.object({
+    mode: z.literal('slots'),
+    slots: z.array(ISO_DATETIME).min(1).max(3),
+    reason: z.string().trim().max(500).optional().nullable()
+  })
+])
 
 export async function rescheduleMeetingRequest(
   meetingId: string,
   raw: z.input<typeof RescheduleInput>
-): Promise<{ request: MeetingRequest; emailStatus?: EmailFanoutResult } | { error: string }> {
+): Promise<
+  | { request: MeetingRequest; emailStatus?: EmailFanoutResult }
+  | { error: string }
+> {
   const parsed = RescheduleInput.safeParse(raw)
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
@@ -742,9 +765,7 @@ export async function rescheduleMeetingRequest(
   if (!isParticipant && !isPlanner) {
     return { error: 'Only participants can reschedule this meeting.' }
   }
-  if (
-    !['pending', 'approved', 'scheduled'].includes(gate.status as string)
-  ) {
+  if (!['pending', 'approved', 'scheduled'].includes(gate.status as string)) {
     return { error: 'This meeting cannot be rescheduled in its current state.' }
   }
 
@@ -756,12 +777,14 @@ export async function rescheduleMeetingRequest(
   if (isGroup) {
     if (input.mode !== 'slots' || input.slots.length !== 1) {
       return {
-        error:
-          'Group meetings must reschedule with exactly one specific time.'
+        error: 'Group meetings must reschedule with exactly one specific time.'
       }
     }
   } else {
-    if (input.mode === 'slots' && (input.slots.length < 2 || input.slots.length > 3)) {
+    if (
+      input.mode === 'slots' &&
+      (input.slots.length < 2 || input.slots.length > 3)
+    ) {
       return { error: '1:1 slot reschedule needs 2 or 3 slots.' }
     }
   }
@@ -781,11 +804,14 @@ export async function rescheduleMeetingRequest(
   // Stash the previous Calendar event id so we can delete it after the
   // row update succeeds. We'll re-create it via finalizeSchedule when
   // it's a group meeting.
-  const previousEventId = (await supabase
-    .from('meeting_requests')
-    .select('calendar_event_id')
-    .eq('id', meetingId)
-    .single()).data?.calendar_event_id ?? null
+  const previousEventId =
+    (
+      await supabase
+        .from('meeting_requests')
+        .select('calendar_event_id')
+        .eq('id', meetingId)
+        .single()
+    ).data?.calendar_event_id ?? null
 
   const { data, error } = await supabase
     .from('meeting_requests')
@@ -870,7 +896,10 @@ export async function rescheduleMeetingRequest(
 
 export async function cancelMeetingRequest(
   meetingId: string
-): Promise<{ request: MeetingRequest; emailStatus?: EmailFanoutResult } | { error: string }> {
+): Promise<
+  | { request: MeetingRequest; emailStatus?: EmailFanoutResult }
+  | { error: string }
+> {
   const member = await getCurrentTeamMember()
   if (!member) return { error: 'Not signed in.' }
   const supabase = createAdminClient()
@@ -878,13 +907,16 @@ export async function cancelMeetingRequest(
   // there's a Google event to clean up. Once status flips to canceled
   // we still keep the id on the row for audit purposes; the delete
   // call happens in parallel.
-  const previousEventId = (await supabase
-    .from('meeting_requests')
-    .select('calendar_event_id')
-    .eq('id', meetingId)
-    .eq('company_id', member.companyId)
-    .eq('requester_id', member.id)
-    .maybeSingle()).data?.calendar_event_id ?? null
+  const previousEventId =
+    (
+      await supabase
+        .from('meeting_requests')
+        .select('calendar_event_id')
+        .eq('id', meetingId)
+        .eq('company_id', member.companyId)
+        .eq('requester_id', member.id)
+        .maybeSingle()
+    ).data?.calendar_event_id ?? null
 
   const { data, error } = await supabase
     .from('meeting_requests')
@@ -908,7 +940,10 @@ export async function cancelMeetingRequest(
       previousEventId
     ).catch((err) => ({ error: String(err).slice(0, 200) }))
     if ('error' in del) {
-      console.warn('[meetings] failed to delete Calendar event on cancel:', del.error)
+      console.warn(
+        '[meetings] failed to delete Calendar event on cancel:',
+        del.error
+      )
     }
   }
 
@@ -936,7 +971,10 @@ const ReviewInput = z.object({
 export async function submitMeetingReview(
   meetingId: string,
   raw: z.input<typeof ReviewInput>
-): Promise<{ request: MeetingRequest; emailStatus?: EmailFanoutResult } | { error: string }> {
+): Promise<
+  | { request: MeetingRequest; emailStatus?: EmailFanoutResult }
+  | { error: string }
+> {
   const parsed = ReviewInput.safeParse(raw)
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
@@ -1064,7 +1102,10 @@ export async function resendMeetingNotification(
 export async function appendMeetingContext(
   meetingId: string,
   text: string
-): Promise<{ request: MeetingRequest; emailStatus?: EmailFanoutResult } | { error: string }> {
+): Promise<
+  | { request: MeetingRequest; emailStatus?: EmailFanoutResult }
+  | { error: string }
+> {
   const trimmed = text.trim().slice(0, 4000)
   if (!trimmed) return { error: 'Context cannot be empty.' }
   const member = await getCurrentTeamMember()
@@ -1100,7 +1141,11 @@ export async function appendMeetingContext(
 async function gateParticipantOrPlanner(
   supabase: ReturnType<typeof createAdminClient>,
   meetingId: string,
-  member: { id: string; companyId: string; accessTier: 'admin' | 'lead' | 'member' }
+  member: {
+    id: string
+    companyId: string
+    accessTier: 'admin' | 'lead' | 'member'
+  }
 ): Promise<{ ok: true } | { error: string }> {
   const gate = await fetchMeetingForGate(supabase, meetingId, member.companyId)
   if (!gate) return { error: 'Meeting not found.' }
@@ -1117,7 +1162,10 @@ async function gateParticipantOrPlanner(
 export async function linkTaskToMeeting(
   meetingId: string,
   taskId: string
-): Promise<{ request: MeetingRequest; emailStatus?: EmailFanoutResult } | { error: string }> {
+): Promise<
+  | { request: MeetingRequest; emailStatus?: EmailFanoutResult }
+  | { error: string }
+> {
   const member = await getCurrentTeamMember()
   if (!member) return { error: 'Not signed in.' }
   const supabase = createAdminClient()
@@ -1132,16 +1180,14 @@ export async function linkTaskToMeeting(
   if (!task || task.company_id !== member.companyId) {
     return { error: 'Task not found.' }
   }
-  await supabase
-    .from('meeting_tasks')
-    .upsert(
-      {
-        meeting_id: meetingId,
-        task_id: taskId,
-        linked_by_id: member.id
-      },
-      { onConflict: 'meeting_id,task_id', ignoreDuplicates: true }
-    )
+  await supabase.from('meeting_tasks').upsert(
+    {
+      meeting_id: meetingId,
+      task_id: taskId,
+      linked_by_id: member.id
+    },
+    { onConflict: 'meeting_id,task_id', ignoreDuplicates: true }
+  )
   const { data: row } = await supabase
     .from('meeting_requests')
     .select(SELECT_WITH_NAMES)
@@ -1154,7 +1200,10 @@ export async function linkTaskToMeeting(
 export async function unlinkTaskFromMeeting(
   meetingId: string,
   taskId: string
-): Promise<{ request: MeetingRequest; emailStatus?: EmailFanoutResult } | { error: string }> {
+): Promise<
+  | { request: MeetingRequest; emailStatus?: EmailFanoutResult }
+  | { error: string }
+> {
   const member = await getCurrentTeamMember()
   if (!member) return { error: 'Not signed in.' }
   const supabase = createAdminClient()
@@ -1184,9 +1233,7 @@ export async function listMeetingsForTask(
   // linked to taskId come back.
   const { data } = await supabase
     .from('meeting_requests')
-    .select(
-      SELECT_WITH_NAMES + ',mt_filter:meeting_tasks!inner(task_id)'
-    )
+    .select(SELECT_WITH_NAMES + ',mt_filter:meeting_tasks!inner(task_id)')
     .eq('company_id', member.companyId)
     .eq('mt_filter.task_id', taskId)
     .order('created_at', { ascending: false })
@@ -1274,9 +1321,7 @@ export async function listMemberReviews(
   for (const r of (attending ?? []) as unknown as RawRow[]) byId.set(r.id, r)
 
   const reviews: MemberReviewSummary[] = Array.from(byId.values())
-    .sort((a, b) =>
-      (b.reviewed_at ?? '').localeCompare(a.reviewed_at ?? '')
-    )
+    .sort((a, b) => (b.reviewed_at ?? '').localeCompare(a.reviewed_at ?? ''))
     .slice(0, limit)
     .map((r) => {
       // Counterparty is "whoever isn't the focus member." For 1:1
@@ -1362,7 +1407,10 @@ export async function fetchMeetingForShare(
     .maybeSingle()
   if (!data) return null
   if (!SHARE_VISIBLE_STATUSES.includes(data.status)) return null
-  const requester = data.requester as { full_name: string; avatar_url: string | null } | null
+  const requester = data.requester as {
+    full_name: string
+    avatar_url: string | null
+  } | null
   const attendees =
     (
       data.meeting_attendees as
@@ -1414,10 +1462,7 @@ async function finalizeSchedule(
     timezone: string | null
     avatar_url: string | null
   }
-  const memberIds = [
-    request.requesterId,
-    ...request.attendees.map((a) => a.id)
-  ]
+  const memberIds = [request.requesterId, ...request.attendees.map((a) => a.id)]
   const { data: parties } = await supabase
     .from('team_members')
     .select('id, full_name, contact_email, email, timezone, avatar_url')
@@ -1488,8 +1533,8 @@ async function finalizeSchedule(
           : request.requesterName
       const counterpartyAvatarUrl =
         memberId === request.requesterId
-          ? request.attendees[0]?.avatarUrl ?? null
-          : partyMap.get(request.requesterId)?.avatar_url ?? null
+          ? (request.attendees[0]?.avatarUrl ?? null)
+          : (partyMap.get(request.requesterId)?.avatar_url ?? null)
       const unsubscribeUrl = await buildUnsubscribeUrl(memberId)
       const { subject, html, text } = meetingScheduledEmail({
         recipientName: party.full_name,
@@ -1745,7 +1790,8 @@ async function sendRescheduledEmail(
   const newLockedStartsAt =
     isGroup && request.mode === 'slots' ? request.selectedStartsAt : null
   const newProposedDate = isGroup ? null : request.proposedDate
-  const newSlotIsos = !isGroup && request.mode === 'slots' ? request.slots : null
+  const newSlotIsos =
+    !isGroup && request.mode === 'slots' ? request.slots : null
 
   await Promise.all(
     (parties ?? []).map(async (p) => {
@@ -1806,7 +1852,9 @@ async function sendDeclinedOrRejectedEmail(
   ])
   if (!requester) return out
   if (pref?.meetings === false) return out
-  const to = (requester.contact_email && requester.contact_email.trim()) || requester.email
+  const to =
+    (requester.contact_email && requester.contact_email.trim()) ||
+    requester.email
   if (!to) return out
   const unsubscribeUrl = await buildUnsubscribeUrl(request.requesterId)
   const { subject, html, text } = meetingDeclinedOrRejectedEmail({

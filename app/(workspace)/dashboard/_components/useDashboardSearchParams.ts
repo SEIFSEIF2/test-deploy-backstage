@@ -19,15 +19,27 @@ const STATUS_VALUES: TaskStatus[] = [
   'canceled',
   'duplicate'
 ]
-const PRIORITY_VALUES: TaskPriority[] = ['urgent', 'high', 'medium', 'low', 'none']
+const PRIORITY_VALUES: TaskPriority[] = [
+  'urgent',
+  'high',
+  'medium',
+  'low',
+  'none'
+]
 const GROUP_BY_VALUES: GroupBy[] = ['status', 'assignee', 'priority', 'lead']
 
 function parseCsv(raw: string | null): string[] {
   if (!raw) return []
-  return raw.split(',').map((v) => v.trim()).filter(Boolean)
+  return raw
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean)
 }
 
-function parseTyped<T extends string>(raw: string | null, allowed: readonly T[]): T[] {
+function parseTyped<T extends string>(
+  raw: string | null,
+  allowed: readonly T[]
+): T[] {
   const set = new Set<string>(allowed)
   return parseCsv(raw).filter((v): v is T => set.has(v))
 }
@@ -125,7 +137,8 @@ export function useDashboardSearchParams(
     [searchParams]
   )
   const priorityFilter = useMemo(
-    () => parseTyped<TaskPriority>(searchParams.get('priority'), PRIORITY_VALUES),
+    () =>
+      parseTyped<TaskPriority>(searchParams.get('priority'), PRIORITY_VALUES),
     [searchParams]
   )
   // URL tokens can be either slugs or UUIDs - normalise to UUIDs so the
@@ -158,7 +171,9 @@ export function useDashboardSearchParams(
   const query = searchParams.get('q') ?? ''
   const groupBy: GroupBy = (() => {
     const raw = searchParams.get('group')
-    return GROUP_BY_VALUES.includes(raw as GroupBy) ? (raw as GroupBy) : 'status'
+    return GROUP_BY_VALUES.includes(raw as GroupBy)
+      ? (raw as GroupBy)
+      : 'status'
   })()
   const feed: Feed = (() => {
     const raw = searchParams.get('feed')

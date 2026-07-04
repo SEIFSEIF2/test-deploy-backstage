@@ -76,7 +76,7 @@ export default function TaskImageGallery({
               handleDelete(hero)
             }}
             aria-label={`Remove ${hero.fileName}`}
-            className="absolute top-2 right-2 hidden size-7 items-center justify-center rounded-md border border-white/20 bg-black/60 text-white transition hover:bg-black/80 group-hover:flex"
+            className="absolute top-2 right-2 hidden size-7 items-center justify-center rounded-md border border-white/20 bg-black/60 text-white transition group-hover:flex hover:bg-black/80"
           >
             <Trash2 className="size-3.5" />
           </button>
@@ -118,7 +118,7 @@ export default function TaskImageGallery({
                     type="button"
                     onClick={() => handleDelete(a)}
                     aria-label={`Remove ${a.fileName}`}
-                    className="absolute top-1 right-1 hidden size-6 items-center justify-center rounded-md border border-white/20 bg-black/60 text-white transition hover:bg-black/80 group-hover:flex"
+                    className="absolute top-1 right-1 hidden size-6 items-center justify-center rounded-md border border-white/20 bg-black/60 text-white transition group-hover:flex hover:bg-black/80"
                   >
                     <Trash2 className="size-3" />
                   </button>
@@ -155,10 +155,7 @@ function Lightbox({
     () => setIndex((i) => (i - 1 + total) % total),
     [total]
   )
-  const goNext = useCallback(
-    () => setIndex((i) => (i + 1) % total),
-    [total]
-  )
+  const goNext = useCallback(() => setIndex((i) => (i + 1) % total), [total])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

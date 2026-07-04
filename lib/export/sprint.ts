@@ -74,9 +74,9 @@ export function sprintToJson(
         scope: sprint.scope,
         completedCount: sprint.completedCount,
         startedCount: sprint.startedCount,
-        percent: sprint.percent,
+        percent: sprint.percent
       },
-      tasks: tasks.map((t) => taskToJsonObject(t, ctx, options)),
+      tasks: tasks.map((t) => taskToJsonObject(t, ctx, options))
     },
     null,
     2

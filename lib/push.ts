@@ -37,16 +37,14 @@ async function loadVapid(): Promise<typeof cached> {
     publicKey = generated.publicKey
     privateKey = generated.privateKey
     subject ??= SUBJECT_DEFAULT
-    await supabase
-      .from('app_secrets')
-      .upsert(
-        [
-          { key: 'vapid_public', value: publicKey },
-          { key: 'vapid_private', value: privateKey },
-          { key: 'vapid_subject', value: subject }
-        ],
-        { onConflict: 'key' }
-      )
+    await supabase.from('app_secrets').upsert(
+      [
+        { key: 'vapid_public', value: publicKey },
+        { key: 'vapid_private', value: privateKey },
+        { key: 'vapid_subject', value: subject }
+      ],
+      { onConflict: 'key' }
+    )
   }
   if (!subject) subject = SUBJECT_DEFAULT
   webpush.setVapidDetails(subject, publicKey, privateKey)

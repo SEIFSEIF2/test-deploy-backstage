@@ -12,4 +12,7 @@ export type DashboardTask = DashboardData['tasks'][number]
 export type DashboardMember = DashboardData['members'][number]
 export type DashboardProject = DashboardData['projects'][number]
 
-export type { StatusChangeResult, RenameProjectState } from '@/supabase/dashboard/mutations'
+export type {
+  StatusChangeResult,
+  RenameProjectState
+} from '@/supabase/dashboard/mutations'

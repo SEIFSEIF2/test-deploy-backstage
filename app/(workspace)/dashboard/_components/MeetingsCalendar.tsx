@@ -131,9 +131,7 @@ export function MeetingsCalendar({
                 </span>
               </div>
               {dayItems.length === 0 ? (
-                <span
-                  className={`text-[10px] italic ${t.textSubtle} mt-1`}
-                >
+                <span className={`text-[10px] italic ${t.textSubtle} mt-1`}>
                   —
                 </span>
               ) : (
@@ -148,7 +146,7 @@ export function MeetingsCalendar({
                     <span className={`text-[10px] tabular-nums ${t.textMuted}`}>
                       {formatTime(item.selectedStartsAt)}
                       {item.meetLink && (
-                        <Video className="inline-block ml-1 size-2.5 align-text-bottom" />
+                        <Video className="ml-1 inline-block size-2.5 align-text-bottom" />
                       )}
                     </span>
                     <span

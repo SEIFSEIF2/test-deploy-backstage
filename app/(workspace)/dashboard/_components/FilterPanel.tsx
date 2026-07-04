@@ -128,12 +128,10 @@ export default function FilterPanel({
   const hasActive = activePills.length > 0
 
   return (
-    <div
-      className={`flex flex-col gap-3 border-b px-4 py-3 ${t.topbar}`}
-    >
+    <div className={`flex flex-col gap-3 border-b px-4 py-3 ${t.topbar}`}>
       <div className="flex items-center justify-between gap-2">
         <span
-          className={`text-[10px] uppercase tracking-[0.22em] ${t.textMuted}`}
+          className={`text-[10px] tracking-[0.22em] uppercase ${t.textMuted}`}
         >
           Filters {hasActive && `(${activePills.length})`}
         </span>
@@ -141,7 +139,7 @@ export default function FilterPanel({
           {hasActive && (
             <button
               onClick={onReset}
-              className={`text-[10px] uppercase tracking-wider underline-offset-2 hover:underline ${t.textMuted}`}
+              className={`text-[10px] tracking-wider uppercase underline-offset-2 hover:underline ${t.textMuted}`}
             >
               Reset all
             </button>
@@ -234,10 +232,7 @@ export default function FilterPanel({
         </ChipGroup>
 
         <ChipGroup label="Lead">
-          <Chip
-            active={leadFilter.length === 0}
-            onClick={() => onClearLead()}
-          >
+          <Chip active={leadFilter.length === 0} onClick={() => onClearLead()}>
             Any
           </Chip>
           {team
@@ -260,10 +255,7 @@ export default function FilterPanel({
 
         {allTags.length > 0 && (
           <ChipGroup label="Tag">
-            <Chip
-              active={tagFilter.length === 0}
-              onClick={() => onClearTag()}
-            >
+            <Chip active={tagFilter.length === 0} onClick={() => onClearTag()}>
               Any
             </Chip>
             {allTags.map((tag) => (
@@ -315,9 +307,7 @@ function ChipGroup({
   const { t } = useDashTheme()
   return (
     <div className="flex items-center gap-1.5">
-      <span
-        className={`text-[10px] tracking-wider uppercase ${t.textSubtle}`}
-      >
+      <span className={`text-[10px] tracking-wider uppercase ${t.textSubtle}`}>
         {label}:
       </span>
       <div className="flex flex-wrap items-center gap-1">{children}</div>

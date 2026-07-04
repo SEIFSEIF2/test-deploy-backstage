@@ -41,7 +41,8 @@ export const FEATURES = {
   },
   aiPasteExport: {
     label: 'AI paste export',
-    description: 'Copy structured briefs of selected tasks for pasting into an AI.',
+    description:
+      'Copy structured briefs of selected tasks for pasting into an AI.',
     group: 'Polish'
   },
   welcomeBar: {

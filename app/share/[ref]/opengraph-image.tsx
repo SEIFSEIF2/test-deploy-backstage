@@ -80,269 +80,262 @@ export default async function OG({
 
   if (!task) {
     return new ImageResponse(
-      (
-        <div
-          style={{
-            display: 'flex',
-            width: '100%',
-            height: '100%',
-            background: BG_PAGE,
-            color: TEXT_SUBTLE,
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 40,
-            fontWeight: 600,
-            letterSpacing: '-0.02em'
-          }}
-        >
-          Task not found
-        </div>
-      ),
+      <div
+        style={{
+          display: 'flex',
+          width: '100%',
+          height: '100%',
+          background: BG_PAGE,
+          color: TEXT_SUBTLE,
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 40,
+          fontWeight: 600,
+          letterSpacing: '-0.02em'
+        }}
+      >
+        Task not found
+      </div>,
       size
     )
   }
 
   return new ImageResponse(
-    (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        width: '100%',
+        height: '100%',
+        background: BG_PAGE,
+        color: TEXT_PRIMARY,
+        padding: 72,
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        position: 'relative'
+      }}
+    >
+      {/* Violet accent corner */}
       <div
         style={{
           display: 'flex',
-          flexDirection: 'column',
-          width: '100%',
-          height: '100%',
-          background: BG_PAGE,
-          color: TEXT_PRIMARY,
-          padding: 72,
-          fontFamily: 'system-ui, -apple-system, sans-serif',
-          position: 'relative'
+          position: 'absolute',
+          top: -120,
+          right: -120,
+          width: 380,
+          height: 380,
+          borderRadius: 9999,
+          background: ACCENT_TEAL_TINT,
+          filter: 'blur(60px)'
+        }}
+      />
+      {/* Soft amber bottom accent */}
+      <div
+        style={{
+          display: 'flex',
+          position: 'absolute',
+          bottom: -140,
+          left: -100,
+          width: 320,
+          height: 320,
+          borderRadius: 9999,
+          background: ACCENT_AMBER_TINT,
+          filter: 'blur(70px)'
+        }}
+      />
+
+      {/* Top bar: wordmark + ref pill + project */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
         }}
       >
-        {/* Violet accent corner */}
-        <div
-          style={{
-            display: 'flex',
-            position: 'absolute',
-            top: -120,
-            right: -120,
-            width: 380,
-            height: 380,
-            borderRadius: 9999,
-            background: ACCENT_TEAL_TINT,
-            filter: 'blur(60px)'
-          }}
-        />
-        {/* Soft amber bottom accent */}
-        <div
-          style={{
-            display: 'flex',
-            position: 'absolute',
-            bottom: -140,
-            left: -100,
-            width: 320,
-            height: 320,
-            borderRadius: 9999,
-            background: ACCENT_AMBER_TINT,
-            filter: 'blur(70px)'
-          }}
-        />
-
-        {/* Top bar: wordmark + ref pill + project */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between'
+            gap: 14,
+            fontSize: 26,
+            fontWeight: 700,
+            letterSpacing: '0.22em',
+            textTransform: 'uppercase',
+            color: TEXT_PRIMARY
           }}
         >
           <div
             style={{
               display: 'flex',
-              alignItems: 'center',
-              gap: 14,
-              fontSize: 26,
-              fontWeight: 700,
-              letterSpacing: '0.22em',
-              textTransform: 'uppercase',
-              color: TEXT_PRIMARY
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                width: 14,
-                height: 14,
-                borderRadius: 9999,
-                background: ACCENT_TEAL
-              }}
-            />
-            {config.appName.toUpperCase()}
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 16,
-              fontSize: 22,
-              color: TEXT_MUTED,
-              letterSpacing: '0.05em'
-            }}
-          >
-            <span
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '8px 18px',
-                borderRadius: 9999,
-                background: ACCENT_TEAL_TINT,
-                color: ACCENT_TEAL_TEXT,
-                fontWeight: 700,
-                letterSpacing: '0.12em'
-              }}
-            >
-              {task.ref}
-            </span>
-            <span style={{ color: TEXT_MUTED }}>{task.project.name}</span>
-            {task.dueDate && (
-              <>
-                <span style={{ color: TEXT_SUBTLE }}>·</span>
-                <span style={{ color: TEXT_MUTED }}>
-                  Due {formatDate(task.dueDate)}
-                </span>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Title - the focal element */}
-        <div
-          style={{
-            display: 'flex',
-            flex: 1,
-            alignItems: 'center',
-            paddingTop: 48,
-            paddingBottom: 48
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              fontSize: task.title.length > 60 ? 60 : 76,
-              fontWeight: 700,
-              lineHeight: 1.05,
-              letterSpacing: '-0.025em',
-              color: TEXT_PRIMARY
-            }}
-          >
-            {task.title}
-          </div>
-        </div>
-
-        {/* Bottom row: assignee + status chip */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingTop: 24,
-            borderTop: `1px solid ${BORDER_SOFT}`
-          }}
-        >
-          {task.assignee ? (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 18,
-                fontSize: 24,
-                color: TEXT_PRIMARY
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 60,
-                  height: 60,
-                  borderRadius: 9999,
-                  background:
-                    'linear-gradient(135deg, #948CC0 0%, #6E62B0 100%)',
-                  color: BG_CARD,
-                  fontSize: 22,
-                  fontWeight: 700,
-                  letterSpacing: '0.02em'
-                }}
-              >
-                {initials(task.assignee.fullName)}
-              </div>
-              <div
-                style={{ display: 'flex', flexDirection: 'column', gap: 2 }}
-              >
-                <span
-                  style={{
-                    display: 'flex',
-                    fontSize: 12,
-                    letterSpacing: '0.25em',
-                    textTransform: 'uppercase',
-                    color: TEXT_SUBTLE
-                  }}
-                >
-                  Assignee
-                </span>
-                <span
-                  style={{
-                    display: 'flex',
-                    fontSize: 24,
-                    color: TEXT_PRIMARY
-                  }}
-                >
-                  {task.assignee.fullName}
-                </span>
-              </div>
-            </div>
-          ) : (
-            <div
-              style={{
-                display: 'flex',
-                fontSize: 22,
-                color: TEXT_SUBTLE,
-                letterSpacing: '0.15em',
-                textTransform: 'uppercase'
-              }}
-            >
-              Unassigned
-            </div>
-          )}
-
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              padding: '14px 26px',
+              width: 14,
+              height: 14,
               borderRadius: 9999,
-              background: STATUS_BG[task.status] ?? '#F4F4F5',
-              color: STATUS_FG[task.status] ?? TEXT_PRIMARY,
-              fontSize: 22,
-              fontWeight: 600,
-              letterSpacing: '0.04em'
+              background: ACCENT_TEAL
+            }}
+          />
+          {config.appName.toUpperCase()}
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 16,
+            fontSize: 22,
+            color: TEXT_MUTED,
+            letterSpacing: '0.05em'
+          }}
+        >
+          <span
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '8px 18px',
+              borderRadius: 9999,
+              background: ACCENT_TEAL_TINT,
+              color: ACCENT_TEAL_TEXT,
+              fontWeight: 700,
+              letterSpacing: '0.12em'
             }}
           >
-            <span
-              style={{
-                display: 'flex',
-                width: 10,
-                height: 10,
-                borderRadius: 9999,
-                background: STATUS_FG[task.status] ?? TEXT_PRIMARY,
-                opacity: 0.85
-              }}
-            />
-            {STATUS_LABEL[task.status] ?? task.status}
-          </div>
+            {task.ref}
+          </span>
+          <span style={{ color: TEXT_MUTED }}>{task.project.name}</span>
+          {task.dueDate && (
+            <>
+              <span style={{ color: TEXT_SUBTLE }}>·</span>
+              <span style={{ color: TEXT_MUTED }}>
+                Due {formatDate(task.dueDate)}
+              </span>
+            </>
+          )}
         </div>
       </div>
-    ),
+
+      {/* Title - the focal element */}
+      <div
+        style={{
+          display: 'flex',
+          flex: 1,
+          alignItems: 'center',
+          paddingTop: 48,
+          paddingBottom: 48
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            fontSize: task.title.length > 60 ? 60 : 76,
+            fontWeight: 700,
+            lineHeight: 1.05,
+            letterSpacing: '-0.025em',
+            color: TEXT_PRIMARY
+          }}
+        >
+          {task.title}
+        </div>
+      </div>
+
+      {/* Bottom row: assignee + status chip */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingTop: 24,
+          borderTop: `1px solid ${BORDER_SOFT}`
+        }}
+      >
+        {task.assignee ? (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 18,
+              fontSize: 24,
+              color: TEXT_PRIMARY
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 60,
+                height: 60,
+                borderRadius: 9999,
+                background: 'linear-gradient(135deg, #948CC0 0%, #6E62B0 100%)',
+                color: BG_CARD,
+                fontSize: 22,
+                fontWeight: 700,
+                letterSpacing: '0.02em'
+              }}
+            >
+              {initials(task.assignee.fullName)}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <span
+                style={{
+                  display: 'flex',
+                  fontSize: 12,
+                  letterSpacing: '0.25em',
+                  textTransform: 'uppercase',
+                  color: TEXT_SUBTLE
+                }}
+              >
+                Assignee
+              </span>
+              <span
+                style={{
+                  display: 'flex',
+                  fontSize: 24,
+                  color: TEXT_PRIMARY
+                }}
+              >
+                {task.assignee.fullName}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div
+            style={{
+              display: 'flex',
+              fontSize: 22,
+              color: TEXT_SUBTLE,
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase'
+            }}
+          >
+            Unassigned
+          </div>
+        )}
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            padding: '14px 26px',
+            borderRadius: 9999,
+            background: STATUS_BG[task.status] ?? '#F4F4F5',
+            color: STATUS_FG[task.status] ?? TEXT_PRIMARY,
+            fontSize: 22,
+            fontWeight: 600,
+            letterSpacing: '0.04em'
+          }}
+        >
+          <span
+            style={{
+              display: 'flex',
+              width: 10,
+              height: 10,
+              borderRadius: 9999,
+              background: STATUS_FG[task.status] ?? TEXT_PRIMARY,
+              opacity: 0.85
+            }}
+          />
+          {STATUS_LABEL[task.status] ?? task.status}
+        </div>
+      </div>
+    </div>,
     size
   )
 }

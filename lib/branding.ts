@@ -8,18 +8,18 @@ import { createAdminClient } from '@/supabase/admin'
 // is single-tenant per install, so we grab the logo of the first
 // (usually only) company row. Multi-tenant deployments fall back to
 // the text wordmark.
-export const getDefaultCompanyLogoUrl = cache(async (): Promise<
-  string | null
-> => {
-  const supabase = createAdminClient()
-  const { data } = await supabase
-    .from('companies')
-    .select('logo_url')
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle()
-  return data?.logo_url ?? null
-})
+export const getDefaultCompanyLogoUrl = cache(
+  async (): Promise<string | null> => {
+    const supabase = createAdminClient()
+    const { data } = await supabase
+      .from('companies')
+      .select('logo_url')
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+    return data?.logo_url ?? null
+  }
+)
 
 // Fresh install detection: no company row means /setup hasn't run yet.
 // Errors (e.g. migrations not applied) read as "no company" so the user

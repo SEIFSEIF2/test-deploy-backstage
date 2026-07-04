@@ -103,16 +103,14 @@ export function ReactionBar({
           }`}
         >
           <span className="text-[13px] leading-none">{g.emoji}</span>
-          {g.count > 1 && (
-            <span className="tabular-nums">{g.count}</span>
-          )}
+          {g.count > 1 && <span className="tabular-nums">{g.count}</span>}
         </button>
       ))}
 
       <div
         className={`relative ${
           hideAddUntilHover
-            ? 'opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100'
+            ? 'opacity-0 transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100'
             : ''
         }`}
       >

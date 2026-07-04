@@ -42,7 +42,11 @@ export function InviteAcceptForm({
         disabled={pending}
         className="h-9 rounded-md bg-teal-600 px-3 text-sm font-medium text-white transition hover:bg-teal-700 disabled:opacity-50"
       >
-        {pending ? (existingAccount ? 'Adding workspace…' : 'Signing you in…') : 'Accept invite'}
+        {pending
+          ? existingAccount
+            ? 'Adding workspace…'
+            : 'Signing you in…'
+          : 'Accept invite'}
       </button>
       <p className="text-[11px] text-zinc-500">
         {existingAccount

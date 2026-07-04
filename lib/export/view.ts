@@ -2,11 +2,18 @@
 // Used by the Copy view button on the Topbar. Honors time scopes by
 // pre-filtering the task list before handing it here.
 
-import { PRIORITY_LABEL, STATUSES, STATUS_BY_ID } from '@/app/(workspace)/dashboard/_components/status'
+import {
+  PRIORITY_LABEL,
+  STATUSES,
+  STATUS_BY_ID
+} from '@/app/(workspace)/dashboard/_components/status'
 import { taskToJsonObject, taskToMarkdown } from './task'
 import type { ExportContext, ExportOptions } from './types'
 import { EXPORT_VERSION } from './types'
-import type { BoardTask, Sprint } from '@/app/(workspace)/dashboard/_components/boardData'
+import type {
+  BoardTask,
+  Sprint
+} from '@/app/(workspace)/dashboard/_components/boardData'
 
 // ponytail: brief per-task line for the AI paste. One line, sprint per row.
 // Drops checklist, links, comments, activity - detail lives behind the
@@ -28,10 +35,7 @@ function taskBriefLine(task: BoardTask, sprint: Sprint | null): string {
   return `- ${bits.join(' · ')}`
 }
 
-function sprintSummarySection(
-  tasks: BoardTask[],
-  sprints: Sprint[]
-): string[] {
+function sprintSummarySection(tasks: BoardTask[], sprints: Sprint[]): string[] {
   const inPlay = new Set<string>()
   for (const t of tasks) {
     const s = sprints.find((sp) => sp.taskIds.includes(t.id))
@@ -89,7 +93,8 @@ export function viewToMarkdown(
 
   const renderTask = (task: BoardTask) => {
     if (options.brief) {
-      const sprint = ctx.sprints.find((c) => c.taskIds.includes(task.id)) ?? null
+      const sprint =
+        ctx.sprints.find((c) => c.taskIds.includes(task.id)) ?? null
       lines.push(taskBriefLine(task, sprint))
       return
     }
@@ -114,7 +119,7 @@ export function viewToMarkdown(
       'high',
       'medium',
       'low',
-      'none',
+      'none'
     ]
     for (const p of order) {
       const inGroup = tasks.filter((t) => t.priority === p)
@@ -135,7 +140,7 @@ export function viewToMarkdown(
       const name =
         key === '__unassigned__'
           ? 'Unassigned'
-          : list[0]?.assignee?.name ?? key
+          : (list[0]?.assignee?.name ?? key)
       lines.push('')
       lines.push(`## ${name} (${list.length})`)
       for (const task of list) renderTask(task)
@@ -150,7 +155,7 @@ export function viewToMarkdown(
     }
     for (const [key, list] of byId) {
       const name =
-        key === '__noLead__' ? 'No lead' : list[0]?.lead?.name ?? key
+        key === '__noLead__' ? 'No lead' : (list[0]?.lead?.name ?? key)
       lines.push('')
       lines.push(`## Lead: ${name} (${list.length})`)
       for (const task of list) renderTask(task)
@@ -203,9 +208,9 @@ export function viewToJson(
         title: meta.title,
         groupBy: meta.groupBy ?? 'status',
         scopeLabel: meta.scopeLabel ?? null,
-        taskCount: tasks.length,
+        taskCount: tasks.length
       },
-      tasks: tasks.map((t) => taskToJsonObject(t, ctx, options)),
+      tasks: tasks.map((t) => taskToJsonObject(t, ctx, options))
     },
     null,
     2

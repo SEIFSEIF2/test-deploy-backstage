@@ -1,8 +1,8 @@
-import "server-only";
+import 'server-only'
 
-import WebSocket from "ws";
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "./types";
+import WebSocket from 'ws'
+import { createClient } from '@supabase/supabase-js'
+import type { Database } from './types'
 
 // Service-role client. Bypasses RLS — only use server-side, never expose to
 // the browser. Used for paths where the user-scoped session client can't
@@ -13,20 +13,20 @@ import type { Database } from "./types";
 // first and constrain all writes to that user's own scope (their team_members
 // row, their own storage folder, etc.).
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-if (typeof globalThis.WebSocket === "undefined") {
-  (globalThis as unknown as { WebSocket: unknown }).WebSocket = WebSocket;
+if (typeof globalThis.WebSocket === 'undefined') {
+  ;(globalThis as unknown as { WebSocket: unknown }).WebSocket = WebSocket
 }
 
 export function createAdminClient() {
   if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
     throw new Error(
-      "createAdminClient requires NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.",
-    );
+      'createAdminClient requires NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.'
+    )
   }
   return createClient<Database>(SUPABASE_URL, SERVICE_ROLE_KEY, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+    auth: { autoRefreshToken: false, persistSession: false }
+  })
 }

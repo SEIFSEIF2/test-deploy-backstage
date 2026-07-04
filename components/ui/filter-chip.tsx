@@ -1,5 +1,5 @@
-import { cn } from "@/lib/utils";
-import { ChevronDown } from "lucide-react";
+import { cn } from '@/lib/utils'
+import { ChevronDown } from 'lucide-react'
 
 // FilterChip — board toolbar dropdown trigger. Ported from design/ui.jsx
 // FilterChip pattern. Used as a button or a label; the dropdown menu itself
@@ -11,13 +11,13 @@ export function FilterChip({
   value,
   disabled = false,
   onClick,
-  className,
+  className
 }: {
-  label: string;
-  value: string;
-  disabled?: boolean;
-  onClick?: () => void;
-  className?: string;
+  label: string
+  value: string
+  disabled?: boolean
+  onClick?: () => void
+  className?: string
 }) {
   return (
     <button
@@ -25,15 +25,15 @@ export function FilterChip({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-xs",
-        "text-muted-foreground hover:text-foreground",
-        "disabled:cursor-default disabled:hover:text-muted-foreground",
-        className,
+        'border-border bg-card inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs',
+        'text-muted-foreground hover:text-foreground',
+        'disabled:hover:text-muted-foreground disabled:cursor-default',
+        className
       )}
     >
       <span>{label}</span>
       <span className="text-foreground">{value}</span>
       <ChevronDown className="h-3 w-3" aria-hidden />
     </button>
-  );
+  )
 }

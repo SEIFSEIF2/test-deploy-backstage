@@ -40,18 +40,16 @@ async function handle(memberId: string | null, token: string | null) {
     })
   }
   const supabase = createAdminClient()
-  await supabase
-    .from('notification_email_prefs')
-    .upsert(
-      {
-        member_id: memberId,
-        mentions: false,
-        assigned: false,
-        meetings: false,
-        updated_at: new Date().toISOString()
-      },
-      { onConflict: 'member_id' }
-    )
+  await supabase.from('notification_email_prefs').upsert(
+    {
+      member_id: memberId,
+      mentions: false,
+      assigned: false,
+      meetings: false,
+      updated_at: new Date().toISOString()
+    },
+    { onConflict: 'member_id' }
+  )
   return new NextResponse(RESULT_OK, {
     status: 200,
     headers: { 'content-type': 'text/html; charset=utf-8' }

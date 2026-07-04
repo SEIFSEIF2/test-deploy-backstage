@@ -1,10 +1,10 @@
-import { Suspense } from "react";
-import { redirect } from "next/navigation";
+import { Suspense } from 'react'
+import { redirect } from 'next/navigation'
 
-import { getCurrentTeamMember } from "@/lib/dal";
-import { DEFAULT_LOGIN_ROUTE } from "@/routes";
-import { LoginWordmark } from "@/components/login-wordmark";
-import { OnboardingWizard } from "./_components/OnboardingWizard";
+import { getCurrentTeamMember } from '@/lib/dal'
+import { DEFAULT_LOGIN_ROUTE } from '@/routes'
+import { LoginWordmark } from '@/components/login-wordmark'
+import { OnboardingWizard } from './_components/OnboardingWizard'
 
 export default function OnboardingPage() {
   return (
@@ -14,13 +14,13 @@ export default function OnboardingPage() {
         <OnboardingContent />
       </Suspense>
     </div>
-  );
+  )
 }
 
 async function OnboardingContent() {
-  const member = await getCurrentTeamMember();
+  const member = await getCurrentTeamMember()
   if (!member) {
-    redirect(DEFAULT_LOGIN_ROUTE);
+    redirect(DEFAULT_LOGIN_ROUTE)
   }
 
   return (
@@ -31,25 +31,25 @@ async function OnboardingContent() {
           email: member.email,
           startStep: member.onboardingStep,
           fullName: member.fullName,
-          contactEmail: member.contactEmail ?? "",
-          bio: member.bio ?? "",
+          contactEmail: member.contactEmail ?? '',
+          bio: member.bio ?? '',
           avatarUrl: member.avatarUrl ?? null,
-          socialLinkedin: member.socialLinkedin ?? "",
-          socialInstagram: member.socialInstagram ?? "",
-          socialWhatsapp: member.socialWhatsapp ?? "",
-          roleFocus: member.roleFocus ?? "",
-          timezone: member.timezone ?? "",
-          workStyle: member.workStyle ?? "",
+          socialLinkedin: member.socialLinkedin ?? '',
+          socialInstagram: member.socialInstagram ?? '',
+          socialWhatsapp: member.socialWhatsapp ?? '',
+          roleFocus: member.roleFocus ?? '',
+          timezone: member.timezone ?? '',
+          workStyle: member.workStyle ?? '',
           languages: member.languages ?? [],
-          headline: member.headline ?? "",
+          headline: member.headline ?? '',
           workLinks: Array.isArray(member.workLinks)
             ? (member.workLinks as { label: string; url: string }[])
             : [],
           skills: Array.isArray(member.skills)
             ? (member.skills as { label: string; level: number }[])
-            : [],
+            : []
         }}
       />
     </div>
-  );
+  )
 }

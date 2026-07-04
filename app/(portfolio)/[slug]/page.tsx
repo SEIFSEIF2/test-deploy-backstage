@@ -67,7 +67,9 @@ export async function generateMetadata(props: {
   return {
     title: `${data.full_name} · ${config.appName}`,
     description:
-      data.headline ?? data.bio ?? `${data.full_name}'s portfolio on ${config.appName}.`
+      data.headline ??
+      data.bio ??
+      `${data.full_name}'s portfolio on ${config.appName}.`
   }
 }
 
@@ -75,14 +77,14 @@ export default function PortfolioSlugPage(props: {
   params: Promise<RouteParams>
 }) {
   return (
-    <main className="flex min-h-screen w-full flex-col bg-background text-foreground">
-      <header className="flex h-12 shrink-0 items-center justify-between border-b border-border px-4 text-xs">
-        <span className="text-[10px] tracking-[0.25em] text-muted-foreground uppercase">
+    <main className="bg-background text-foreground flex min-h-screen w-full flex-col">
+      <header className="border-border flex h-12 shrink-0 items-center justify-between border-b px-4 text-xs">
+        <span className="text-muted-foreground text-[10px] tracking-[0.25em] uppercase">
           {config.appName} · Portfolio
         </span>
         <Link
           href="/dashboard"
-          className="flex items-center gap-1.5 text-muted-foreground transition hover:text-foreground"
+          className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition"
         >
           Dashboard
           <ArrowRight className="size-3" />
@@ -96,11 +98,7 @@ export default function PortfolioSlugPage(props: {
   )
 }
 
-async function PortfolioBody({
-  params
-}: {
-  params: Promise<RouteParams>
-}) {
+async function PortfolioBody({ params }: { params: Promise<RouteParams> }) {
   const { slug } = await params
   const supabase = await createClient()
 
@@ -158,12 +156,9 @@ async function PortfolioBody({
 
   const shipped = shippedRes.data ?? []
   const doneAllTime = doneCountRes.count ?? 0
-  const projects = new Set(
-    (projectsRes.data ?? []).map((r) => r.project_id)
-  ).size
-  const sprints = new Set(
-    (sprintsRes.data ?? []).map((r) => r.sprint_id)
-  ).size
+  const projects = new Set((projectsRes.data ?? []).map((r) => r.project_id))
+    .size
+  const sprints = new Set((sprintsRes.data ?? []).map((r) => r.sprint_id)).size
 
   const skills = parseSkills(target.skills)
   const workLinks = parseWorkLinks(target.work_links)
@@ -196,17 +191,18 @@ async function PortfolioBody({
 
       {skills.length > 0 && <SkillsRow skills={skills} />}
 
-      <section className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4">
+      <section className="border-border bg-card flex flex-col gap-2 rounded-xl border p-4">
         <div className="flex shrink-0 items-baseline justify-between">
-          <h2 className="text-sm font-medium text-foreground">
+          <h2 className="text-foreground text-sm font-medium">
             Recent shipped work
           </h2>
-          <span className="text-[11px] text-muted-foreground">
-            Last {shipped.length} completed task{shipped.length === 1 ? '' : 's'}
+          <span className="text-muted-foreground text-[11px]">
+            Last {shipped.length} completed task
+            {shipped.length === 1 ? '' : 's'}
           </span>
         </div>
         {shipped.length === 0 ? (
-          <div className="flex items-center justify-center py-8 text-center text-xs text-muted-foreground">
+          <div className="text-muted-foreground flex items-center justify-center py-8 text-center text-xs">
             Nothing shipped yet.
           </div>
         ) : (
@@ -214,18 +210,18 @@ async function PortfolioBody({
             {shipped.map((task) => (
               <li
                 key={task.id}
-                className="flex items-center gap-3 rounded-md border border-border bg-background px-3 py-2 text-xs"
+                className="border-border bg-background flex items-center gap-3 rounded-md border px-3 py-2 text-xs"
               >
-                <span className="shrink-0 rounded border border-border px-1.5 py-0.5 text-[10px] tracking-wider tabular-nums text-muted-foreground uppercase">
+                <span className="border-border text-muted-foreground shrink-0 rounded border px-1.5 py-0.5 text-[10px] tracking-wider uppercase tabular-nums">
                   {task.ref ?? task.id.slice(0, 8)}
                 </span>
-                <span className="min-w-0 flex-1 truncate text-foreground">
+                <span className="text-foreground min-w-0 flex-1 truncate">
                   {task.title}
                 </span>
-                <span className="hidden shrink-0 text-[10px] text-muted-foreground sm:inline">
+                <span className="text-muted-foreground hidden shrink-0 text-[10px] sm:inline">
                   {task.projects?.name}
                 </span>
-                <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
+                <span className="text-muted-foreground shrink-0 text-[10px] tabular-nums">
                   {formatDate(task.updated_at)}
                 </span>
               </li>
@@ -244,11 +240,11 @@ function PortfolioSkeleton() {
   return (
     <div className="flex flex-1 flex-col gap-3 p-3 sm:p-4">
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <div className="h-48 rounded-xl border border-border bg-card animate-pulse" />
-        <div className="h-48 rounded-xl border border-border bg-card animate-pulse" />
-        <div className="h-48 rounded-xl border border-border bg-card animate-pulse" />
+        <div className="border-border bg-card h-48 animate-pulse rounded-xl border" />
+        <div className="border-border bg-card h-48 animate-pulse rounded-xl border" />
+        <div className="border-border bg-card h-48 animate-pulse rounded-xl border" />
       </div>
-      <div className="h-64 rounded-xl border border-border bg-card animate-pulse" />
+      <div className="border-border bg-card h-64 animate-pulse rounded-xl border" />
     </div>
   )
 }
@@ -271,39 +267,39 @@ function IdentityCard({
   slug: string | null
 }) {
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
+    <div className="border-border bg-card flex flex-col gap-3 rounded-xl border p-4">
       <div className="flex items-center gap-3">
         {avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={avatarUrl}
             alt={name}
-            className="size-12 rounded-full border border-border object-cover"
+            className="border-border size-12 rounded-full border object-cover"
           />
         ) : (
-          <div className="flex size-12 items-center justify-center rounded-full border border-border bg-muted text-xs font-medium text-foreground">
+          <div className="border-border bg-muted text-foreground flex size-12 items-center justify-center rounded-full border text-xs font-medium">
             {name.slice(0, 2).toUpperCase()}
           </div>
         )}
         <div className="flex min-w-0 flex-col">
-          <span className="truncate text-sm font-medium text-foreground">
+          <span className="text-foreground truncate text-sm font-medium">
             {name}
           </span>
-          <span className="text-[10px] tracking-[0.2em] text-muted-foreground uppercase">
+          <span className="text-muted-foreground text-[10px] tracking-[0.2em] uppercase">
             {roleFocus ?? role}
           </span>
         </div>
       </div>
       {headline && (
-        <p className="text-xs font-medium leading-relaxed text-foreground">
+        <p className="text-foreground text-xs leading-relaxed font-medium">
           {headline}
         </p>
       )}
-      <p className="line-clamp-4 text-xs leading-relaxed text-muted-foreground">
+      <p className="text-muted-foreground line-clamp-4 text-xs leading-relaxed">
         {bio ?? 'No bio yet.'}
       </p>
       {slug && (
-        <span className="text-[10px] tracking-[0.15em] text-muted-foreground/70 uppercase">
+        <span className="text-muted-foreground/70 text-[10px] tracking-[0.15em] uppercase">
           /{slug}
         </span>
       )}
@@ -321,7 +317,7 @@ function StatsCard({
   sprints: number
 }) {
   return (
-    <div className="grid grid-cols-3 gap-2 rounded-xl border border-border bg-card p-4">
+    <div className="border-border bg-card grid grid-cols-3 gap-2 rounded-xl border p-4">
       <Stat label="Shipped" value={doneAllTime} />
       <Stat label="Projects" value={projects} />
       <Stat label="Sprints" value={sprints} />
@@ -331,11 +327,11 @@ function StatsCard({
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex flex-col rounded-md border border-border bg-background px-3 py-2">
-      <span className="text-2xl font-medium tabular-nums text-foreground">
+    <div className="border-border bg-background flex flex-col rounded-md border px-3 py-2">
+      <span className="text-foreground text-2xl font-medium tabular-nums">
         {value}
       </span>
-      <span className="text-[10px] tracking-[0.2em] text-muted-foreground uppercase">
+      <span className="text-muted-foreground text-[10px] tracking-[0.2em] uppercase">
         {label}
       </span>
     </div>
@@ -356,25 +352,26 @@ function ContactCard({
   workLinks: WorkLinkEntry[]
 }) {
   const links: { href: string; label: string }[] = []
-  for (const link of workLinks) links.push({ href: link.url, label: link.label })
+  for (const link of workLinks)
+    links.push({ href: link.url, label: link.label })
   if (instagram) links.push({ href: instagram, label: 'Instagram' })
   if (linkedin) links.push({ href: linkedin, label: 'LinkedIn' })
   if (whatsapp) links.push({ href: whatsapp, label: 'WhatsApp' })
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
-      <span className="text-[10px] tracking-[0.2em] text-muted-foreground uppercase">
+    <div className="border-border bg-card flex flex-col gap-3 rounded-xl border p-4">
+      <span className="text-muted-foreground text-[10px] tracking-[0.2em] uppercase">
         Reach out
       </span>
       {contactEmail ? (
         <a
           href={`mailto:${contactEmail}`}
-          className="truncate text-sm font-medium text-foreground transition hover:text-muted-foreground"
+          className="text-foreground hover:text-muted-foreground truncate text-sm font-medium transition"
         >
           {contactEmail}
         </a>
       ) : (
-        <span className="text-xs text-muted-foreground">
+        <span className="text-muted-foreground text-xs">
           No public contact email.
         </span>
       )}
@@ -386,7 +383,7 @@ function ContactCard({
               href={href}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-full border border-border bg-background px-2.5 py-0.5 text-[11px] text-foreground transition hover:text-muted-foreground"
+              className="border-border bg-background text-foreground hover:text-muted-foreground rounded-full border px-2.5 py-0.5 text-[11px] transition"
             >
               {label}
             </a>
@@ -399,18 +396,18 @@ function ContactCard({
 
 function SkillsRow({ skills }: { skills: SkillEntry[] }) {
   return (
-    <div className="flex shrink-0 flex-wrap items-center gap-1.5 rounded-xl border border-border bg-card px-4 py-3">
-      <span className="mr-2 text-[10px] tracking-[0.2em] text-muted-foreground uppercase">
+    <div className="border-border bg-card flex shrink-0 flex-wrap items-center gap-1.5 rounded-xl border px-4 py-3">
+      <span className="text-muted-foreground mr-2 text-[10px] tracking-[0.2em] uppercase">
         Skills
       </span>
       {skills.map((s) => (
         <span
           key={s.label}
-          className="flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-0.5 text-[11px] text-foreground"
+          className="border-border bg-background text-foreground flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px]"
         >
           {s.label}
           {s.level > 0 && (
-            <span className="text-[9px] tabular-nums text-muted-foreground">
+            <span className="text-muted-foreground text-[9px] tabular-nums">
               {'•'.repeat(s.level)}
             </span>
           )}
@@ -422,11 +419,11 @@ function SkillsRow({ skills }: { skills: SkillEntry[] }) {
 
 function WorkStyleRow({ text }: { text: string }) {
   return (
-    <div className="flex shrink-0 items-start gap-3 rounded-xl border border-border bg-card px-4 py-3">
-      <span className="shrink-0 text-[10px] tracking-[0.2em] text-muted-foreground uppercase">
+    <div className="border-border bg-card flex shrink-0 items-start gap-3 rounded-xl border px-4 py-3">
+      <span className="text-muted-foreground shrink-0 text-[10px] tracking-[0.2em] uppercase">
         Works best
       </span>
-      <p className="text-xs leading-relaxed text-foreground">{text}</p>
+      <p className="text-foreground text-xs leading-relaxed">{text}</p>
     </div>
   )
 }
@@ -434,14 +431,14 @@ function WorkStyleRow({ text }: { text: string }) {
 function LanguagesRow({ languages }: { languages: string[] }) {
   if (!languages || languages.length === 0) return null
   return (
-    <div className="flex shrink-0 flex-wrap items-center gap-1.5 rounded-xl border border-border bg-card px-4 py-3">
-      <span className="mr-2 text-[10px] tracking-[0.2em] text-muted-foreground uppercase">
+    <div className="border-border bg-card flex shrink-0 flex-wrap items-center gap-1.5 rounded-xl border px-4 py-3">
+      <span className="text-muted-foreground mr-2 text-[10px] tracking-[0.2em] uppercase">
         Speaks
       </span>
       {languages.map((lang) => (
         <span
           key={lang}
-          className="rounded-full border border-border bg-background px-2 py-0.5 text-[11px] text-foreground"
+          className="border-border bg-background text-foreground rounded-full border px-2 py-0.5 text-[11px]"
         >
           {lang}
         </span>

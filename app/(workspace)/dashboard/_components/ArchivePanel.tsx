@@ -450,7 +450,8 @@ function SprintToolbar({
   // selecting a status doesn't make the OTHER status counts zero out.
   const statusCounts = useMemo(() => {
     const out = new Map<TaskStatus, number>()
-    for (const task of tasks) out.set(task.status, (out.get(task.status) ?? 0) + 1)
+    for (const task of tasks)
+      out.set(task.status, (out.get(task.status) ?? 0) + 1)
     return out
   }, [tasks])
   const assigneeCounts = useMemo(() => {
@@ -513,9 +514,7 @@ function SprintToolbar({
               title="Unassigned"
               aria-pressed={assigneeFilter.has('__unassigned')}
               className={`inline-flex size-[22px] items-center justify-center rounded-full border ${t.border} ${
-                assigneeFilter.has('__unassigned')
-                  ? 'ring-2 ring-teal-500'
-                  : ''
+                assigneeFilter.has('__unassigned') ? 'ring-2 ring-teal-500' : ''
               } ${
                 assigneeFilter.size > 0 && !assigneeFilter.has('__unassigned')
                   ? 'opacity-40 hover:opacity-70'
@@ -640,7 +639,7 @@ function FilterPopover({
       </button>
       {open && (
         <div
-          className={`absolute right-0 top-9 z-30 w-56 overflow-hidden rounded-md border shadow-xl ${t.surface} ${t.border}`}
+          className={`absolute top-9 right-0 z-30 w-56 overflow-hidden rounded-md border shadow-xl ${t.surface} ${t.border}`}
         >
           <ul className="max-h-72 overflow-y-auto py-1">
             {items.length === 0 ? (
@@ -669,7 +668,9 @@ function FilterPopover({
                       </span>
                       <span className={`truncate ${t.text}`}>{item.label}</span>
                     </span>
-                    <span className={`tabular-nums text-[10px] ${t.textSubtle}`}>
+                    <span
+                      className={`text-[10px] tabular-nums ${t.textSubtle}`}
+                    >
                       {item.count}
                     </span>
                   </button>

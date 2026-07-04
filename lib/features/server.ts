@@ -48,10 +48,18 @@ export const getWorkspaceBranding = cache(
     const rows = data ?? []
     const workspaces: WorkspaceSummary[] = rows.flatMap((r) =>
       r.companies
-        ? [{ id: r.companies.id, name: r.companies.name, logoUrl: r.companies.logo_url }]
+        ? [
+            {
+              id: r.companies.id,
+              name: r.companies.name,
+              logoUrl: r.companies.logo_url
+            }
+          ]
         : []
     )
-    const active = rows.find((r) => r.company_id === member.companyId)?.companies
+    const active = rows.find(
+      (r) => r.company_id === member.companyId
+    )?.companies
     return {
       enabledFeatures:
         (active?.enabled_features as AnyFeatureKey[] | null) ?? [],

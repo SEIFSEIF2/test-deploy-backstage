@@ -25,10 +25,13 @@ type InstallState =
 function detectIOS() {
   if (typeof window === 'undefined') return false
   const ua = window.navigator.userAgent
-  const isIOS = /iPad|iPhone|iPod/.test(ua) && !(window as unknown as { MSStream?: unknown }).MSStream
+  const isIOS =
+    /iPad|iPhone|iPod/.test(ua) &&
+    !(window as unknown as { MSStream?: unknown }).MSStream
   // iPadOS reports as Mac; treat any touch-capable webkit as iOS-like.
   const isIpadOS =
-    /Macintosh/.test(ua) && typeof document !== 'undefined' &&
+    /Macintosh/.test(ua) &&
+    typeof document !== 'undefined' &&
     'ontouchend' in document
   return isIOS || isIpadOS
 }
@@ -37,12 +40,17 @@ function isStandalone() {
   if (typeof window === 'undefined') return false
   if (window.matchMedia?.('(display-mode: standalone)').matches) return true
   // iOS Safari sets navigator.standalone on home-screen PWAs.
-  return (window.navigator as Navigator & { standalone?: boolean }).standalone === true
+  return (
+    (window.navigator as Navigator & { standalone?: boolean }).standalone ===
+    true
+  )
 }
 
 export function useInstallPrompt() {
   const [state, setState] = useState<InstallState>('unavailable')
-  const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null)
+  const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(
+    null
+  )
 
   useEffect(() => {
     if (typeof window === 'undefined') return

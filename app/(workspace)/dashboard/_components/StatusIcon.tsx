@@ -17,8 +17,7 @@ export default function StatusIcon({
   const todoStroke = mode === 'light' ? 'text-zinc-400' : 'text-zinc-500'
   const backlogColor =
     mode === 'light' ? 'text-yellow-600/80' : 'text-yellow-300/90'
-  const unscopedColor =
-    mode === 'light' ? 'text-violet-500' : 'text-violet-400'
+  const unscopedColor = mode === 'light' ? 'text-violet-500' : 'text-violet-400'
   const innerLight = mode === 'light' ? '#ffffff' : '#000000'
 
   switch (status) {

@@ -11,11 +11,11 @@
 import { fetchDashboardData as fetchDashboardDataImpl } from '@/supabase/dashboard/fetch'
 import {
   getMyEmailPrefs as getMyEmailPrefsImpl,
-  updateMyEmailPrefs as updateMyEmailPrefsImpl,
+  updateMyEmailPrefs as updateMyEmailPrefsImpl
 } from '@/supabase/dashboard/emailPrefs'
 import {
   disconnectGoogle as disconnectGoogleImpl,
-  getGoogleConnectionStatus as getGoogleConnectionStatusImpl,
+  getGoogleConnectionStatus as getGoogleConnectionStatusImpl
 } from '@/supabase/dashboard/googleConnection'
 import {
   appendMeetingContext as appendMeetingContextImpl,
@@ -34,7 +34,7 @@ import {
   pickMeetingTime as pickMeetingTimeImpl,
   rejectMeetingRequest as rejectMeetingRequestImpl,
   rescheduleMeetingRequest as rescheduleMeetingRequestImpl,
-  unlinkTaskFromMeeting as unlinkTaskFromMeetingImpl,
+  unlinkTaskFromMeeting as unlinkTaskFromMeetingImpl
 } from '@/supabase/dashboard/meetings'
 import {
   cancelInvite as cancelInviteImpl,
@@ -47,14 +47,14 @@ import {
   setMemberPresence as setMemberPresenceImpl,
   softRemoveMember as softRemoveMemberImpl,
   updateMemberProfileByAdmin as updateMemberProfileByAdminImpl,
-  updateMyTimezone as updateMyTimezoneImpl,
+  updateMyTimezone as updateMyTimezoneImpl
 } from '@/supabase/dashboard/team'
 import {
   setQuickMeetUrl as setQuickMeetUrlImpl,
   inviteToQuickRoom as inviteToQuickRoomImpl,
   joinQuickRoom as joinQuickRoomImpl,
   heartbeatQuickRoom as heartbeatQuickRoomImpl,
-  leaveQuickRoom as leaveQuickRoomImpl,
+  leaveQuickRoom as leaveQuickRoomImpl
 } from '@/supabase/dashboard/quickRoom'
 import { fetchInitial as fetchInitialImpl } from './_components/fetchInitial'
 import {
@@ -113,12 +113,12 @@ import {
   toggleCommentReaction as toggleCommentReactionImpl,
   toggleTaskReaction as toggleTaskReactionImpl,
   updateSprint as updateSprintImpl,
-  updateTaskExternalRefLabel as updateTaskExternalRefLabelImpl,
+  updateTaskExternalRefLabel as updateTaskExternalRefLabelImpl
 } from '@/supabase/dashboard/mutations'
 import {
   uploadTaskImage as uploadTaskImageImpl,
   deleteTaskAttachment as deleteTaskAttachmentImpl,
-  listTaskAttachmentsForTasks as listTaskAttachmentsForTasksImpl,
+  listTaskAttachmentsForTasks as listTaskAttachmentsForTasksImpl
 } from '@/supabase/dashboard/taskAttachments'
 import {
   listOnboardingProgress as listOnboardingProgressImpl,
@@ -128,7 +128,7 @@ import {
   updateTemplate as updateTemplateImpl,
   archiveTemplate as archiveTemplateImpl,
   seedDefaultTemplates as seedDefaultTemplatesImpl,
-  listAllTemplates as listAllTemplatesImpl,
+  listAllTemplates as listAllTemplatesImpl
 } from '@/supabase/dashboard/onboarding'
 
 export async function fetchDashboardData(
@@ -248,15 +248,11 @@ export async function duplicateDashboardTask(
   return duplicateDashboardTaskImpl(...args)
 }
 
-export async function addComment(
-  ...args: Parameters<typeof addCommentImpl>
-) {
+export async function addComment(...args: Parameters<typeof addCommentImpl>) {
   return addCommentImpl(...args)
 }
 
-export async function editComment(
-  ...args: Parameters<typeof editCommentImpl>
-) {
+export async function editComment(...args: Parameters<typeof editCommentImpl>) {
   return editCommentImpl(...args)
 }
 
@@ -308,15 +304,11 @@ export async function removeTaskFromSprint(
   return removeTaskFromSprintImpl(...args)
 }
 
-export async function startSprint(
-  ...args: Parameters<typeof startSprintImpl>
-) {
+export async function startSprint(...args: Parameters<typeof startSprintImpl>) {
   return startSprintImpl(...args)
 }
 
-export async function endSprint(
-  ...args: Parameters<typeof endSprintImpl>
-) {
+export async function endSprint(...args: Parameters<typeof endSprintImpl>) {
   return endSprintImpl(...args)
 }
 
@@ -734,9 +726,7 @@ export async function listMemberChecklist(
   return listMemberChecklistImpl(...args)
 }
 
-export async function markStep(
-  ...args: Parameters<typeof markStepImpl>
-) {
+export async function markStep(...args: Parameters<typeof markStepImpl>) {
   return markStepImpl(...args)
 }
 

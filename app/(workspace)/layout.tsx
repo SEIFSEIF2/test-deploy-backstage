@@ -1,8 +1,8 @@
-import { Suspense } from "react";
-import { after } from "next/server";
-import { requireOnboardingComplete, touchLastSeen } from "@/lib/dal";
-import { getWorkspaceBranding } from "@/lib/features/server";
-import { FeaturesProvider } from "@/lib/features/client";
+import { Suspense } from 'react'
+import { after } from 'next/server'
+import { requireOnboardingComplete, touchLastSeen } from '@/lib/dal'
+import { getWorkspaceBranding } from '@/lib/features/server'
+import { FeaturesProvider } from '@/lib/features/client'
 
 // (workspace) — shell-less authenticated route group.
 //
@@ -26,21 +26,21 @@ import { FeaturesProvider } from "@/lib/features/client";
 // visible loading state.
 
 export default function WorkspaceLayout({
-  children,
+  children
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
     <Suspense fallback={null}>
       <Gated>{children}</Gated>
     </Suspense>
-  );
+  )
 }
 
 async function Gated({ children }: { children: React.ReactNode }) {
-  const member = await requireOnboardingComplete();
-  const branding = await getWorkspaceBranding();
-  after(() => touchLastSeen(member.id));
+  const member = await requireOnboardingComplete()
+  const branding = await getWorkspaceBranding()
+  after(() => touchLastSeen(member.id))
   return (
     <FeaturesProvider
       enabled={branding.enabledFeatures}
@@ -51,5 +51,5 @@ async function Gated({ children }: { children: React.ReactNode }) {
     >
       {children}
     </FeaturesProvider>
-  );
+  )
 }

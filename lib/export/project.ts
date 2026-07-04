@@ -1,11 +1,11 @@
 // Serialize a project to markdown or JSON. Includes all tasks, all sprints,
 // and the project-level external refs.
 
-import { STATUSES, STATUS_BY_ID } from '@/app/(workspace)/dashboard/_components/status'
 import {
-  defaultExternalRefLabel,
-  parseExternalRef,
-} from '@/lib/externalRef'
+  STATUSES,
+  STATUS_BY_ID
+} from '@/app/(workspace)/dashboard/_components/status'
+import { defaultExternalRefLabel, parseExternalRef } from '@/lib/externalRef'
 import { taskToJsonObject, taskToMarkdown } from './task'
 import type { ExportContext, ExportOptions, ProjectLite } from './types'
 import { EXPORT_VERSION } from './types'
@@ -38,7 +38,8 @@ export function projectToMarkdown(
     lines.push('## Links')
     for (const ref of projectRefs) {
       const parsed = parseExternalRef(ref.url)
-      const label = ref.label ?? (parsed ? defaultExternalRefLabel(parsed) : ref.url)
+      const label =
+        ref.label ?? (parsed ? defaultExternalRefLabel(parsed) : ref.url)
       lines.push(`- ${ref.kind}: [${label}](${ref.url})`)
     }
   }
@@ -48,10 +49,10 @@ export function projectToMarkdown(
     lines.push('## Sprints')
     // Same sort order as the Sprints tab: current, then upcoming asc, then
     // completed (newest first).
-    const order: Record<typeof sprints[number]['status'], number> = {
+    const order: Record<(typeof sprints)[number]['status'], number> = {
       current: 0,
       upcoming: 1,
-      completed: 2,
+      completed: 2
     }
     const sorted = [...sprints].sort((a, b) => {
       const so = order[a.status] - order[b.status]
@@ -117,8 +118,8 @@ export function projectToJson(
           id: r.id,
           kind: r.kind,
           url: r.url,
-          label: r.label,
-        })),
+          label: r.label
+        }))
       },
       stats: {
         tasksTotal: tasks.length,
@@ -127,7 +128,7 @@ export function projectToJson(
           acc[s.id] = tasks.filter((t) => t.status === s.id).length
           return acc
         }, {}),
-        sprintsTotal: sprints.length,
+        sprintsTotal: sprints.length
       },
       sprints: sprints.map((c) => ({
         id: c.id,
@@ -142,9 +143,9 @@ export function projectToJson(
         completedCount: c.completedCount,
         startedCount: c.startedCount,
         percent: c.percent,
-        taskIds: c.taskIds,
+        taskIds: c.taskIds
       })),
-      tasks: tasks.map((t) => taskToJsonObject(t, ctx, options)),
+      tasks: tasks.map((t) => taskToJsonObject(t, ctx, options))
     },
     null,
     2

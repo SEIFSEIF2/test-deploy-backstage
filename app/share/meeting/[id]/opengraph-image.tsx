@@ -1,5 +1,8 @@
 import { ImageResponse } from 'next/og'
-import { fetchMeetingForShare, type SharedMeeting } from '@/supabase/dashboard/meetings'
+import {
+  fetchMeetingForShare,
+  type SharedMeeting
+} from '@/supabase/dashboard/meetings'
 import { config } from '@/lib/config'
 
 export const alt = `${config.appName} meeting share preview`
@@ -61,11 +64,14 @@ function formatWhen(m: SharedMeeting): string {
   }
   if (m.proposedDate) {
     try {
-      return new Date(`${m.proposedDate}T12:00:00`).toLocaleDateString('en-US', {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric'
-      })
+      return new Date(`${m.proposedDate}T12:00:00`).toLocaleDateString(
+        'en-US',
+        {
+          weekday: 'long',
+          month: 'long',
+          day: 'numeric'
+        }
+      )
     } catch {
       return m.proposedDate
     }
@@ -91,23 +97,21 @@ export default async function OG({
 
   if (!meeting) {
     return new ImageResponse(
-      (
-        <div
-          style={{
-            width: '100%',
-            height: '100%',
-            background: BG_PAGE,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 32,
-            color: TEXT_MUTED,
-            fontFamily: 'system-ui, sans-serif'
-          }}
-        >
-          Meeting not found
-        </div>
-      ),
+      <div
+        style={{
+          width: '100%',
+          height: '100%',
+          background: BG_PAGE,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 32,
+          color: TEXT_MUTED,
+          fontFamily: 'system-ui, sans-serif'
+        }}
+      >
+        Meeting not found
+      </div>,
       size
     )
   }
@@ -115,162 +119,160 @@ export default async function OG({
   const when = formatWhen(meeting)
 
   return new ImageResponse(
-    (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        background: BG_PAGE,
+        padding: 64,
+        display: 'flex',
+        flexDirection: 'column',
+        fontFamily: 'system-ui, sans-serif'
+      }}
+    >
+      {/* Brand strip */}
       <div
         style={{
-          width: '100%',
-          height: '100%',
-          background: BG_PAGE,
-          padding: 64,
           display: 'flex',
-          flexDirection: 'column',
-          fontFamily: 'system-ui, sans-serif'
+          alignItems: 'center',
+          justifyContent: 'space-between'
         }}
       >
-        {/* Brand strip */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between'
+            gap: 12,
+            color: ACCENT_TEAL_TEXT,
+            fontSize: 22,
+            fontWeight: 600,
+            letterSpacing: 1
           }}
         >
+          <div
+            style={{
+              width: 14,
+              height: 14,
+              borderRadius: 14,
+              background: ACCENT_TEAL
+            }}
+          />
+          {config.appName.toUpperCase()}
+        </div>
+        <div
+          style={{
+            padding: '8px 18px',
+            borderRadius: 999,
+            background: STATUS_BG[meeting.status],
+            color: STATUS_FG[meeting.status],
+            fontSize: 22,
+            fontWeight: 600
+          }}
+        >
+          {STATUS_LABEL[meeting.status]}
+        </div>
+      </div>
+
+      {/* Card */}
+      <div
+        style={{
+          marginTop: 36,
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          background: BG_CARD,
+          border: `1px solid ${BORDER_SOFT}`,
+          borderRadius: 32,
+          padding: 56
+        }}
+      >
+        {when && (
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: 12,
-              color: ACCENT_TEAL_TEXT,
-              fontSize: 22,
-              fontWeight: 600,
-              letterSpacing: 1
+              fontSize: 26,
+              color: TEXT_MUTED
             }}
           >
             <div
               style={{
-                width: 14,
-                height: 14,
-                borderRadius: 14,
-                background: ACCENT_TEAL
-              }}
-            />
-            {config.appName.toUpperCase()}
-          </div>
-          <div
-            style={{
-              padding: '8px 18px',
-              borderRadius: 999,
-              background: STATUS_BG[meeting.status],
-              color: STATUS_FG[meeting.status],
-              fontSize: 22,
-              fontWeight: 600
-            }}
-          >
-            {STATUS_LABEL[meeting.status]}
-          </div>
-        </div>
-
-        {/* Card */}
-        <div
-          style={{
-            marginTop: 36,
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            background: BG_CARD,
-            border: `1px solid ${BORDER_SOFT}`,
-            borderRadius: 32,
-            padding: 56
-          }}
-        >
-          {when && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                fontSize: 26,
-                color: TEXT_MUTED
+                padding: '6px 14px',
+                borderRadius: 8,
+                background: ACCENT_TEAL_TINT,
+                color: ACCENT_TEAL_TEXT,
+                fontWeight: 600
               }}
             >
-              <div
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: 8,
-                  background: ACCENT_TEAL_TINT,
-                  color: ACCENT_TEAL_TEXT,
-                  fontWeight: 600
-                }}
-              >
-                {when}
-              </div>
-              <div>· {meeting.durationMin} min</div>
+              {when}
             </div>
-          )}
-
-          <div
-            style={{
-              marginTop: 30,
-              fontSize: 64,
-              fontWeight: 700,
-              color: TEXT_PRIMARY,
-              lineHeight: 1.1
-            }}
-          >
-            {meeting.title.length > 90
-              ? meeting.title.slice(0, 87) + '...'
-              : meeting.title}
+            <div>· {meeting.durationMin} min</div>
           </div>
+        )}
 
-          {/* Attendees */}
-          <div
-            style={{
-              marginTop: 'auto',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 20
-            }}
-          >
-            <AttendeeChip
-              name={meeting.requesterName}
-              avatarUrl={meeting.requesterAvatarUrl}
-            />
-            <div style={{ color: TEXT_MUTED, fontSize: 28 }}>↔</div>
-            <AttendeeChip
-              name={
-                meeting.attendees.length === 1
-                  ? meeting.attendees[0].fullName
-                  : `${meeting.attendees[0]?.fullName ?? 'someone'} + ${meeting.attendees.length - 1} more`
-              }
-              avatarUrl={meeting.attendees[0]?.avatarUrl ?? null}
-            />
-          </div>
-        </div>
-
-        {/* Footer */}
         <div
           style={{
-            marginTop: 24,
-            color: TEXT_MUTED,
-            fontSize: 20,
-            letterSpacing: 1,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10
+            marginTop: 30,
+            fontSize: 64,
+            fontWeight: 700,
+            color: TEXT_PRIMARY,
+            lineHeight: 1.1
           }}
         >
-          <div
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: 6,
-              background: ACCENT_TEAL
-            }}
+          {meeting.title.length > 90
+            ? meeting.title.slice(0, 87) + '...'
+            : meeting.title}
+        </div>
+
+        {/* Attendees */}
+        <div
+          style={{
+            marginTop: 'auto',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 20
+          }}
+        >
+          <AttendeeChip
+            name={meeting.requesterName}
+            avatarUrl={meeting.requesterAvatarUrl}
           />
-          MEETING ON {config.appName.toUpperCase()}
+          <div style={{ color: TEXT_MUTED, fontSize: 28 }}>↔</div>
+          <AttendeeChip
+            name={
+              meeting.attendees.length === 1
+                ? meeting.attendees[0].fullName
+                : `${meeting.attendees[0]?.fullName ?? 'someone'} + ${meeting.attendees.length - 1} more`
+            }
+            avatarUrl={meeting.attendees[0]?.avatarUrl ?? null}
+          />
         </div>
       </div>
-    ),
+
+      {/* Footer */}
+      <div
+        style={{
+          marginTop: 24,
+          color: TEXT_MUTED,
+          fontSize: 20,
+          letterSpacing: 1,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10
+        }}
+      >
+        <div
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: 6,
+            background: ACCENT_TEAL
+          }}
+        />
+        MEETING ON {config.appName.toUpperCase()}
+      </div>
+    </div>,
     size
   )
 }

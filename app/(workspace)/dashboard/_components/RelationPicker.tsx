@@ -2,10 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Plus, Search, X } from 'lucide-react'
-import {
-  RELATION_LABEL,
-  RelationKind
-} from './status'
+import { RELATION_LABEL, RelationKind } from './status'
 import RelationIcon from './RelationIcon'
 import { useDashTheme } from './theme'
 import type { BoardTask, TaskRelation } from './boardData'
@@ -72,8 +69,7 @@ export default function RelationPicker({
       .filter((c) => {
         if (!q) return true
         return (
-          c.ref.toLowerCase().includes(q) ||
-          c.title.toLowerCase().includes(q)
+          c.ref.toLowerCase().includes(q) || c.title.toLowerCase().includes(q)
         )
       })
       .slice(0, 8)
@@ -85,7 +81,7 @@ export default function RelationPicker({
     }
   }, [adding])
 
-  const submit = (target: typeof candidates[number] | undefined) => {
+  const submit = (target: (typeof candidates)[number] | undefined) => {
     const picked = target ?? filteredCandidates[highlight]
     if (!picked) return
     onAdd({ kind, ref: picked.ref })
@@ -236,7 +232,7 @@ export default function RelationPicker({
                     }`}
                   >
                     <span
-                      className={`shrink-0 rounded border px-1 py-0.5 text-[10px] tracking-wider tabular-nums uppercase ${t.metaTag}`}
+                      className={`shrink-0 rounded border px-1 py-0.5 text-[10px] tracking-wider uppercase tabular-nums ${t.metaTag}`}
                     >
                       {c.ref}
                     </span>

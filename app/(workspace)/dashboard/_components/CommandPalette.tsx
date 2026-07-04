@@ -84,12 +84,18 @@ type Scope =
 function parseQuery(raw: string): { scope: Scope; term: string } {
   const trimmed = raw.trimStart()
   // `>>` is parsed before `>` so the doubled form wins.
-  if (trimmed.startsWith('>>')) return { scope: 'mine', term: trimmed.slice(2).trim() }
-  if (trimmed.startsWith('>')) return { scope: 'tasks', term: trimmed.slice(1).trim() }
-  if (trimmed.startsWith('@')) return { scope: 'members', term: trimmed.slice(1).trim() }
-  if (trimmed.startsWith('#')) return { scope: 'projects', term: trimmed.slice(1).trim() }
-  if (trimmed.startsWith('?')) return { scope: 'meetings', term: trimmed.slice(1).trim() }
-  if (trimmed.startsWith('/')) return { scope: 'nav', term: trimmed.slice(1).trim() }
+  if (trimmed.startsWith('>>'))
+    return { scope: 'mine', term: trimmed.slice(2).trim() }
+  if (trimmed.startsWith('>'))
+    return { scope: 'tasks', term: trimmed.slice(1).trim() }
+  if (trimmed.startsWith('@'))
+    return { scope: 'members', term: trimmed.slice(1).trim() }
+  if (trimmed.startsWith('#'))
+    return { scope: 'projects', term: trimmed.slice(1).trim() }
+  if (trimmed.startsWith('?'))
+    return { scope: 'meetings', term: trimmed.slice(1).trim() }
+  if (trimmed.startsWith('/'))
+    return { scope: 'nav', term: trimmed.slice(1).trim() }
   return { scope: 'default', term: trimmed.trim() }
 }
 
@@ -104,15 +110,60 @@ const SCOPE_LABEL: Record<Scope, string> = {
 }
 
 const NAV: NavItem[] = [
-  { kind: 'tab', id: 'board', label: 'Board', icon: <LayoutGrid className="size-3.5" /> },
-  { kind: 'tab', id: 'list', label: 'List', icon: <ListIcon className="size-3.5" /> },
-  { kind: 'tab', id: 'timeline', label: 'Timeline', icon: <ChartGantt className="size-3.5" /> },
-  { kind: 'tab', id: 'sprints', label: 'Sprints', icon: <Rocket className="size-3.5" /> },
-  { kind: 'tab', id: 'meetings', label: 'Calendar', icon: <CalendarDays className="size-3.5" /> },
-  { kind: 'view', id: 'settings', label: 'Settings', icon: <SettingsIcon className="size-3.5" /> },
-  { kind: 'view', id: 'updates', label: 'Updates', icon: <CheckSquare className="size-3.5" /> },
-  { kind: 'view', id: 'projects', label: 'Projects', icon: <Folder className="size-3.5" /> },
-  { kind: 'view', id: 'marketplace', label: 'Marketplace', icon: <Store className="size-3.5" /> }
+  {
+    kind: 'tab',
+    id: 'board',
+    label: 'Board',
+    icon: <LayoutGrid className="size-3.5" />
+  },
+  {
+    kind: 'tab',
+    id: 'list',
+    label: 'List',
+    icon: <ListIcon className="size-3.5" />
+  },
+  {
+    kind: 'tab',
+    id: 'timeline',
+    label: 'Timeline',
+    icon: <ChartGantt className="size-3.5" />
+  },
+  {
+    kind: 'tab',
+    id: 'sprints',
+    label: 'Sprints',
+    icon: <Rocket className="size-3.5" />
+  },
+  {
+    kind: 'tab',
+    id: 'meetings',
+    label: 'Calendar',
+    icon: <CalendarDays className="size-3.5" />
+  },
+  {
+    kind: 'view',
+    id: 'settings',
+    label: 'Settings',
+    icon: <SettingsIcon className="size-3.5" />
+  },
+  {
+    kind: 'view',
+    id: 'updates',
+    label: 'Updates',
+    icon: <CheckSquare className="size-3.5" />
+  },
+  {
+    kind: 'view',
+    id: 'projects',
+    label: 'Projects',
+    icon: <Folder className="size-3.5" />
+  },
+  {
+    kind: 'view',
+    id: 'marketplace',
+    label: 'Marketplace',
+    icon: <Store className="size-3.5" />
+  }
 ]
 
 export default function CommandPalette({
@@ -220,9 +271,12 @@ export default function CommandPalette({
       string,
       { id: string; title: string; status: string; startsAt: string | null }
     >()
-    const push = (
-      r: { id: string; title: string; status: string; selectedStartsAt: string | null }
-    ) => {
+    const push = (r: {
+      id: string
+      title: string
+      status: string
+      selectedStartsAt: string | null
+    }) => {
       if (
         r.status === 'canceled' ||
         r.status === 'rejected' ||
@@ -389,7 +443,8 @@ export default function CommandPalette({
     if (scope === 'tasks') {
       const list = q
         ? recentTasks.filter((t) => {
-            const hay = `${t.ref} ${t.title} ${t.description ?? ''}`.toLowerCase()
+            const hay =
+              `${t.ref} ${t.title} ${t.description ?? ''}`.toLowerCase()
             return hay.includes(q)
           })
         : recentTasks
@@ -401,7 +456,8 @@ export default function CommandPalette({
     if (scope === 'mine') {
       const list = q
         ? myTasks.filter((t) => {
-            const hay = `${t.ref} ${t.title} ${t.description ?? ''}`.toLowerCase()
+            const hay =
+              `${t.ref} ${t.title} ${t.description ?? ''}`.toLowerCase()
             return hay.includes(q)
           })
         : myTasks
@@ -571,7 +627,8 @@ export default function CommandPalette({
       ? 'bg-white border-zinc-200'
       : 'bg-zinc-950 border-white/10'
 
-  const grouped: { group: Row['group']; rows: { row: Row; idx: number }[] }[] = []
+  const grouped: { group: Row['group']; rows: { row: Row; idx: number }[] }[] =
+    []
   rows.forEach((row, idx) => {
     let bucket = grouped.find((g) => g.group === row.group)
     if (!bucket) {
@@ -590,7 +647,9 @@ export default function CommandPalette({
         onClick={(e) => e.stopPropagation()}
         className={`w-full max-w-xl overflow-hidden rounded-lg border shadow-2xl ${surface}`}
       >
-        <div className={`flex items-center gap-2 border-b px-3 ${t.borderSoft}`}>
+        <div
+          className={`flex items-center gap-2 border-b px-3 ${t.borderSoft}`}
+        >
           <Search className={`size-4 ${t.textSubtle}`} />
           {scope !== 'default' && (
             <span
@@ -622,7 +681,9 @@ export default function CommandPalette({
           <div
             className={`flex flex-wrap items-center gap-1.5 border-b px-3 py-1.5 ${t.borderSoft}`}
           >
-            <span className={`text-[10px] tracking-wider uppercase ${t.textSubtle}`}>
+            <span
+              className={`text-[10px] tracking-wider uppercase ${t.textSubtle}`}
+            >
               Filter
             </span>
             <button
@@ -706,7 +767,7 @@ export default function CommandPalette({
 
         <div
           ref={listRef}
-          className="max-h-[60vh] overflow-y-auto py-1 [scrollbar-width:thin]"
+          className="max-h-[60vh] [scrollbar-width:thin] overflow-y-auto py-1"
         >
           {grouped.length === 0 ? (
             <div className={`px-4 py-6 text-center text-xs ${t.textSubtle}`}>
@@ -742,7 +803,9 @@ export default function CommandPalette({
                         {row.label}
                       </span>
                       {row.hint && (
-                        <span className={`shrink-0 text-[10px] ${t.textSubtle}`}>
+                        <span
+                          className={`shrink-0 text-[10px] ${t.textSubtle}`}
+                        >
                           {row.hint}
                         </span>
                       )}

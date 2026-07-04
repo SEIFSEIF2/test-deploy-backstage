@@ -52,9 +52,9 @@ describe('parseExternalRef', () => {
       kind: 'bunny',
       identifier: 'cdn-zone'
     })
-    expect(
-      parseExternalRef('https://www.notion.so/acme/Spec-1')
-    ).toMatchObject({ kind: 'doc' })
+    expect(parseExternalRef('https://www.notion.so/acme/Spec-1')).toMatchObject(
+      { kind: 'doc' }
+    )
   })
 
   it('rejects non-http URLs and falls back to link', async () => {
@@ -102,8 +102,9 @@ describe('isSelfHosted / labels', () => {
   })
 
   it('labels the own host as the app itself and siblings with hostname', async () => {
-    const { parseExternalRef, defaultExternalRefLabel } =
-      await loadWithAppUrl('https://backstage.acme.com')
+    const { parseExternalRef, defaultExternalRefLabel } = await loadWithAppUrl(
+      'https://backstage.acme.com'
+    )
     vi.stubEnv('NEXT_PUBLIC_APP_NAME', 'Backstage')
     const self = parseExternalRef('https://backstage.acme.com/dashboard')
     const sibling = parseExternalRef('https://learn.acme.com')

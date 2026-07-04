@@ -33,7 +33,12 @@ interface NewTaskModalProps {
   defaultDueDate?: string | null
   // Pool for the relation picker autocomplete. Visible tasks scoped by
   // the caller.
-  candidateTasks: { id: string; ref: string; title: string; status: TaskStatus }[]
+  candidateTasks: {
+    id: string
+    ref: string
+    title: string
+    status: TaskStatus
+  }[]
   onClose: () => void
   // Manual create carries an optional description alongside the core
   // BoardTask shape; the dashboard plumbs it through to createDashboardTask.
@@ -53,7 +58,10 @@ interface NewTaskModalProps {
       dueDate: string | null
       labelIds: string[]
       newLabelNames: string[]
-      relations?: { kind: 'blocked_by' | 'blocks' | 'parent' | 'sub_issue' | 'triage'; ref: string }[]
+      relations?: {
+        kind: 'blocked_by' | 'blocks' | 'parent' | 'sub_issue' | 'triage'
+        ref: string
+      }[]
     }[]
   ) => Promise<void> | void
 }
@@ -131,10 +139,7 @@ export default function NewTaskModal({
               Manual
             </TabButton>
             {aiPasteEnabled && (
-              <TabButton
-                active={tab === 'ai'}
-                onClick={() => setTab('ai')}
-              >
+              <TabButton active={tab === 'ai'} onClick={() => setTab('ai')}>
                 From AI
               </TabButton>
             )}
@@ -249,8 +254,7 @@ function ManualTab({
   const assignableMembers = useMemo(
     () =>
       members.filter(
-        (m) =>
-          m.activityStatus !== 'left' && m.activityStatus !== 'on_vacation'
+        (m) => m.activityStatus !== 'left' && m.activityStatus !== 'on_vacation'
       ),
     [members]
   )

@@ -44,10 +44,7 @@ export interface TaskAttachment {
 
 export async function uploadTaskImage(
   form: FormData
-): Promise<
-  | { ok: true; attachment: TaskAttachment }
-  | { error: string }
-> {
+): Promise<{ ok: true; attachment: TaskAttachment } | { error: string }> {
   const taskId = String(form.get('taskId') ?? '')
   const file = form.get('file')
   const width = Number(form.get('width') ?? 0) || null

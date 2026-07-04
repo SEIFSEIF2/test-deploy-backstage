@@ -25,7 +25,10 @@ import {
   type DragStartEvent
 } from '@dnd-kit/core'
 import { toast } from 'sonner'
-import { DashboardThemeProvider, useDashTheme } from '@/app/(workspace)/dashboard/_components/theme'
+import {
+  DashboardThemeProvider,
+  useDashTheme
+} from '@/app/(workspace)/dashboard/_components/theme'
 import { ContextMenuProvider } from '@/app/(workspace)/dashboard/_components/ContextMenu'
 import { TeamProvider } from '@/app/(workspace)/dashboard/_components/TeamContext'
 import {
@@ -83,15 +86,19 @@ function DemoBoardInner() {
   const actions = useMemo<TaskActions>(
     () => ({
       changeStatus: (id, s) => {
-        setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status: s } : t)))
+        setTasks((prev) =>
+          prev.map((t) => (t.id === id ? { ...t, status: s } : t))
+        )
         toast.success('Status updated (demo, no persistence)')
       },
       changePriority: (id, p) => {
-        setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, priority: p } : t)))
+        setTasks((prev) =>
+          prev.map((t) => (t.id === id ? { ...t, priority: p } : t))
+        )
       },
       changeAssignee: (id, assigneeId) => {
         const assignee = assigneeId
-          ? DEMO_MEMBERS.find((m) => m.id === assigneeId) ?? undefined
+          ? (DEMO_MEMBERS.find((m) => m.id === assigneeId) ?? undefined)
           : undefined
         setTasks((prev) =>
           prev.map((t) => (t.id === id ? { ...t, assignee } : t))
@@ -120,7 +127,8 @@ function DemoBoardInner() {
         setTasks((prev) => prev.filter((t) => t.id !== id))
       },
       copyRef: (ref) => {
-        if (typeof navigator !== 'undefined') navigator.clipboard?.writeText(ref)
+        if (typeof navigator !== 'undefined')
+          navigator.clipboard?.writeText(ref)
         toast.success(`Copied ${ref}`)
       },
       copyShareLink: (ref) => {
@@ -204,11 +212,11 @@ function DemoBoardInner() {
   }, [])
 
   const activeTask = activeDragId
-    ? tasks.find((t) => t.id === activeDragId) ?? null
+    ? (tasks.find((t) => t.id === activeDragId) ?? null)
     : null
 
   const selectedTask = selectedId
-    ? tasks.find((t) => t.id === selectedId) ?? null
+    ? (tasks.find((t) => t.id === selectedId) ?? null)
     : null
 
   return (
@@ -228,7 +236,7 @@ function DemoBoardInner() {
                 onDragEnd={onDragEnd}
                 onDragCancel={onDragCancel}
               >
-                <div className="flex min-h-0 flex-1 gap-3 overflow-x-auto pb-1 scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                <div className="flex min-h-0 flex-1 scrollbar-none gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                   {groups.map((g) => {
                     const status = STATUS_BY_ID[g.key]
                     return (
@@ -249,7 +257,11 @@ function DemoBoardInner() {
                 <DragOverlay dropAnimation={null}>
                   {activeTask ? (
                     <div className="rotate-1 opacity-95 shadow-2xl">
-                      <TaskCard task={activeTask} draggable={false} density="cozy" />
+                      <TaskCard
+                        task={activeTask}
+                        draggable={false}
+                        density="cozy"
+                      />
                     </div>
                   ) : null}
                 </DragOverlay>
@@ -310,7 +322,9 @@ function DemoSidebar() {
           {config.appName.slice(0, 1).toUpperCase()}
         </div>
         <div className="flex flex-col leading-none">
-          <span className={`text-[10px] tracking-[0.25em] uppercase ${t.textMuted}`}>
+          <span
+            className={`text-[10px] tracking-[0.25em] uppercase ${t.textMuted}`}
+          >
             {config.appName}
           </span>
           <span className={`text-xs ${t.text}`}>Workspace</span>
@@ -383,11 +397,13 @@ function DemoTopbar({ count }: { count: number }) {
           {DEMO_PROJECT.name}
           <ChevronDown className="size-3" />
         </button>
-        <span className="ml-2 rounded-full bg-[#948CC0]/12 px-2 py-0.5 text-[10px] font-medium tracking-[0.18em] uppercase text-[#6E62B0] dark:bg-[#948CC0]/15 dark:text-[#BCB3DD]">
+        <span className="ml-2 rounded-full bg-[#948CC0]/12 px-2 py-0.5 text-[10px] font-medium tracking-[0.18em] text-[#6E62B0] uppercase dark:bg-[#948CC0]/15 dark:text-[#BCB3DD]">
           {DEMO_SPRINT.name}
         </span>
       </div>
-      <span className={`text-[10px] tracking-[0.18em] uppercase ${t.textSubtle}`}>
+      <span
+        className={`text-[10px] tracking-[0.18em] uppercase ${t.textSubtle}`}
+      >
         {count} tasks
       </span>
     </div>
@@ -478,15 +494,14 @@ function DemoTaskDrawer({
           </div>
           {task.checklist && task.checklist.length > 0 && (
             <div className="flex flex-col gap-2">
-              <span className={`text-[10px] tracking-[0.2em] uppercase ${t.textFaint}`}>
+              <span
+                className={`text-[10px] tracking-[0.2em] uppercase ${t.textFaint}`}
+              >
                 Checklist
               </span>
               <ul className="flex flex-col gap-1.5">
                 {task.checklist.map((item) => (
-                  <li
-                    key={item.id}
-                    className="flex items-center gap-2 text-sm"
-                  >
+                  <li key={item.id} className="flex items-center gap-2 text-sm">
                     <span
                       className={`flex size-4 items-center justify-center rounded border ${
                         item.done
@@ -498,7 +513,9 @@ function DemoTaskDrawer({
                       {item.done ? '✓' : ''}
                     </span>
                     <span
-                      className={item.done ? `${t.textFaint} line-through` : t.text}
+                      className={
+                        item.done ? `${t.textFaint} line-through` : t.text
+                      }
                     >
                       {item.text}
                     </span>

@@ -134,12 +134,7 @@ export default function TimezoneGate({ savedTimezone, onSaved }: Props) {
 
   if (!mustChoose) return null
 
-  return (
-    <MandatoryTimezoneDialog
-      browserTz={browserTz}
-      onSaved={onSaved}
-    />
-  )
+  return <MandatoryTimezoneDialog browserTz={browserTz} onSaved={onSaved} />
 }
 
 function MandatoryTimezoneDialog({
@@ -201,8 +196,8 @@ function MandatoryTimezoneDialog({
             Pick your timezone
           </AlertDialogTitle>
           <AlertDialogDescription className="text-xs leading-relaxed">
-            Shown in your local hours across meetings, due dates and the
-            quick room. Match where you actually work.
+            Shown in your local hours across meetings, due dates and the quick
+            room. Match where you actually work.
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -222,11 +217,12 @@ function MandatoryTimezoneDialog({
               >
                 Use my location
               </span>
-              <span className="truncate text-base font-medium leading-tight">
+              <span className="truncate text-base leading-tight font-medium">
                 {splitZone(browserTz).city}
               </span>
               <span className={`truncate text-xs ${t.textMuted}`}>
-                {splitZone(browserTz).region} · {formatLocalTime(browserTz, now)} ·{' '}
+                {splitZone(browserTz).region} ·{' '}
+                {formatLocalTime(browserTz, now)} ·{' '}
                 {formatOffset(browserTz, now)}
               </span>
             </div>
@@ -287,7 +283,7 @@ function MandatoryTimezoneDialog({
                         <span className={`truncate text-sm ${t.text}`}>
                           {split.city}
                           {isBrowser && (
-                            <span className="ml-2 rounded bg-teal-500/15 px-1.5 py-0.5 text-[9px] tracking-wider uppercase text-teal-600 dark:text-teal-400">
+                            <span className="ml-2 rounded bg-teal-500/15 px-1.5 py-0.5 text-[9px] tracking-wider text-teal-600 uppercase dark:text-teal-400">
                               your location
                             </span>
                           )}

@@ -88,10 +88,10 @@ export default function TaskDetailContent({
     <div className="flex flex-col gap-5">
       {showHeader && (
         <div
-          className={`flex items-center justify-between pb-3 border-b ${t.border}`}
+          className={`flex items-center justify-between border-b pb-3 ${t.border}`}
         >
           <span
-            className={`text-[10px] uppercase tracking-[0.22em] ${t.textSubtle}`}
+            className={`text-[10px] tracking-[0.22em] uppercase ${t.textSubtle}`}
           >
             {task.ref}
           </span>
@@ -101,7 +101,7 @@ export default function TaskDetailContent({
                 e.stopPropagation()
                 onClose()
               }}
-              className={`size-7 rounded-md flex items-center justify-center transition ${t.btn}`}
+              className={`flex size-7 items-center justify-center rounded-md transition ${t.btn}`}
               aria-label="Close detail"
             >
               <X className="size-3.5" />
@@ -111,12 +111,12 @@ export default function TaskDetailContent({
       )}
 
       {!compact && (
-        <h2 className={`text-lg font-medium leading-snug ${t.text}`}>
+        <h2 className={`text-lg leading-snug font-medium ${t.text}`}>
           {task.title}
         </h2>
       )}
 
-      <div className="grid grid-cols-[88px_1fr] gap-y-2.5 text-xs items-center">
+      <div className="grid grid-cols-[88px_1fr] items-center gap-y-2.5 text-xs">
         <FieldLabel>Status</FieldLabel>
         <Popover
           disabled={!canEditOwner}
@@ -137,7 +137,7 @@ export default function TaskDetailContent({
                 onChangeStatus(task.id, s.id)
                 setStatusOpen(false)
               }}
-              className={`w-full flex items-center gap-2 px-2.5 py-1.5 text-xs rounded ${
+              className={`flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-xs ${
                 task.status === s.id ? t.btnActive : t.tab
               }`}
             >
@@ -167,7 +167,7 @@ export default function TaskDetailContent({
                 onChangePriority(task.id, p)
                 setPrioOpen(false)
               }}
-              className={`w-full flex items-center gap-2 px-2.5 py-1.5 text-xs rounded ${
+              className={`flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-xs ${
                 task.priority === p ? t.btnActive : t.tab
               }`}
             >
@@ -199,11 +199,11 @@ export default function TaskDetailContent({
               onChangeAssignee(task.id, null)
               setAssigneeOpen(false)
             }}
-            className={`w-full flex items-center gap-2 px-2.5 py-1.5 text-xs rounded ${
+            className={`flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-xs ${
               !task.assignee ? t.btnActive : t.tab
             }`}
           >
-            <span className="size-5 rounded-full bg-zinc-200 dark:bg-white/10 text-[9px] font-semibold flex items-center justify-center">
+            <span className="flex size-5 items-center justify-center rounded-full bg-zinc-200 text-[9px] font-semibold dark:bg-white/10">
               —
             </span>
             Unassigned
@@ -216,7 +216,7 @@ export default function TaskDetailContent({
                 onChangeAssignee(task.id, m.id)
                 setAssigneeOpen(false)
               }}
-              className={`w-full flex items-center gap-2 px-2.5 py-1.5 text-xs rounded ${
+              className={`flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-xs ${
                 task.assignee?.id === m.id ? t.btnActive : t.tab
               }`}
             >
@@ -234,7 +234,7 @@ export default function TaskDetailContent({
           {task.tags?.map((tag) => (
             <span
               key={tag}
-              className={`border rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wider ${t.metaTag}`}
+              className={`rounded border px-1.5 py-0.5 text-[10px] tracking-wider uppercase ${t.metaTag}`}
             >
               {tag}
             </span>
@@ -248,12 +248,12 @@ export default function TaskDetailContent({
               {task.relations.map((r, i) => (
                 <span
                   key={`${r.kind}-${r.ref}-${i}`}
-                  className={`inline-flex items-center gap-1.5 border rounded-md px-2 py-1 text-[11px] ${t.metaTag}`}
+                  className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] ${t.metaTag}`}
                 >
                   <RelationIcon kind={r.kind} className="size-3.5" />
                   <span className={t.textMuted}>{RELATION_LABEL[r.kind]}</span>
                   <span
-                    className={`uppercase tracking-wider text-[10px] ${t.text}`}
+                    className={`text-[10px] tracking-wider uppercase ${t.text}`}
                   >
                     {r.ref}
                   </span>
@@ -275,9 +275,9 @@ export default function TaskDetailContent({
                   }`}
                 >
                   <span
-                    className={`size-3.5 rounded-sm border flex items-center justify-center ${
+                    className={`flex size-3.5 items-center justify-center rounded-sm border ${
                       c.done
-                        ? 'bg-emerald-500 border-emerald-500 text-white'
+                        ? 'border-emerald-500 bg-emerald-500 text-white'
                         : t.border
                     }`}
                   >
@@ -305,7 +305,7 @@ export default function TaskDetailContent({
 
       <div>
         <div
-          className={`text-[10px] uppercase tracking-[0.22em] mb-2 ${t.textMuted}`}
+          className={`mb-2 text-[10px] tracking-[0.22em] uppercase ${t.textMuted}`}
         >
           Comments ({comments.length})
         </div>
@@ -318,7 +318,7 @@ export default function TaskDetailContent({
               key={c.id}
               className={`rounded-md border px-3 py-2 text-xs ${t.border} ${t.surfaceMuted}`}
             >
-              <div className="flex items-center justify-between mb-1">
+              <div className="mb-1 flex items-center justify-between">
                 <span className={`font-medium ${t.text}`}>{c.author}</span>
                 <span className={`text-[10px] ${t.textSubtle}`}>{c.at}</span>
               </div>
@@ -346,7 +346,7 @@ export default function TaskDetailContent({
 
       <div className="flex flex-col gap-2 text-xs">
         <div
-          className={`text-[10px] uppercase tracking-[0.22em] ${t.textMuted}`}
+          className={`text-[10px] tracking-[0.22em] uppercase ${t.textMuted}`}
         >
           Activity
         </div>
@@ -381,7 +381,7 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
   const { t } = useDashTheme()
   return (
     <div
-      className={`uppercase tracking-wider text-[10px] py-1 ${t.textSubtle}`}
+      className={`py-1 text-[10px] tracking-wider uppercase ${t.textSubtle}`}
     >
       {children}
     </div>
@@ -426,7 +426,7 @@ function Popover({
       </button>
       {open && (
         <div
-          className={`absolute left-0 top-9 z-40 w-52 rounded-md border shadow-xl py-1 ${t.detail}`}
+          className={`absolute top-9 left-0 z-40 w-52 rounded-md border py-1 shadow-xl ${t.detail}`}
         >
           {children}
         </div>

@@ -46,7 +46,8 @@ export async function buildUnsubscribeUrl(memberId: string): Promise<string> {
   const secret = await loadSecret()
   const sig = sign(memberId, secret)
   const base =
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ?? 'http://localhost:3000'
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ??
+    'http://localhost:3000'
   return `${base}/api/email/unsubscribe?m=${encodeURIComponent(memberId)}&t=${sig}`
 }
 
